@@ -1,0 +1,348 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== Verein (Tenant) ====================
+
+model Tenant {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  logo         String?
+  primaryColor String   @default("#1a56db")
+  plan         Plan     @default(STARTER)
+  domain       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users          User[]
+  teams          Team[]
+  events         Event[]
+  tournaments    Tournament[]
+  members        Member[]
+  formTemplates  FormTemplate[]
+  messages       Message[]
+  faqs           FAQ[]
+
+  @@index([slug])
+}
+
+enum Plan {
+  STARTER
+  PRO
+  CLUB
+  ENTERPRISE
+  SELF_HOSTED
+}
+
+// ==================== Benutzer ====================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String?
+  role         Role
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  refreshToken String?
+  profile      Member?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([email])
+}
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  TRAINER
+  MEMBER
+  PARENT
+}
+
+// ==================== Mitglied ====================
+
+model Member {
+  id           String       @id @default(cuid())
+  userId       String?      @unique
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tenantId     String
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  memberNumber String
+  firstName    String
+  lastName     String
+  birthDate    DateTime?
+  phone        String?
+  address      String?
+  joinDate     DateTime     @default(now())
+  status       MemberStatus @default(PENDING)
+  sport        String[]
+  qrCode       String?
+  parentEmail  String?
+  signatureUrl String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  attendances Attendance[]
+
+  @@index([tenantId])
+}
+
+enum MemberStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  CANCELLED
+}
+
+// ==================== Mannschaft ====================
+
+model Team {
+  id        String @id @default(cuid())
+  name      String
+  sport     Sport
+  ageGroup  String
+  trainerId String
+  tenantId  String
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events   Event[]
+  messages Message[]
+
+  @@index([tenantId])
+}
+
+enum Sport {
+  FUSSBALL
+  HANDBALL
+  BASKETBALL
+  FOOTBALL
+  TENNIS
+  TURNEN
+  SCHWIMMEN
+  LEICHTATHLETIK
+  SONSTIGES
+}
+
+// ==================== Veranstaltungen ====================
+
+model Event {
+  id          String    @id @default(cuid())
+  title       String
+  type        EventType
+  date        DateTime
+  endDate     DateTime?
+  location    String
+  hallName    String?
+  hallAddress String?
+  teamId      String
+  team        Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  attendances Attendance[]
+  reminders   Reminder[]
+
+  @@index([tenantId])
+  @@index([teamId])
+  @@index([date])
+}
+
+enum EventType {
+  TRAINING
+  MATCH
+  TOURNAMENT
+  TRIP
+  MEETING
+}
+
+// ==================== Anwesenheit ====================
+
+model Attendance {
+  id         String           @id @default(cuid())
+  eventId    String
+  event      Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  memberId   String
+  member     Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  status     AttendanceStatus @default(PENDING)
+  reason     String?
+  answeredAt DateTime?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@unique([eventId, memberId])
+  @@index([eventId])
+  @@index([memberId])
+}
+
+enum AttendanceStatus {
+  PENDING
+  YES
+  NO
+  MAYBE
+}
+
+// ==================== Turnier ====================
+
+model Tournament {
+  id        String          @id @default(cuid())
+  name      String
+  sport     Sport
+  format    TournamentFormat
+  publicUrl String          @unique
+  tenantId  String
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  isLive    Boolean         @default(false)
+  qrCode    String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  matches TournamentMatch[]
+
+  @@index([tenantId])
+  @@index([publicUrl])
+}
+
+enum TournamentFormat {
+  GRUPPE
+  KO
+  SCHWEIZER
+  KOMBINATION
+}
+
+model TournamentMatch {
+  id           String      @id @default(cuid())
+  tournamentId String
+  tournament   Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  team1        String
+  team2        String
+  score1       Int?
+  score2       Int?
+  time         DateTime?
+  field        String?
+  status       MatchStatus @default(GEPLANT)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([tournamentId])
+}
+
+enum MatchStatus {
+  GEPLANT
+  LAUFEND
+  BEENDET
+  ABGESAGT
+}
+
+// ==================== Formulare ====================
+
+model FormTemplate {
+  id       String   @id @default(cuid())
+  tenantId String
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name     String
+  type     FormType
+  fileUrl  String
+  fields   Json
+  isActive Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+enum FormType {
+  MITGLIEDSANTRAG
+  EINVERSTAENDNIS
+  SONSTIGES
+}
+
+// ==================== Erinnerungen ====================
+
+model Reminder {
+  id           String       @id @default(cuid())
+  eventId      String
+  event        Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  type         ReminderType
+  sentAt       DateTime?
+  scheduledFor DateTime
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([eventId])
+  @@index([scheduledFor])
+}
+
+enum ReminderType {
+  H24
+  H2
+  CUSTOM
+}
+
+// ==================== Nachrichten ====================
+
+model Message {
+  id         String      @id @default(cuid())
+  tenantId   String
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teamId     String?
+  team       Team?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  senderId   String
+  content    String
+  type       MessageType
+  silentFrom String?
+  silentTo   String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  reads MessageRead[]
+
+  @@index([tenantId])
+  @@index([teamId])
+}
+
+enum MessageType {
+  BROADCAST
+  ANNOUNCEMENT
+  TEAM_CHAT
+  QUESTION
+  FAQ_ANSWER
+}
+
+model MessageRead {
+  id        String   @id @default(cuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  readAt    DateTime @default(now())
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+}
+
+// ==================== FAQ ====================
+
+model FAQ {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teamId   String?
+  question String
+  answer   String
+  useCount Int    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
