@@ -26,9 +26,11 @@ model Tenant {
   tournaments        Tournament[]
   members            Member[]
   formTemplates      FormTemplate[]
+  formSubmissions    FormSubmission[]
   messages           Message[]
   faqs               FAQ[]
   fahrgemeinschaften Fahrgemeinschaft[]
+  dokumente          Dokument[]
 
   @@index([slug])
 }
@@ -297,12 +299,78 @@ model FormTemplate {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  submissions FormSubmission[]
+
   @@index([tenantId])
 }
 
 enum FormType {
   MITGLIEDSANTRAG
   EINVERSTAENDNIS
+  SONSTIGES
+}
+
+// ==================== Formular-Einreichungen (Online-Antraege) ====================
+
+model FormSubmission {
+  id             String           @id @default(cuid())
+  tenantId       String
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  templateId     String
+  template       FormTemplate     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  eingereichtVon String?          // userId, falls angemeldet
+  email          String           // E-Mail des Antragstellers
+  daten          Json             // Ausgefuellte Felder als JSON
+  signatureUrl   String?          // Digitale Unterschrift als Data-URL
+  status         SubmissionStatus @default(EINGEREICHT)
+  kommentar      String?          // Interner Kommentar vom Admin
+  archiviertePdf String?          // URL der archivierten PDF
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([tenantId])
+  @@index([templateId])
+  @@index([status])
+}
+
+enum SubmissionStatus {
+  EINGEREICHT   // Antrag gestellt
+  IN_PRUEFUNG   // Wird geprueft
+  GENEHMIGT     // Genehmigt → Mitglied wird angelegt
+  ABGELEHNT     // Abgelehnt
+  ARCHIVIERT    // Archiviert
+}
+
+// ==================== Dokumenten-Ablage ====================
+
+model Dokument {
+  id          String       @id @default(cuid())
+  tenantId    String
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  beschreibung String?
+  dateiUrl    String       // Pfad im S3/Storage
+  dateiGroesse Int         // Groesse in Bytes
+  dateiTyp    String       // MIME-Type (application/pdf, image/png, etc.)
+  kategorie   DokumentKategorie @default(SONSTIGES)
+  ordner      String?      // Optionaler Ordner-Pfad
+  hochgeladenVon String    // userId
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([tenantId])
+  @@index([kategorie])
+  @@index([ordner])
+}
+
+enum DokumentKategorie {
+  MITGLIEDSANTRAG
+  VERTRAG
+  RECHNUNG
+  PROTOKOLL
+  TRAININGSPLAN
+  SATZUNG
+  DATENSCHUTZ
   SONSTIGES
 }
 

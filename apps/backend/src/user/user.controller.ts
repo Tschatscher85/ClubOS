@@ -11,7 +11,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { UserService } from './user.service';
-import { ErstelleUserDto, AktualisiereUserDto } from './dto/erstelle-user.dto';
+import { ErstelleUserDto, AktualisiereUserDto, PasswortZuruecksetzenDto } from './dto/erstelle-user.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RollenGuard } from '../common/guards/rollen.guard';
 import { TenantGuard } from '../common/guards/tenant.guard';
@@ -61,6 +61,17 @@ export class UserController {
     @Body() dto: AktualisiereUserDto,
   ) {
     return this.userService.aktualisieren(tenantId, id, dto);
+  }
+
+  @Put(':id/passwort')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Passwort eines Benutzers zuruecksetzen' })
+  async passwortZuruecksetzen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: PasswortZuruecksetzenDto,
+  ) {
+    return this.userService.passwortZuruecksetzen(tenantId, id, dto.neuesPasswort);
   }
 
   @Delete(':id')

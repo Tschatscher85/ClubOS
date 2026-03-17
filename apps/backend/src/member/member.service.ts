@@ -1,7 +1,10 @@
 import {
   Injectable,
   NotFoundException,
+  ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
+import { MemberStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ErstelleMitgliedDto,
@@ -42,6 +45,16 @@ export class MemberService {
   async nachIdAbrufen(tenantId: string, id: string) {
     const mitglied = await this.prisma.member.findFirst({
       where: { id, tenantId },
+      include: {
+        teamMembers: {
+          include: {
+            team: {
+              select: { id: true, name: true, sport: true, ageGroup: true },
+            },
+          },
+        },
+        user: { select: { id: true, email: true, role: true } },
+      },
     });
 
     if (!mitglied) {
@@ -80,6 +93,96 @@ export class MemberService {
 
     return this.prisma.member.delete({
       where: { id },
+    });
+  }
+
+  // ==================== Mitglied-User-Verknuepfung ====================
+
+  async mitBenutzerVerknuepfen(tenantId: string, memberId: string, userId: string) {
+    const mitglied = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+    });
+    if (!mitglied) {
+      throw new NotFoundException('Mitglied nicht gefunden.');
+    }
+
+    const benutzer = await this.prisma.user.findFirst({
+      where: { id: userId, tenantId },
+    });
+    if (!benutzer) {
+      throw new NotFoundException('Benutzer nicht gefunden.');
+    }
+
+    if (mitglied.userId) {
+      throw new ConflictException('Dieses Mitglied ist bereits mit einem Benutzer verknuepft.');
+    }
+
+    const bereitsVerknuepft = await this.prisma.member.findFirst({
+      where: { userId, tenantId },
+    });
+    if (bereitsVerknuepft) {
+      throw new ConflictException('Dieser Benutzer ist bereits mit einem anderen Mitglied verknuepft.');
+    }
+
+    return this.prisma.member.update({
+      where: { id: memberId },
+      data: { userId },
+    });
+  }
+
+  async verknuepfungAufheben(tenantId: string, memberId: string) {
+    const mitglied = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+    });
+    if (!mitglied) {
+      throw new NotFoundException('Mitglied nicht gefunden.');
+    }
+
+    if (!mitglied.userId) {
+      throw new BadRequestException('Dieses Mitglied ist mit keinem Benutzer verknuepft.');
+    }
+
+    return this.prisma.member.update({
+      where: { id: memberId },
+      data: { userId: null },
+    });
+  }
+
+  // ==================== Status & Suche ====================
+
+  async statusAendern(tenantId: string, id: string, neuerStatus: MemberStatus) {
+    await this.nachIdAbrufen(tenantId, id);
+
+    return this.prisma.member.update({
+      where: { id },
+      data: { status: neuerStatus },
+    });
+  }
+
+  async batchFreigeben(tenantId: string, ids: string[]) {
+    const ergebnis = await this.prisma.member.updateMany({
+      where: {
+        id: { in: ids },
+        tenantId,
+      },
+      data: { status: MemberStatus.ACTIVE },
+    });
+
+    return { aktualisiert: ergebnis.count };
+  }
+
+  async suchen(tenantId: string, suchbegriff: string, status?: string, sportart?: string) {
+    return this.prisma.member.findMany({
+      where: {
+        tenantId,
+        OR: [
+          { firstName: { contains: suchbegriff, mode: 'insensitive' } },
+          { lastName: { contains: suchbegriff, mode: 'insensitive' } },
+        ],
+        ...(status && { status: status as MemberStatus }),
+        ...(sportart && { sport: { has: sportart } }),
+      },
+      orderBy: { lastName: 'asc' },
     });
   }
 

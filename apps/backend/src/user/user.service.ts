@@ -109,6 +109,16 @@ export class UserService {
     });
   }
 
+  async passwortZuruecksetzen(tenantId: string, id: string, neuesPasswort: string) {
+    await this.nachIdAbrufen(tenantId, id);
+    const passwortHash = await bcrypt.hash(neuesPasswort, BCRYPT_ROUNDS);
+    await this.prisma.user.update({
+      where: { id },
+      data: { passwordHash: passwortHash },
+    });
+    return { nachricht: 'Passwort erfolgreich zurueckgesetzt.' };
+  }
+
   async loeschen(tenantId: string, id: string) {
     await this.nachIdAbrufen(tenantId, id);
 

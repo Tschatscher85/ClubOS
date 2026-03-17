@@ -6,14 +6,18 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { MemberService } from './member.service';
 import {
   ErstelleMitgliedDto,
   AktualisiereMitgliedDto,
+  VerknuepfeMitgliedDto,
+  StatusAendernDto,
+  BatchFreigebenDto,
 } from './dto/erstelle-mitglied.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RollenGuard } from '../common/guards/rollen.guard';
@@ -43,6 +47,31 @@ export class MemberController {
   @ApiOperation({ summary: 'Alle Mitglieder des Vereins abrufen' })
   async alleAbrufen(@AktuellerBenutzer('tenantId') tenantId: string) {
     return this.memberService.alleAbrufen(tenantId);
+  }
+
+  @Get('suchen')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
+  @ApiOperation({ summary: 'Mitglieder suchen' })
+  @ApiQuery({ name: 'q', required: true, description: 'Suchbegriff (Vor-/Nachname)' })
+  @ApiQuery({ name: 'status', required: false, description: 'Mitgliedsstatus filtern' })
+  @ApiQuery({ name: 'sportart', required: false, description: 'Sportart filtern' })
+  async suchen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Query('q') suchbegriff: string,
+    @Query('status') status?: string,
+    @Query('sportart') sportart?: string,
+  ) {
+    return this.memberService.suchen(tenantId, suchbegriff, status, sportart);
+  }
+
+  @Post('batch-freigeben')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Mehrere Mitglieder gleichzeitig freigeben' })
+  async batchFreigeben(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Body() dto: BatchFreigebenDto,
+  ) {
+    return this.memberService.batchFreigeben(tenantId, dto.ids);
   }
 
   // ==================== Eltern-Portal ====================
@@ -93,6 +122,38 @@ export class MemberController {
     @Body() dto: AktualisiereMitgliedDto,
   ) {
     return this.memberService.aktualisieren(tenantId, id, dto);
+  }
+
+  @Put(':id/status')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
+  @ApiOperation({ summary: 'Mitgliedsstatus aendern' })
+  async statusAendern(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: StatusAendernDto,
+  ) {
+    return this.memberService.statusAendern(tenantId, id, dto.status);
+  }
+
+  @Put(':id/verknuepfen')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Mitglied mit Benutzer verknuepfen' })
+  async mitBenutzerVerknuepfen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: VerknuepfeMitgliedDto,
+  ) {
+    return this.memberService.mitBenutzerVerknuepfen(tenantId, id, dto.userId);
+  }
+
+  @Delete(':id/verknuepfen')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Verknuepfung zwischen Mitglied und Benutzer aufheben' })
+  async verknuepfungAufheben(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.memberService.verknuepfungAufheben(tenantId, id);
   }
 
   @Delete(':id')

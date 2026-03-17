@@ -51,6 +51,25 @@ export class ErstelleMitgliedDto {
   elternEmail?: string;
 }
 
+export class VerknuepfeMitgliedDto {
+  @ApiProperty({ example: 'clxyz123', description: 'Benutzer-ID zur Verknuepfung' })
+  @IsString({ message: 'userId muss ein Text sein.' })
+  userId!: string;
+}
+
+export class StatusAendernDto {
+  @ApiProperty({ enum: MemberStatus, example: MemberStatus.ACTIVE })
+  @IsEnum(MemberStatus, { message: 'Ungueltiger Mitgliedsstatus.' })
+  status!: MemberStatus;
+}
+
+export class BatchFreigebenDto {
+  @ApiProperty({ example: ['id1', 'id2'], description: 'Liste der Mitglieder-IDs' })
+  @IsArray({ message: 'ids muss ein Array sein.' })
+  @IsString({ each: true, message: 'Jede ID muss ein Text sein.' })
+  ids!: string[];
+}
+
 export class AktualisiereMitgliedDto {
   @ApiPropertyOptional({ example: 'Max' })
   @IsOptional()

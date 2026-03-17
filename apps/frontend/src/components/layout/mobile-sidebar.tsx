@@ -3,12 +3,15 @@
 import {
   LayoutDashboard,
   Users,
+  UserCog,
   Shield,
   Calendar,
   Trophy,
   MessageSquare,
   Car,
   Heart,
+  FileText,
+  FolderOpen,
   Settings,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -28,12 +31,15 @@ const NAVIGATION: ReadonlyArray<{
 }> = [
   { href: ROUTEN.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard, rollen: null },
   { href: ROUTEN.MITGLIEDER, label: 'Mitglieder', icon: Users, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
+  { href: ROUTEN.MITARBEITER, label: 'Mitarbeiter', icon: UserCog, rollen: ['SUPERADMIN', 'ADMIN'] },
   { href: ROUTEN.TEAMS, label: 'Teams', icon: Shield, rollen: null },
   { href: ROUTEN.KALENDER, label: 'Kalender', icon: Calendar, rollen: null },
   { href: ROUTEN.TURNIERE, label: 'Turniere', icon: Trophy, rollen: null },
   { href: ROUTEN.NACHRICHTEN, label: 'Nachrichten', icon: MessageSquare, rollen: null },
   { href: ROUTEN.FAHRGEMEINSCHAFTEN, label: 'Fahrtenboerse', icon: Car, rollen: null },
   { href: ROUTEN.ELTERN, label: 'Eltern-Portal', icon: Heart, rollen: ['PARENT'] },
+  { href: ROUTEN.FORMULARE, label: 'Formulare', icon: FileText, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
+  { href: ROUTEN.DOKUMENTE, label: 'Dokumente', icon: FolderOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
   { href: ROUTEN.EINSTELLUNGEN, label: 'Einstellungen', icon: Settings, rollen: ['SUPERADMIN', 'ADMIN'] },
 ];
 

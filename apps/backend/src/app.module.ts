@@ -10,6 +10,8 @@ import { EventModule } from './event/event.module';
 import { TournamentModule } from './tournament/tournament.module';
 import { MessageModule } from './message/message.module';
 import { FahrgemeinschaftModule } from './fahrgemeinschaft/fahrgemeinschaft.module';
+import { FormModule } from './form/form.module';
+import { DokumentModule } from './dokument/dokument.module';
 import { HealthModule } from './health/health.module';
 import configuration from './config/configuration';
 
@@ -29,6 +31,8 @@ import configuration from './config/configuration';
     TournamentModule,
     MessageModule,
     FahrgemeinschaftModule,
+    FormModule,
+    DokumentModule,
     HealthModule,
   ],
 })
