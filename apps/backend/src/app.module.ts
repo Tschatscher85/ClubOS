@@ -7,6 +7,7 @@ import { UserModule } from './user/user.module';
 import { MemberModule } from './member/member.module';
 import { TeamModule } from './team/team.module';
 import { EventModule } from './event/event.module';
+import { TournamentModule } from './tournament/tournament.module';
 import { HealthModule } from './health/health.module';
 import configuration from './config/configuration';
 
@@ -23,6 +24,7 @@ import configuration from './config/configuration';
     MemberModule,
     TeamModule,
     EventModule,
+    TournamentModule,
     HealthModule,
   ],
 })
