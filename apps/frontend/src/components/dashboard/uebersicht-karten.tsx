@@ -25,11 +25,13 @@ export function UebersichtKarten() {
   const [mitglieder, setMitglieder] = useState<MitgliederStatistik | null>(null);
   const [teams, setTeams] = useState<TeamStatistik | null>(null);
   const [naechstes, setNaechstes] = useState<NaechstesEvent | null | undefined>(undefined);
+  const [ungelesen, setUngelesen] = useState<number | null>(null);
 
   useEffect(() => {
     apiClient.get<MitgliederStatistik>('/mitglieder/statistik').then(setMitglieder).catch(() => {});
     apiClient.get<TeamStatistik>('/teams/statistik').then(setTeams).catch(() => {});
     apiClient.get<NaechstesEvent | null>('/veranstaltungen/naechstes').then(setNaechstes).catch(() => setNaechstes(null));
+    apiClient.get<{ ungelesen: number }>('/nachrichten/ungelesen').then((d) => setUngelesen(d.ungelesen)).catch(() => {});
   }, []);
 
   const eventText = naechstes
@@ -65,8 +67,8 @@ export function UebersichtKarten() {
     },
     {
       titel: 'Nachrichten',
-      wert: '---',
-      beschreibung: 'Kommt in Sprint 5',
+      wert: ungelesen !== null ? String(ungelesen) : '---',
+      beschreibung: 'Ungelesene Nachrichten',
       icon: MessageSquare,
     },
   ];
