@@ -5,6 +5,8 @@ import { AuthModule } from './auth/auth.module';
 import { TenantModule } from './tenant/tenant.module';
 import { UserModule } from './user/user.module';
 import { MemberModule } from './member/member.module';
+import { TeamModule } from './team/team.module';
+import { EventModule } from './event/event.module';
 import { HealthModule } from './health/health.module';
 import configuration from './config/configuration';
 
@@ -19,6 +21,8 @@ import configuration from './config/configuration';
     TenantModule,
     UserModule,
     MemberModule,
+    TeamModule,
+    EventModule,
     HealthModule,
   ],
 })

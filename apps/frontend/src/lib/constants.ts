@@ -6,6 +6,7 @@ export const ROUTEN = {
   DASHBOARD: '/dashboard',
   MITGLIEDER: '/mitglieder',
   TEAMS: '/teams',
+  KALENDER: '/kalender',
   TURNIERE: '/turniere',
   NACHRICHTEN: '/nachrichten',
   EINSTELLUNGEN: '/einstellungen',
