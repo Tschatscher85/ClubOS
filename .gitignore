@@ -34,3 +34,4 @@ docker-compose.override.yml
 # Coverage
 coverage/
 uploads/
+apps/frontend/tsconfig.tsbuildinfo
