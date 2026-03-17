@@ -2,6 +2,7 @@
 
 import { useTenant, useBenutzer } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { API_BASE_URL } from '@/lib/constants';
 
 export function WillkommenBanner() {
   const tenant = useTenant();
@@ -19,7 +20,7 @@ export function WillkommenBanner() {
   return (
     <div className="flex items-center gap-4 rounded-lg bg-primary/5 border border-primary/10 p-6">
       <Avatar className="h-14 w-14">
-        {tenant?.logo && <AvatarImage src={tenant.logo} alt={tenant.name} />}
+        {tenant?.logo && <AvatarImage src={`${API_BASE_URL}${tenant.logo}`} alt={tenant.name} />}
         <AvatarFallback className="bg-primary text-primary-foreground text-lg">
           {initialen}
         </AvatarFallback>

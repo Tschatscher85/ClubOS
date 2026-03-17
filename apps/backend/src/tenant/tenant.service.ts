@@ -67,6 +67,15 @@ export class TenantService {
     });
   }
 
+  async logoAktualisieren(id: string, logoUrl: string) {
+    await this.nachIdAbrufen(id);
+
+    return this.prisma.tenant.update({
+      where: { id },
+      data: { logo: logoUrl },
+    });
+  }
+
   async loeschen(id: string) {
     await this.nachIdAbrufen(id);
 

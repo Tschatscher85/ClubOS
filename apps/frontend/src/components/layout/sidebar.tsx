@@ -13,7 +13,7 @@ import { useTenant, useBenutzer } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { SidebarNavItem } from './sidebar-nav-item';
-import { ROUTEN } from '@/lib/constants';
+import { ROUTEN, API_BASE_URL } from '@/lib/constants';
 
 const NAVIGATION: ReadonlyArray<{
   href: string;
@@ -53,7 +53,7 @@ export function Sidebar() {
       {/* Vereins-Header */}
       <div className="flex h-16 items-center gap-3 border-b px-4">
         <Avatar className="h-9 w-9">
-          {tenant?.logo && <AvatarImage src={tenant.logo} alt={tenant.name} />}
+          {tenant?.logo && <AvatarImage src={`${API_BASE_URL}${tenant.logo}`} alt={tenant.name} />}
           <AvatarFallback className="bg-primary text-primary-foreground text-xs">
             {initialen}
           </AvatarFallback>

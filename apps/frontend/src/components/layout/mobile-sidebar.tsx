@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarNavItem } from './sidebar-nav-item';
 import { useTenant, useBenutzer } from '@/hooks/use-auth';
-import { ROUTEN } from '@/lib/constants';
+import { ROUTEN, API_BASE_URL } from '@/lib/constants';
 import { Menu } from 'lucide-react';
 import { useState } from 'react';
 
@@ -65,7 +65,7 @@ export function MobileSidebar() {
         <div className="flex h-16 items-center gap-3 border-b px-4">
           <Avatar className="h-9 w-9">
             {tenant?.logo && (
-              <AvatarImage src={tenant.logo} alt={tenant.name} />
+              <AvatarImage src={`${API_BASE_URL}${tenant.logo}`} alt={tenant.name} />
             )}
             <AvatarFallback className="bg-primary text-primary-foreground text-xs">
               {initialen}

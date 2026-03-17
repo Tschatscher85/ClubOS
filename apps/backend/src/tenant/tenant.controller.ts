@@ -7,14 +7,31 @@ import {
   Body,
   Param,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { TenantService } from './tenant.service';
 import { ErstelleTenantDto, AktualisiereTenantDto } from './dto/erstelle-tenant.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RollenGuard } from '../common/guards/rollen.guard';
 import { Rollen } from '../common/decorators/rollen.decorator';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import { randomBytes } from 'crypto';
+
+const logoStorage = diskStorage({
+  destination: join(process.cwd(), 'uploads'),
+  filename: (_req, file, cb) => {
+    const uniqueName = randomBytes(16).toString('hex') + extname(file.originalname);
+    cb(null, uniqueName);
+  },
+});
+
+const ERLAUBTE_TYPEN = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'];
 
 @ApiTags('Vereine')
 @Controller('vereine')
@@ -52,6 +69,35 @@ export class TenantController {
     @Body() dto: AktualisiereTenantDto,
   ) {
     return this.tenantService.aktualisieren(id, dto);
+  }
+
+  @Post(':id/logo')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @UseInterceptors(
+    FileInterceptor('logo', {
+      storage: logoStorage,
+      limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB
+      fileFilter: (_req, file, cb) => {
+        if (ERLAUBTE_TYPEN.includes(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(new BadRequestException('Nur PNG, JPG, SVG und WebP erlaubt.'), false);
+        }
+      },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Vereinslogo hochladen (PNG, JPG, SVG, WebP, max 2MB)' })
+  async logoHochladen(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Bitte eine Datei hochladen.');
+    }
+
+    const logoUrl = `/uploads/${file.filename}`;
+    return this.tenantService.logoAktualisieren(id, logoUrl);
   }
 
   @Delete(':id')

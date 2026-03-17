@@ -1,15 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { Settings, Palette, Save } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Settings, Palette, Save, Upload, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/use-auth';
+import { useAuthStore } from '@/stores/auth-store';
 import { apiClient } from '@/lib/api-client';
 import { applyTenantTheme } from '@/lib/theme';
+import { API_BASE_URL } from '@/lib/constants';
 
 const FARBEN = [
   { name: 'Blau', wert: '#1a56db' },
@@ -36,8 +39,43 @@ export default function EinstellungenPage() {
   const [farbe, setFarbe] = useState(tenant?.primaryColor || '#1a56db');
   const [customFarbe, setCustomFarbe] = useState('');
   const [ladend, setLadend] = useState(false);
+  const [logoLadend, setLogoLadend] = useState(false);
   const [gespeichert, setGespeichert] = useState(false);
   const [fehler, setFehler] = useState('');
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const datei = e.target.files?.[0];
+    if (!datei || !tenant) return;
+
+    setLogoLadend(true);
+    setFehler('');
+
+    try {
+      const formData = new FormData();
+      formData.append('logo', datei);
+
+      const res = await fetch(`${API_BASE_URL}/vereine/${tenant.id}/logo`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${useAuthStore.getState().accessToken}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.nachricht || 'Upload fehlgeschlagen.');
+      }
+
+      await profilLaden();
+    } catch (error) {
+      setFehler(error instanceof Error ? error.message : 'Logo-Upload fehlgeschlagen.');
+    } finally {
+      setLogoLadend(false);
+      if (logoInputRef.current) logoInputRef.current.value = '';
+    }
+  };
 
   const handleFarbeWaehlen = (neueFarbe: string) => {
     setFarbe(neueFarbe);
@@ -104,6 +142,62 @@ export default function EinstellungenPage() {
                   {PLAN_LABEL[(tenant as unknown as Record<string, string>)?.plan] || 'Starter'}
                 </Badge>
               </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Vereinslogo */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="h-5 w-5" />
+            Vereinslogo
+          </CardTitle>
+          <CardDescription>
+            Logo hochladen (PNG, JPG, SVG oder WebP, max. 2 MB)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-6">
+            <Avatar className="h-24 w-24">
+              {tenant?.logo && (
+                <AvatarImage
+                  src={`${API_BASE_URL}${tenant.logo}`}
+                  alt={tenant.name}
+                />
+              )}
+              <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+                {tenant?.name
+                  ? tenant.name
+                      .split(' ')
+                      .map((w) => w[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase()
+                  : 'CO'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="space-y-2">
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                className="hidden"
+                onChange={handleLogoUpload}
+                disabled={!istAdmin}
+              />
+              <Button
+                variant="outline"
+                onClick={() => logoInputRef.current?.click()}
+                disabled={!istAdmin || logoLadend}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {logoLadend ? 'Wird hochgeladen...' : 'Logo hochladen'}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Empfohlen: Quadratisch, mind. 200x200 Pixel
+              </p>
             </div>
           </div>
         </CardContent>
