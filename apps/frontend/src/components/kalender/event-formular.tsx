@@ -69,6 +69,10 @@ export function EventFormular({
   const [teamId, setTeamId] = useState(event?.teamId || '');
   const [notizen, setNotizen] = useState(event?.notes || '');
   const [teams, setTeams] = useState<Team[]>([]);
+  const [istWiederkehrend, setIstWiederkehrend] = useState(false);
+  const [wiederholung, setWiederholung] = useState('WEEKLY');
+  const [wiederholungTage, setWiederholungTage] = useState<string[]>([]);
+  const [wiederholungEnde, setWiederholungEnde] = useState('');
   const [ladend, setLadend] = useState(false);
   const [fehler, setFehler] = useState('');
 
@@ -102,6 +106,11 @@ export function EventFormular({
         ...(hallenAdresse && { hallenAdresse }),
         teamId,
         ...(notizen && { notizen }),
+        ...(istWiederkehrend && {
+          wiederholung,
+          wiederholungTage,
+          wiederholungEnde: wiederholungEnde ? new Date(wiederholungEnde).toISOString() : undefined,
+        }),
       };
 
       if (istBearbeitung && event) {
@@ -183,6 +192,82 @@ export function EventFormular({
               />
             </div>
           </div>
+
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={istWiederkehrend}
+                onChange={(e) => setIstWiederkehrend(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <span className="text-sm font-medium">Wiederkehrendes Event</span>
+            </label>
+          </div>
+
+          {istWiederkehrend && (
+            <div className="space-y-4 rounded-md border p-4">
+              <div className="space-y-2">
+                <Label htmlFor="wiederholung">Wiederholung</Label>
+                <Select
+                  id="wiederholung"
+                  value={wiederholung}
+                  onChange={(e) => setWiederholung(e.target.value)}
+                >
+                  <option value="WEEKLY">Woechentlich</option>
+                  <option value="BIWEEKLY">Alle 2 Wochen</option>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Wochentage</Label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { wert: 'MO', label: 'Mo' },
+                    { wert: 'DI', label: 'Di' },
+                    { wert: 'MI', label: 'Mi' },
+                    { wert: 'DO', label: 'Do' },
+                    { wert: 'FR', label: 'Fr' },
+                    { wert: 'SA', label: 'Sa' },
+                    { wert: 'SO', label: 'So' },
+                  ].map((tag) => (
+                    <label
+                      key={tag.wert}
+                      className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm cursor-pointer transition-colors ${
+                        wiederholungTage.includes(tag.wert)
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'hover:bg-accent'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={wiederholungTage.includes(tag.wert)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setWiederholungTage([...wiederholungTage, tag.wert]);
+                          } else {
+                            setWiederholungTage(wiederholungTage.filter((t) => t !== tag.wert));
+                          }
+                        }}
+                        className="sr-only"
+                      />
+                      {tag.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="wiederholungEnde">Wiederholen bis</Label>
+                <Input
+                  id="wiederholungEnde"
+                  type="date"
+                  value={wiederholungEnde}
+                  onChange={(e) => setWiederholungEnde(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="ort">Ort *</Label>

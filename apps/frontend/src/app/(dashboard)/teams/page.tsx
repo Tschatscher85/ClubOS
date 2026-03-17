@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Shield, Plus, Pencil, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Shield, Plus, Pencil, Trash2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +15,7 @@ interface Team {
   sport: string;
   ageGroup: string;
   trainerId: string;
-  _count: { events: number };
+  _count: { events: number; teamMembers: number };
 }
 
 const SPORT_LABEL: Record<string, string> = {
@@ -30,6 +31,7 @@ const SPORT_LABEL: Record<string, string> = {
 };
 
 export default function TeamsPage() {
+  const router = useRouter();
   const [teams, setTeams] = useState<Team[]>([]);
   const [ladend, setLadend] = useState(true);
   const [formularOffen, setFormularOffen] = useState(false);
@@ -93,7 +95,11 @@ export default function TeamsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {teams.map((team) => (
-            <Card key={team.id}>
+            <Card
+              key={team.id}
+              className="cursor-pointer hover:bg-accent/50 transition-colors"
+              onClick={() => router.push(`/teams/${team.id}`)}
+            >
               <CardHeader className="flex flex-row items-start justify-between space-y-0">
                 <div>
                   <CardTitle className="text-lg">{team.name}</CardTitle>
@@ -108,7 +114,8 @@ export default function TeamsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setBearbeitungsTeam(team);
                       setFormularOffen(true);
                     }}
@@ -118,16 +125,23 @@ export default function TeamsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleLoeschen(team.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLoeschen(team.id);
+                    }}
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {team._count.events} Veranstaltungen
-                </p>
+                <div className="flex gap-4 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Users className="h-3.5 w-3.5" />
+                    {team._count.teamMembers} Spieler
+                  </span>
+                  <span>{team._count.events} Veranstaltungen</span>
+                </div>
               </CardContent>
             </Card>
           ))}

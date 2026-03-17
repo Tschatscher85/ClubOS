@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Shield, Calendar, MessageSquare } from 'lucide-react';
+import { Users, Shield, Calendar, MessageSquare, ClipboardCheck } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { apiClient } from '@/lib/api-client';
+import { useBenutzer } from '@/hooks/use-auth';
 
 interface MitgliederStatistik {
   gesamt: number;
@@ -19,20 +20,36 @@ interface NaechstesEvent {
   title: string;
   date: string;
   team: { name: string };
+  _count?: { attendances: number };
+}
+
+interface AnwesenheitsRate {
+  gesamt: number;
+  zugesagt: number;
 }
 
 export function UebersichtKarten() {
+  const benutzer = useBenutzer();
+  const istTrainer = benutzer?.rolle === 'TRAINER';
+
   const [mitglieder, setMitglieder] = useState<MitgliederStatistik | null>(null);
   const [teams, setTeams] = useState<TeamStatistik | null>(null);
   const [naechstes, setNaechstes] = useState<NaechstesEvent | null | undefined>(undefined);
   const [ungelesen, setUngelesen] = useState<number | null>(null);
+  const [anwesenheit, setAnwesenheit] = useState<AnwesenheitsRate | null>(null);
 
   useEffect(() => {
     apiClient.get<MitgliederStatistik>('/mitglieder/statistik').then(setMitglieder).catch(() => {});
-    apiClient.get<TeamStatistik>('/teams/statistik').then(setTeams).catch(() => {});
-    apiClient.get<NaechstesEvent | null>('/veranstaltungen/naechstes').then(setNaechstes).catch(() => setNaechstes(null));
+    const teamEndpoint = istTrainer ? '/teams/meine' : '/teams/statistik';
+    apiClient.get<TeamStatistik>(teamEndpoint).then(setTeams).catch(() => {});
+    apiClient.get<NaechstesEvent | null>('/veranstaltungen/naechstes').then((data) => {
+      setNaechstes(data);
+      if (data?._count?.attendances !== undefined) {
+        setAnwesenheit({ gesamt: data._count.attendances, zugesagt: 0 });
+      }
+    }).catch(() => setNaechstes(null));
     apiClient.get<{ ungelesen: number }>('/nachrichten/ungelesen').then((d) => setUngelesen(d.ungelesen)).catch(() => {});
-  }, []);
+  }, [istTrainer]);
 
   const eventText = naechstes
     ? new Date(naechstes.date).toLocaleDateString('de-DE', {
@@ -52,7 +69,7 @@ export function UebersichtKarten() {
       icon: Users,
     },
     {
-      titel: 'Teams',
+      titel: istTrainer ? 'Meine Teams' : 'Teams',
       wert: teams ? String(teams.gesamt) : '---',
       beschreibung: 'Mannschaften',
       icon: Shield,
@@ -71,10 +88,20 @@ export function UebersichtKarten() {
       beschreibung: 'Ungelesene Nachrichten',
       icon: MessageSquare,
     },
+    ...(naechstes && naechstes._count
+      ? [
+          {
+            titel: 'Anwesenheit',
+            wert: String(naechstes._count.attendances),
+            beschreibung: `Anmeldungen fuer ${naechstes.title}`,
+            icon: ClipboardCheck,
+          },
+        ]
+      : []),
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
       {karten.map((karte) => (
         <Card key={karte.titel}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Calendar, Plus, Trash2, MapPin, Clock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Calendar, Plus, Trash2, MapPin, Clock, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +21,7 @@ interface EventData {
   teamId: string;
   notes: string | null;
   team: { id: string; name: string; sport: string };
+  attendances: { status: string }[];
   _count: { attendances: number };
 }
 
@@ -47,6 +49,7 @@ function formatUhrzeit(iso: string): string {
 }
 
 export default function KalenderPage() {
+  const router = useRouter();
   const [events, setEvents] = useState<EventData[]>([]);
   const [ladend, setLadend] = useState(true);
   const [formularOffen, setFormularOffen] = useState(false);
@@ -113,7 +116,11 @@ export default function KalenderPage() {
           {events.map((event) => {
             const typInfo = TYP_LABEL[event.type] || { text: event.type, variant: 'outline' as const };
             return (
-              <Card key={event.id}>
+              <Card
+                key={event.id}
+                className="cursor-pointer hover:bg-accent/50 transition-colors"
+                onClick={() => router.push(`/kalender/${event.id}`)}
+              >
                 <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                   <div>
                     <CardTitle className="text-base">{event.title}</CardTitle>
@@ -125,7 +132,10 @@ export default function KalenderPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleLoeschen(event.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLoeschen(event.id);
+                    }}
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
@@ -142,6 +152,22 @@ export default function KalenderPage() {
                       {event.location}
                       {event.hallName && ` (${event.hallName})`}
                     </span>
+                    {event.attendances && event.attendances.length > 0 && (() => {
+                      const gesamt = event.attendances.length;
+                      const zugesagt = event.attendances.filter((a) => a.status === 'YES').length;
+                      const abgesagt = event.attendances.filter((a) => a.status === 'NO').length;
+                      const farbe = zugesagt > gesamt / 2
+                        ? 'text-green-600'
+                        : abgesagt > gesamt / 2
+                          ? 'text-red-600'
+                          : 'text-muted-foreground';
+                      return (
+                        <span className={`flex items-center gap-1 ${farbe}`}>
+                          <Users className="h-3.5 w-3.5" />
+                          {zugesagt}/{gesamt} zugesagt
+                        </span>
+                      );
+                    })()}
                   </div>
                   {event.notes && (
                     <p className="mt-2 text-sm">{event.notes}</p>

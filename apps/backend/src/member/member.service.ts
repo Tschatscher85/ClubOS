@@ -83,6 +83,59 @@ export class MemberService {
     });
   }
 
+  // ==================== Eltern-Portal ====================
+
+  /** Alle Kinder eines Elternteils anhand der E-Mail-Adresse finden */
+  async meineKinder(tenantId: string, elternEmail: string) {
+    return this.prisma.member.findMany({
+      where: {
+        tenantId,
+        parentEmail: elternEmail,
+      },
+      orderBy: { lastName: 'asc' },
+    });
+  }
+
+  /** Teams der Kinder eines Elternteils finden */
+  async meineKinderTeams(tenantId: string, elternEmail: string) {
+    const kinder = await this.prisma.member.findMany({
+      where: {
+        tenantId,
+        parentEmail: elternEmail,
+      },
+      select: { id: true },
+    });
+
+    if (kinder.length === 0) {
+      return [];
+    }
+
+    const kinderIds = kinder.map((k) => k.id);
+
+    const teamMitgliedschaften = await this.prisma.teamMember.findMany({
+      where: {
+        memberId: { in: kinderIds },
+      },
+      include: {
+        team: {
+          include: {
+            _count: { select: { events: true, teamMembers: true } },
+          },
+        },
+      },
+    });
+
+    // Einzigartige Teams zurueckgeben
+    const teamsMap = new Map<string, (typeof teamMitgliedschaften)[number]['team']>();
+    for (const tm of teamMitgliedschaften) {
+      if (tm.team.tenantId === tenantId) {
+        teamsMap.set(tm.team.id, tm.team);
+      }
+    }
+
+    return Array.from(teamsMap.values());
+  }
+
   async statistik(tenantId: string) {
     const [gesamt, aktiv, ausstehend] = await Promise.all([
       this.prisma.member.count({ where: { tenantId } }),

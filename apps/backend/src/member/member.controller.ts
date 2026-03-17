@@ -45,6 +45,28 @@ export class MemberController {
     return this.memberService.alleAbrufen(tenantId);
   }
 
+  // ==================== Eltern-Portal ====================
+
+  @Get('meine-kinder')
+  @Rollen(Role.PARENT)
+  @ApiOperation({ summary: 'Eigene Kinder abrufen (Eltern-Portal)' })
+  async meineKinder(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @AktuellerBenutzer('email') elternEmail: string,
+  ) {
+    return this.memberService.meineKinder(tenantId, elternEmail);
+  }
+
+  @Get('meine-kinder/teams')
+  @Rollen(Role.PARENT)
+  @ApiOperation({ summary: 'Teams der eigenen Kinder abrufen (Eltern-Portal)' })
+  async meineKinderTeams(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @AktuellerBenutzer('email') elternEmail: string,
+  ) {
+    return this.memberService.meineKinderTeams(tenantId, elternEmail);
+  }
+
   @Get('statistik')
   @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
   @ApiOperation({ summary: 'Mitglieder-Statistik abrufen' })

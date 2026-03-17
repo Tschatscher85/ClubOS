@@ -7,6 +7,8 @@ import {
   Calendar,
   Trophy,
   MessageSquare,
+  Car,
+  Heart,
   Settings,
 } from 'lucide-react';
 import { useTenant, useBenutzer } from '@/hooks/use-auth';
@@ -27,6 +29,8 @@ const NAVIGATION: ReadonlyArray<{
   { href: ROUTEN.KALENDER, label: 'Kalender', icon: Calendar, rollen: null },
   { href: ROUTEN.TURNIERE, label: 'Turniere', icon: Trophy, rollen: null },
   { href: ROUTEN.NACHRICHTEN, label: 'Nachrichten', icon: MessageSquare, rollen: null },
+  { href: ROUTEN.FAHRGEMEINSCHAFTEN, label: 'Fahrtenboerse', icon: Car, rollen: null },
+  { href: ROUTEN.ELTERN, label: 'Eltern-Portal', icon: Heart, rollen: ['PARENT'] },
   { href: ROUTEN.EINSTELLUNGEN, label: 'Einstellungen', icon: Settings, rollen: ['SUPERADMIN', 'ADMIN'] },
 ];
 

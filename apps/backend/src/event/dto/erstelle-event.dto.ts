@@ -4,9 +4,11 @@ import {
   IsEnum,
   IsOptional,
   IsDateString,
+  IsArray,
+  IsIn,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { EventType } from '@prisma/client';
+import { EventType, AttendanceStatus } from '@prisma/client';
 
 export class ErstelleEventDto {
   @ApiProperty({ example: 'Training Dienstag', description: 'Titel' })
@@ -50,6 +52,48 @@ export class ErstelleEventDto {
   @IsOptional()
   @IsString()
   notizen?: string;
+
+  @ApiPropertyOptional({
+    description: 'Wiederholungsregel: WEEKLY oder BIWEEKLY',
+    example: 'WEEKLY',
+  })
+  @IsOptional()
+  @IsIn(['WEEKLY', 'BIWEEKLY'], { message: 'Wiederholung muss WEEKLY oder BIWEEKLY sein.' })
+  wiederholung?: string;
+
+  @ApiPropertyOptional({
+    description: 'Enddatum der Wiederholung (ISO-String)',
+    example: '2026-06-30T00:00:00.000Z',
+  })
+  @IsOptional()
+  @IsDateString({}, { message: 'Bitte ein gueltiges Enddatum fuer die Wiederholung angeben.' })
+  wiederholungEnde?: string;
+
+  @ApiPropertyOptional({
+    description: 'Wochentage fuer Wiederholung',
+    example: ['DI', 'DO'],
+  })
+  @IsOptional()
+  @IsArray({ message: 'Wiederholungstage muss ein Array sein.' })
+  @IsString({ each: true })
+  wiederholungTage?: string[];
+}
+
+// ==================== Schnell-Anmeldung DTO ====================
+
+export class SchnellAnmeldungDto {
+  @ApiProperty({ description: 'Schnell-Anmeldung Token' })
+  @IsString()
+  token!: string;
+
+  @ApiProperty({ enum: AttendanceStatus, example: AttendanceStatus.YES })
+  @IsEnum(AttendanceStatus, { message: 'Ungueltiger Status (YES, NO, MAYBE).' })
+  status!: AttendanceStatus;
+
+  @ApiPropertyOptional({ description: 'Grund bei Absage' })
+  @IsOptional()
+  @IsString()
+  grund?: string;
 }
 
 export class AktualisiereEventDto {

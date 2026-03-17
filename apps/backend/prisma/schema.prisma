@@ -20,14 +20,15 @@ model Tenant {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  users          User[]
-  teams          Team[]
-  events         Event[]
-  tournaments    Tournament[]
-  members        Member[]
-  formTemplates  FormTemplate[]
-  messages       Message[]
-  faqs           FAQ[]
+  users              User[]
+  teams              Team[]
+  events             Event[]
+  tournaments        Tournament[]
+  members            Member[]
+  formTemplates      FormTemplate[]
+  messages           Message[]
+  faqs               FAQ[]
+  fahrgemeinschaften Fahrgemeinschaft[]
 
   @@index([slug])
 }
@@ -89,7 +90,8 @@ model Member {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  attendances Attendance[]
+  attendances  Attendance[]
+  teamMembers  TeamMember[]
 
   @@index([tenantId])
 }
@@ -114,10 +116,27 @@ model Team {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  events   Event[]
-  messages Message[]
+  events      Event[]
+  messages    Message[]
+  teamMembers TeamMember[]
 
   @@index([tenantId])
+}
+
+// ==================== Kader (Team-Mitglieder) ====================
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  rolle     String   @default("SPIELER")
+  createdAt DateTime @default(now())
+
+  @@unique([teamId, memberId])
+  @@index([teamId])
+  @@index([memberId])
 }
 
 enum Sport {
@@ -148,15 +167,34 @@ model Event {
   tenantId    String
   tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   notes       String?
+  // Wiederkehrende Events
+  recurrenceRule  String?   // z.B. "WEEKLY:DI,DO" oder "BIWEEKLY:MI"
+  recurrenceEnd   DateTime? // Bis wann wiederholen
+  parentEventId   String?   // Referenz auf das Eltern-Event (Vorlage)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  attendances Attendance[]
-  reminders   Reminder[]
+  attendances      Attendance[]
+  reminders        Reminder[]
+  comments         EventComment[]
+  schnellTokens    SchnellAnmeldungToken[]
 
   @@index([tenantId])
   @@index([teamId])
   @@index([date])
+}
+
+// ==================== Event-Kommentare ====================
+
+model EventComment {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([eventId])
 }
 
 enum EventType {
@@ -345,4 +383,53 @@ model FAQ {
   updatedAt DateTime @updatedAt
 
   @@index([tenantId])
+}
+
+// ==================== Schnell-Anmeldung per E-Mail-Link ====================
+
+model SchnellAnmeldungToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  memberId  String
+  benutzt   Boolean  @default(false)
+  gueltigBis DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([eventId])
+}
+
+// ==================== Fahrtenborse ====================
+
+model Fahrgemeinschaft {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  eventId     String?
+  fahrerId    String   // userId des Fahrers
+  startort    String
+  zielort     String
+  abfahrt     DateTime
+  plaetze     Int      @default(4)
+  kommentar   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  mitfahrer   Mitfahrer[]
+
+  @@index([tenantId])
+  @@index([eventId])
+}
+
+model Mitfahrer {
+  id                 String           @id @default(cuid())
+  fahrgemeinschaftId String
+  fahrgemeinschaft   Fahrgemeinschaft @relation(fields: [fahrgemeinschaftId], references: [id], onDelete: Cascade)
+  userId             String
+  createdAt          DateTime         @default(now())
+
+  @@unique([fahrgemeinschaftId, userId])
+  @@index([fahrgemeinschaftId])
 }

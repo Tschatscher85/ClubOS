@@ -9,5 +9,7 @@ export const ROUTEN = {
   KALENDER: '/kalender',
   TURNIERE: '/turniere',
   NACHRICHTEN: '/nachrichten',
+  FAHRGEMEINSCHAFTEN: '/fahrgemeinschaften',
+  ELTERN: '/eltern',
   EINSTELLUNGEN: '/einstellungen',
 } as const;

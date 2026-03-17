@@ -41,12 +41,14 @@ interface MitgliederTabelleProps {
   mitglieder: Mitglied[];
   onBearbeiten: (mitglied: Mitglied) => void;
   onLoeschen: (id: string) => void;
+  onKlick?: (id: string) => void;
 }
 
 export function MitgliederTabelle({
   mitglieder,
   onBearbeiten,
   onLoeschen,
+  onKlick,
 }: MitgliederTabelleProps) {
   if (mitglieder.length === 0) {
     return (
@@ -76,7 +78,11 @@ export function MitgliederTabelle({
               variant: 'outline' as const,
             };
             return (
-              <tr key={m.id} className="border-b hover:bg-muted/30">
+              <tr
+                key={m.id}
+                className={`border-b hover:bg-muted/30 ${onKlick ? 'cursor-pointer' : ''}`}
+                onClick={() => onKlick?.(m.id)}
+              >
                 <td className="px-4 py-3 text-muted-foreground">
                   {m.memberNumber}
                 </td>
@@ -93,7 +99,7 @@ export function MitgliederTabelle({
                   <Badge variant={statusInfo.variant}>{statusInfo.text}</Badge>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <div className="flex justify-end gap-1">
+                  <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                     <Button
                       variant="ghost"
                       size="icon"

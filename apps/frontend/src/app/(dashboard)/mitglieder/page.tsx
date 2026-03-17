@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Users, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +30,7 @@ interface Statistik {
 }
 
 export default function MitgliederPage() {
+  const router = useRouter();
   const [mitglieder, setMitglieder] = useState<Mitglied[]>([]);
   const [statistik, setStatistik] = useState<Statistik | null>(null);
   const [ladend, setLadend] = useState(true);
@@ -149,6 +151,7 @@ export default function MitgliederPage() {
         mitglieder={mitglieder}
         onBearbeiten={handleBearbeiten}
         onLoeschen={handleLoeschen}
+        onKlick={(id) => router.push(`/mitglieder/${id}`)}
       />
 
       {/* Formular-Dialog */}

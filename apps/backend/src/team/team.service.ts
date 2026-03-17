@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ErstelleTeamDto, AktualisiereTeamDto } from './dto/erstelle-team.dto';
+import { MitgliedHinzufuegenDto } from './dto/team-mitglied.dto';
 
 @Injectable()
 export class TeamService {
@@ -22,7 +23,17 @@ export class TeamService {
     return this.prisma.team.findMany({
       where: { tenantId },
       include: {
-        _count: { select: { events: true } },
+        _count: { select: { events: true, teamMembers: true } },
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async meineTeams(tenantId: string, trainerId: string) {
+    return this.prisma.team.findMany({
+      where: { tenantId, trainerId },
+      include: {
+        _count: { select: { events: true, teamMembers: true } },
       },
       orderBy: { name: 'asc' },
     });
@@ -36,7 +47,13 @@ export class TeamService {
           orderBy: { date: 'asc' },
           take: 10,
         },
-        _count: { select: { events: true } },
+        teamMembers: {
+          include: {
+            member: true,
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+        _count: { select: { events: true, teamMembers: true } },
       },
     });
 
@@ -69,5 +86,77 @@ export class TeamService {
   async statistik(tenantId: string) {
     const gesamt = await this.prisma.team.count({ where: { tenantId } });
     return { gesamt };
+  }
+
+  // ==================== Kader-Verwaltung ====================
+
+  async mitgliederAbrufen(tenantId: string, teamId: string) {
+    await this.nachIdAbrufen(tenantId, teamId);
+
+    return this.prisma.teamMember.findMany({
+      where: { teamId },
+      include: {
+        member: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            memberNumber: true,
+            phone: true,
+            parentEmail: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async mitgliedHinzufuegen(
+    tenantId: string,
+    teamId: string,
+    dto: MitgliedHinzufuegenDto,
+  ) {
+    await this.nachIdAbrufen(tenantId, teamId);
+
+    // Pruefen ob Mitglied zum Verein gehoert
+    const mitglied = await this.prisma.member.findFirst({
+      where: { id: dto.memberId, tenantId },
+    });
+    if (!mitglied) {
+      throw new NotFoundException('Mitglied nicht gefunden.');
+    }
+
+    // Pruefen ob bereits im Team
+    const vorhanden = await this.prisma.teamMember.findUnique({
+      where: { teamId_memberId: { teamId, memberId: dto.memberId } },
+    });
+    if (vorhanden) {
+      throw new ConflictException('Mitglied ist bereits im Team.');
+    }
+
+    return this.prisma.teamMember.create({
+      data: {
+        teamId,
+        memberId: dto.memberId,
+        rolle: dto.rolle || 'SPIELER',
+      },
+      include: { member: true },
+    });
+  }
+
+  async mitgliedEntfernen(tenantId: string, teamId: string, memberId: string) {
+    await this.nachIdAbrufen(tenantId, teamId);
+
+    const eintrag = await this.prisma.teamMember.findUnique({
+      where: { teamId_memberId: { teamId, memberId } },
+    });
+    if (!eintrag) {
+      throw new NotFoundException('Mitglied ist nicht in diesem Team.');
+    }
+
+    return this.prisma.teamMember.delete({
+      where: { id: eintrag.id },
+    });
   }
 }
