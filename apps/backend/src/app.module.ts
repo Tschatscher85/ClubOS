@@ -4,6 +4,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { TenantModule } from './tenant/tenant.module';
 import { UserModule } from './user/user.module';
+import { MemberModule } from './member/member.module';
 import { HealthModule } from './health/health.module';
 import configuration from './config/configuration';
 
@@ -17,6 +18,7 @@ import configuration from './config/configuration';
     AuthModule,
     TenantModule,
     UserModule,
+    MemberModule,
     HealthModule,
   ],
 })
