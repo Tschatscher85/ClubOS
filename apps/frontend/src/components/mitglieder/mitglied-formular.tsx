@@ -31,6 +31,14 @@ interface Mitglied {
   beitragsklasseId?: string | null;
   beitragBetrag?: number | null;
   beitragIntervall?: string | null;
+  userId?: string | null;
+}
+
+interface RollenVorlage {
+  id: string;
+  name: string;
+  beschreibung: string | null;
+  farbe: string | null;
 }
 
 interface Beitragsklasse {
@@ -117,12 +125,19 @@ export function MitgliedFormular({
   const [individuellerBetrag, setIndividuellerBetrag] = useState('');
   const [individuellerIntervall, setIndividuellerIntervall] = useState('MONATLICH');
 
-  // Beitragsklassen laden
+  // Vereinsrollen
+  const [rollenVorlagen, setRollenVorlagen] = useState<RollenVorlage[]>([]);
+  const [gewaehlteRollen, setGewaehlteRollen] = useState<string[]>(['Spieler']);
+
+  // Beitragsklassen + Rollen laden
   useEffect(() => {
     if (offen) {
       apiClient.get<Beitragsklasse[]>('/beitragsklassen')
         .then((result) => setBeitragsklassen(result.filter((k) => k.istAktiv)))
-        .catch(() => {/* Fehler ignorieren - optionales Feature */});
+        .catch(() => {});
+      apiClient.get<RollenVorlage[]>('/rollen-vorlagen')
+        .then((result) => setRollenVorlagen(result))
+        .catch(() => {});
     }
   }, [offen]);
 
@@ -155,6 +170,14 @@ export function MitgliedFormular({
         setIndividuellerBetrag('');
         setIndividuellerIntervall('MONATLICH');
       }
+      // Rollen laden wenn Mitglied einen User hat
+      if (mitglied.userId) {
+        apiClient.get<{ vereinsRollen: string[] }>(`/benutzer/${mitglied.userId}`)
+          .then((user) => setGewaehlteRollen(user.vereinsRollen?.length ? user.vereinsRollen : ['Spieler']))
+          .catch(() => setGewaehlteRollen(['Spieler']));
+      } else {
+        setGewaehlteRollen(['Spieler']);
+      }
       setFehler('');
     } else if (offen && !mitglied) {
       // Neues Mitglied - alles zuruecksetzen
@@ -172,6 +195,7 @@ export function MitgliedFormular({
       setIndividuellerBeitrag(false);
       setIndividuellerBetrag('');
       setIndividuellerIntervall('MONATLICH');
+      setGewaehlteRollen(['Spieler']);
       setFehler('');
     }
   }, [offen, mitglied]);
@@ -220,8 +244,20 @@ export function MitgliedFormular({
 
       if (istBearbeitung && mitglied) {
         await apiClient.put(`/mitglieder/${mitglied.id}`, daten);
+        // Vereinsrollen zuweisen wenn Mitglied einen User-Account hat
+        if (mitglied.userId && gewaehlteRollen.length > 0) {
+          await apiClient.put(`/benutzer/verwaltung/${mitglied.userId}/vereinsrollen`, {
+            vereinsRollen: gewaehlteRollen,
+          }).catch(() => {/* User hat ggf. noch keinen Account */});
+        }
       } else {
-        await apiClient.post('/mitglieder', daten);
+        const neuesMitglied = await apiClient.post<{ id: string; userId?: string }>('/mitglieder', daten);
+        // Vereinsrollen zuweisen wenn User-Account erstellt wurde
+        if (neuesMitglied.userId && gewaehlteRollen.length > 0) {
+          await apiClient.put(`/benutzer/verwaltung/${neuesMitglied.userId}/vereinsrollen`, {
+            vereinsRollen: gewaehlteRollen,
+          }).catch(() => {});
+        }
       }
 
       onGespeichert();
@@ -465,6 +501,47 @@ export function MitgliedFormular({
                     </Select>
                   </div>
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* Vereinsrollen */}
+          {rollenVorlagen.length > 0 && (
+            <div className="space-y-3 rounded-lg border p-4">
+              <Label className="text-base font-medium">Vereinsrolle</Label>
+              <p className="text-xs text-muted-foreground">
+                Bestimmt welche Bereiche das Mitglied im Portal sehen kann. Standard: Spieler.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {rollenVorlagen.map((vorlage) => {
+                  const istGewaehlt = gewaehlteRollen.includes(vorlage.name);
+                  return (
+                    <button
+                      key={vorlage.id}
+                      type="button"
+                      onClick={() => {
+                        setGewaehlteRollen((prev) =>
+                          istGewaehlt
+                            ? prev.filter((r) => r !== vorlage.name)
+                            : [...prev, vorlage.name],
+                        );
+                      }}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors border ${
+                        istGewaehlt
+                          ? 'text-white border-transparent'
+                          : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                      }`}
+                      style={istGewaehlt ? { backgroundColor: vorlage.farbe || '#64748b' } : undefined}
+                    >
+                      {vorlage.name}
+                    </button>
+                  );
+                })}
+              </div>
+              {gewaehlteRollen.length === 0 && (
+                <p className="text-xs text-orange-600">
+                  Mindestens eine Rolle auswählen (z.B. Spieler)
+                </p>
               )}
             </div>
           )}
