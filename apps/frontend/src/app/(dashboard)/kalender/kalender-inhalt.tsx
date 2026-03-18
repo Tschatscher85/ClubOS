@@ -56,12 +56,41 @@ export default function KalenderInhalt() {
   const [ladend, setLadend] = useState(true);
   const [formularOffen, setFormularOffen] = useState(false);
   const [aktuellerMonat, setAktuellerMonat] = useState(new Date());
-  const [ansicht, setAnsicht] = useState<'monat' | 'liste'>('monat');
+  const [ansicht, setAnsicht] = useState<'monat' | 'liste' | 'timeline'>('monat');
 
   const datenLaden = useCallback(async () => {
     try {
-      const daten = await apiClient.get<EventData[]>('/veranstaltungen');
-      setEvents(daten);
+      // Events + Turnier-Spiele laden
+      const [eventDaten, turnierDaten] = await Promise.all([
+        apiClient.get<EventData[]>('/veranstaltungen'),
+        apiClient.get<{ id: string; name: string; matches: { id: string; team1: string; team2: string; time: string | null; status: string; score1: number | null; score2: number | null }[] }[]>('/turniere').catch(() => []),
+      ]);
+
+      // Turnier-Spiele als Events einfügen
+      const turnierEvents: EventData[] = [];
+      for (const turnier of turnierDaten) {
+        for (const spiel of turnier.matches || []) {
+          if (spiel.time) {
+            turnierEvents.push({
+              id: `turnier-${spiel.id}`,
+              title: `${spiel.team1} vs ${spiel.team2}`,
+              type: 'TOURNAMENT',
+              date: spiel.time,
+              endDate: null,
+              location: turnier.name,
+              hallName: null,
+              hallAddress: null,
+              teamId: '',
+              notes: spiel.score1 !== null ? `${spiel.score1}:${spiel.score2}` : null,
+              team: { id: '', name: turnier.name, sport: '' },
+              attendances: [],
+              _count: { attendances: 0 },
+            });
+          }
+        }
+      }
+
+      setEvents([...eventDaten, ...turnierEvents]);
     } catch (error) {
       console.error('Fehler beim Laden:', error);
     } finally {
@@ -154,7 +183,7 @@ export default function KalenderInhalt() {
           <div className="flex rounded-md border">
             <button
               onClick={() => setAnsicht('monat')}
-              className={`px-3 py-1.5 text-sm ${ansicht === 'monat' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+              className={`px-3 py-1.5 text-sm rounded-l-md ${ansicht === 'monat' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
             >
               Monat
             </button>
@@ -163,6 +192,12 @@ export default function KalenderInhalt() {
               className={`px-3 py-1.5 text-sm border-l ${ansicht === 'liste' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
             >
               Liste
+            </button>
+            <button
+              onClick={() => setAnsicht('timeline')}
+              className={`px-3 py-1.5 text-sm border-l rounded-r-md ${ansicht === 'timeline' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+            >
+              Timeline
             </button>
           </div>
           {ansicht === 'monat' && (
@@ -329,6 +364,80 @@ export default function KalenderInhalt() {
           )}
         </div>
       )}
+
+      {/* Timeline-Ansicht */}
+      {ansicht === 'timeline' && (() => {
+        // Events nach Datum gruppieren
+        const sortiert = [...events]
+          .filter((e) => new Date(e.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        const nachDatum = new Map<string, EventData[]>();
+        for (const event of sortiert) {
+          const tag = new Date(event.date).toLocaleDateString('de-DE', {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+          });
+          if (!nachDatum.has(tag)) nachDatum.set(tag, []);
+          nachDatum.get(tag)!.push(event);
+        }
+
+        return (
+          <div className="relative">
+            {/* Vertikale Linie */}
+            <div className="absolute left-[19px] top-0 bottom-0 w-0.5 bg-border" />
+
+            {nachDatum.size === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                Keine kommenden Termine.
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {Array.from(nachDatum.entries()).slice(0, 30).map(([tag, tagesEvents]) => (
+                  <div key={tag}>
+                    {/* Datum-Marker */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold z-10">
+                        {tagesEvents[0] ? new Date(tagesEvents[0].date).getDate() : ''}
+                      </div>
+                      <span className="font-semibold text-sm">{tag}</span>
+                    </div>
+
+                    {/* Events des Tages */}
+                    <div className="ml-[40px] space-y-2">
+                      {tagesEvents.map((event) => (
+                        <div
+                          key={event.id}
+                          onClick={() => !event.id.startsWith('turnier-') && router.push(`/kalender/${event.id}`)}
+                          className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
+                            event.id.startsWith('turnier-') ? '' : 'cursor-pointer hover:bg-accent/50'
+                          }`}
+                        >
+                          <div className={`w-1 h-10 rounded-full ${TYP_FARBE[event.type] || 'bg-gray-500'}`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm truncate">{event.title}</span>
+                              {event.notes && event.type === 'TOURNAMENT' && (
+                                <Badge variant="outline" className="text-xs">{event.notes}</Badge>
+                              )}
+                            </div>
+                            <div className="flex gap-3 text-xs text-muted-foreground mt-0.5">
+                              <span>{formatUhrzeit(event.date)}{event.endDate ? ` – ${formatUhrzeit(event.endDate)}` : ''}</span>
+                              <span>{event.location || event.team.name}</span>
+                            </div>
+                          </div>
+                          <Badge className={`text-white text-xs shrink-0 ${TYP_FARBE[event.type] || 'bg-gray-500'}`}>
+                            {TYP_LABEL[event.type] || event.type}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Legende */}
       <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
