@@ -97,6 +97,10 @@ model Tenant {
   spielberichte      Spielbericht[]
   ressourcen         Ressource[]
   trainingsplaene    Trainingsplan[]
+  verletzungen       Verletzung[]
+  aufstellungen      Aufstellung[]
+  entwicklungsboegen Entwicklungsbogen[]
+  referral           Referral?
 
   @@index([slug])
 }
@@ -209,10 +213,12 @@ model Member {
   createdAt                  DateTime       @default(now())
   updatedAt                  DateTime       @updatedAt
 
-  attendances    Attendance[]
-  teamMembers    TeamMember[]
-  kasseBuchungen KasseBuchung[]
-  trikotVergaben TrikotVergabe[]
+  attendances        Attendance[]
+  teamMembers        TeamMember[]
+  kasseBuchungen     KasseBuchung[]
+  trikotVergaben     TrikotVergabe[]
+  verletzungen       Verletzung[]
+  entwicklungsboegen Entwicklungsbogen[]
 
   @@index([tenantId])
   @@index([email])
@@ -281,15 +287,17 @@ model Team {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  events           Event[]
-  messages         Message[]
-  teamMembers      TeamMember[]
-  hallenbelegungen Hallenbelegung[]
-  pinboardItems    PinboardItem[]
-  kasse            TeamKasse?
-  strafkatalog     Strafkatalog[]
-  trikots          Trikot[]
-  trainingsplaene  Trainingsplan[]
+  events             Event[]
+  messages           Message[]
+  teamMembers        TeamMember[]
+  hallenbelegungen   Hallenbelegung[]
+  pinboardItems      PinboardItem[]
+  kasse              TeamKasse?
+  strafkatalog       Strafkatalog[]
+  trikots            Trikot[]
+  trainingsplaene    Trainingsplan[]
+  aufstellungen      Aufstellung[]
+  entwicklungsboegen Entwicklungsbogen[]
 
   @@index([tenantId])
   @@index([abteilungId])
@@ -424,8 +432,8 @@ model Event {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  lat            Float?
-  lng            Float?
+  lat           Float?
+  lng           Float?
   attendances   Attendance[]
   reminders     Reminder[]
   comments      EventComment[]
@@ -1392,4 +1400,101 @@ model Trainingsplan {
 
   @@index([teamId])
   @@index([tenantId])
+}
+
+// ==================== Spieler-Entwicklungsbogen ====================
+
+model Entwicklungsbogen {
+  id                 String   @id @default(cuid())
+  memberId           String
+  teamId             String
+  tenantId           String
+  erstelltVon        String
+  datum              DateTime @default(now())
+  saison             String
+  ball               Int?
+  passen             Int?
+  schuss             Int?
+  zweikampf          Int?
+  kopfball           Int?
+  spielverstaendnis  Int?
+  positionsspiel     Int?
+  defensivverhalten  Int?
+  schnelligkeit      Int?
+  ausdauer           Int?
+  sprungkraft        Int?
+  teamgeist          Int?
+  einstellung        Int?
+  coaching           Int?
+  staerken           String?
+  entwicklungsfelder String?
+  ziele              String?
+  trainerEmpfehlung  String?
+  member             Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  team               Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([teamId])
+}
+
+// ==================== Aufstellung (Lineup Planner) ====================
+
+model Aufstellung {
+  id         String   @id @default(cuid())
+  teamId     String
+  tenantId   String
+  eventId    String?
+  name       String
+  formation  String
+  positionen Json
+  publicUrl  String?  @unique
+  erstelltAm DateTime @default(now())
+  team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+}
+
+// ==================== Verletzungsprotokoll ====================
+
+model Verletzung {
+  id             String     @id @default(cuid())
+  memberId       String
+  tenantId       String
+  art            String
+  koerperteil    String
+  datum          DateTime   @default(now())
+  pauseVoraus    Int?
+  zurueckAm      DateTime?
+  notiz          String?
+  status         RehaStatus @default(VERLETZT)
+  erstelltVon    String
+  erstelltAm     DateTime   @default(now())
+  aktualisiertAm DateTime   @updatedAt
+  member         Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  tenant         Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([tenantId])
+}
+
+enum RehaStatus {
+  VERLETZT
+  REHA
+  BEOBACHTEN
+  FIT
+}
+
+// ==================== Empfehlungsprogramm (Referral) ====================
+
+model Referral {
+  id           String    @id @default(cuid())
+  referrerId   String    @unique
+  code         String    @unique
+  genutzteVon  String[]
+  freiMonate   Int       @default(0)
+  ausgezahltAm DateTime?
+  erstelltAm   DateTime  @default(now())
+  referrer     Tenant    @relation(fields: [referrerId], references: [id], onDelete: Cascade)
 }

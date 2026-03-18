@@ -41,6 +41,10 @@ import { KasseModule } from './kasse/kasse.module';
 import { WetterModule } from './wetter/wetter.module';
 import { BuchungModule } from './buchung/buchung.module';
 import { TrainingsplanModule } from './trainingsplan/trainingsplan.module';
+import { EntwicklungModule } from './entwicklung/entwicklung.module';
+import { ReferralModule } from './referral/referral.module';
+import { AufstellungModule } from './aufstellung/aufstellung.module';
+import { VerletzungModule } from './verletzung/verletzung.module';
 import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
 import configuration from './config/configuration';
 
@@ -106,6 +110,10 @@ import configuration from './config/configuration';
     WetterModule,
     BuchungModule,
     TrainingsplanModule,
+    EntwicklungModule,
+    ReferralModule,
+    AufstellungModule,
+    VerletzungModule,
   ],
   providers: [
     {

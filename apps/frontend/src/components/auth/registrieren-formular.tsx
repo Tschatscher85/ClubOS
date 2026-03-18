@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,9 +34,18 @@ export function RegistrierenFormular() {
   const [passwortBestaetigung, setPasswortBestaetigung] = useState('');
   const [vereinsname, setVereinsname] = useState('');
   const [slug, setSlug] = useState('');
+  const [empfehlungscode, setEmpfehlungscode] = useState('');
   const [istLadend, setIstLadend] = useState(false);
   const [fehler, setFehler] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      setEmpfehlungscode(refCode);
+    }
+  }, [searchParams]);
 
   const handleVereinsname = (value: string) => {
     setVereinsname(value);
@@ -77,6 +86,18 @@ export function RegistrierenFormular() {
         refreshToken: antwort.refreshToken,
         istAngemeldet: true,
       });
+
+      // Empfehlungscode einloesen (falls angegeben)
+      if (empfehlungscode.trim()) {
+        try {
+          await apiClient.post('/referral/einloesen', {
+            code: empfehlungscode.trim(),
+            tenantId: antwort.tenant.id,
+          });
+        } catch {
+          // Fehler beim Einloesen ignorieren — Registrierung war trotzdem erfolgreich
+        }
+      }
 
       router.push('/onboarding');
     } catch (error) {
@@ -161,6 +182,23 @@ export function RegistrierenFormular() {
           minLength={8}
           autoComplete="new-password"
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="empfehlungscode">
+          Empfehlungscode <span className="text-muted-foreground">(optional)</span>
+        </Label>
+        <Input
+          id="empfehlungscode"
+          type="text"
+          placeholder="z.B. FCKUNCHEN2026"
+          value={empfehlungscode}
+          onChange={(e) => setEmpfehlungscode(e.target.value.toUpperCase())}
+          maxLength={30}
+        />
+        <p className="text-xs text-muted-foreground">
+          Haben Sie einen Empfehlungscode? Beide Vereine erhalten 1 Monat gratis.
+        </p>
       </div>
 
       {fehler && (

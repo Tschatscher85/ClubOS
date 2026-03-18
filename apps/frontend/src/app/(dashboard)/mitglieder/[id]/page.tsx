@@ -20,6 +20,9 @@ import {
   QrCode,
   Key,
   Loader2,
+  TrendingUp,
+  HeartPulse,
+  Info,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,6 +30,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { apiClient } from '@/lib/api-client';
+import { useBenutzer } from '@/hooks/use-auth';
 import { UnterschriftPad } from '@/components/unterschrift/unterschrift-pad';
 
 interface TeamMitgliedschaft {
@@ -80,6 +84,32 @@ interface AnwesenheitsStatistik {
     status: string;
   }>;
 }
+
+interface VerletzungDaten {
+  id: string;
+  memberId: string;
+  art: string;
+  koerperteil: string;
+  datum: string;
+  pauseVoraus: number | null;
+  zurueckAm: string | null;
+  notiz: string | null;
+  status: string;
+  erstelltAm: string;
+  member: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    memberNumber: string;
+  };
+}
+
+const REHA_STATUS_CONFIG: Record<string, { label: string; farbe: string; bgFarbe: string }> = {
+  VERLETZT: { label: 'Verletzt', farbe: 'text-red-700', bgFarbe: 'bg-red-100 border-red-300' },
+  REHA: { label: 'Reha', farbe: 'text-orange-700', bgFarbe: 'bg-orange-100 border-orange-300' },
+  BEOBACHTEN: { label: 'Beobachten', farbe: 'text-yellow-700', bgFarbe: 'bg-yellow-100 border-yellow-300' },
+  FIT: { label: 'Fit', farbe: 'text-green-700', bgFarbe: 'bg-green-100 border-green-300' },
+};
 
 const STATUS_ICON: Record<
   string,
@@ -138,7 +168,11 @@ function quoteFarbe(quote: number): string {
 export default function MitgliedDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const benutzer = useBenutzer();
   const mitgliedId = params.id as string;
+
+  const istTrainerOderAdmin =
+    benutzer && ['SUPERADMIN', 'ADMIN', 'TRAINER'].includes(benutzer.rolle);
 
   const [mitglied, setMitglied] = useState<Mitglied | null>(null);
   const [statistik, setStatistik] = useState<AnwesenheitsStatistik | null>(null);
@@ -158,6 +192,9 @@ export default function MitgliedDetailPage() {
   // Unterschrift
   const [unterschriftPadOffen, setUnterschriftPadOffen] = useState(false);
   const [unterschriftSpeichernd, setUnterschriftSpeichernd] = useState(false);
+
+  // Verletzungen
+  const [verletzungen, setVerletzungen] = useState<VerletzungDaten[]>([]);
 
   const datenLaden = useCallback(async () => {
     try {
@@ -186,9 +223,22 @@ export default function MitgliedDetailPage() {
     }
   }, [mitgliedId]);
 
+  const verletzungenLaden = useCallback(async () => {
+    if (!istTrainerOderAdmin) return;
+    try {
+      const daten = await apiClient.get<VerletzungDaten[]>(
+        `/verletzungen/mitglied/${mitgliedId}`,
+      );
+      setVerletzungen(daten);
+    } catch {
+      // Kein Zugriff oder Fehler ignorieren
+    }
+  }, [mitgliedId, istTrainerOderAdmin]);
+
   useEffect(() => {
     datenLaden();
-  }, [datenLaden]);
+    verletzungenLaden();
+  }, [datenLaden, verletzungenLaden]);
 
   const handleVerknuepfen = useCallback(async () => {
     if (!ausgewaehlterBenutzerId) return;
@@ -303,6 +353,15 @@ export default function MitgliedDetailPage() {
             Mitgliedsnr. {mitglied.memberNumber}
           </p>
         </div>
+        {istTrainerOderAdmin && (
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/mitglieder/${mitgliedId}/entwicklung`)}
+          >
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Entwicklung
+          </Button>
+        )}
       </div>
 
       {/* Statistik-Karten */}
@@ -485,6 +544,77 @@ export default function MitgliedDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Verletzungshistorie (nur fuer Trainer/Admin) */}
+      {istTrainerOderAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <HeartPulse className="h-5 w-5 text-red-500" />
+              Verletzungshistorie
+              {verletzungen.filter((v) => v.status !== 'FIT').length > 0 && (
+                <Badge variant="destructive" className="ml-1">
+                  {verletzungen.filter((v) => v.status !== 'FIT').length} aktiv
+                </Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {verletzungen.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Keine Verletzungen dokumentiert.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {verletzungen.map((v) => {
+                  const statusConfig = REHA_STATUS_CONFIG[v.status] || REHA_STATUS_CONFIG.VERLETZT;
+                  return (
+                    <div
+                      key={v.id}
+                      className="flex items-center justify-between rounded-md border px-4 py-3"
+                    >
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">
+                          {v.art} - {v.koerperteil}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                          <span>
+                            {new Date(v.datum).toLocaleDateString('de-DE', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                            })}
+                          </span>
+                          {v.pauseVoraus && (
+                            <span>ca. {v.pauseVoraus} Tage Pause</span>
+                          )}
+                          {v.zurueckAm && (
+                            <span>
+                              Zurueck: {new Date(v.zurueckAm).toLocaleDateString('de-DE')}
+                            </span>
+                          )}
+                        </div>
+                        {v.notiz && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {v.notiz}
+                          </p>
+                        )}
+                      </div>
+                      <Badge className={`${statusConfig.bgFarbe} ${statusConfig.farbe} border`}>
+                        {statusConfig.label}
+                      </Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
+              <Info className="h-3 w-3" />
+              Gesundheitsdaten werden nur vereinsintern gespeichert (Art. 9 DSGVO)
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Benutzerkonto */}
       <Card>

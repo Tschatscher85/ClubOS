@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
 import {
   Card,
@@ -18,7 +19,9 @@ export default function RegistrierenPage() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <RegistrierenFormular />
+        <Suspense fallback={<div className="animate-pulse text-center text-muted-foreground">Laden...</div>}>
+          <RegistrierenFormular />
+        </Suspense>
         <p className="text-center text-sm text-muted-foreground">
           Bereits registriert?{' '}
           <Link href="/anmelden" className="text-primary underline hover:no-underline">
