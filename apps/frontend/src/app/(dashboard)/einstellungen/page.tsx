@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send, Building2, Trophy, CreditCard, Shield, Users, Gift, Layout } from 'lucide-react';
+import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send, Building2, Trophy, CreditCard, Shield, Users, Gift, Layout, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,13 @@ import { useAuthStore } from '@/stores/auth-store';
 import { apiClient } from '@/lib/api-client';
 import { applyTenantTheme } from '@/lib/theme';
 import { API_BASE_URL } from '@/lib/constants';
+import {
+  getEventFarben,
+  setEventFarben,
+  STANDARD_FARBEN,
+  EVENT_TYP_LABEL,
+} from '@/lib/event-farben';
+import type { EventFarben } from '@/lib/event-farben';
 
 const FARBEN = [
   { name: 'Blau', wert: '#1a56db' },
@@ -81,6 +88,30 @@ export default function EinstellungenPage() {
   const [pwLadend, setPwLadend] = useState(false);
   const [pwErfolg, setPwErfolg] = useState('');
   const [pwFehler, setPwFehler] = useState('');
+
+  // Kalender-Farben
+  const [eventFarben, setEventFarbenState] = useState<EventFarben>(STANDARD_FARBEN);
+  const [eventFarbenGespeichert, setEventFarbenGespeichert] = useState(false);
+
+  useEffect(() => {
+    setEventFarbenState(getEventFarben());
+  }, []);
+
+  const handleEventFarbeAendern = (typ: keyof EventFarben, farbe: string) => {
+    const neu = { ...eventFarben, [typ]: farbe };
+    setEventFarbenState(neu);
+  };
+
+  const handleEventFarbenSpeichern = () => {
+    setEventFarben(eventFarben);
+    setEventFarbenGespeichert(true);
+    setTimeout(() => setEventFarbenGespeichert(false), 3000);
+  };
+
+  const handleEventFarbenZuruecksetzen = () => {
+    setEventFarbenState(STANDARD_FARBEN);
+    setEventFarben(STANDARD_FARBEN);
+  };
 
   const handlePasswortAendern = async () => {
     setPwFehler('');
@@ -391,6 +422,14 @@ export default function EinstellungenPage() {
             </Badge>
           </Link>
         )}
+        {istAdmin && (
+          <a href="#kalender-farben">
+            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
+              <Calendar className="h-3 w-3 mr-1" />
+              Kalender-Farben
+            </Badge>
+          </a>
+        )}
         <a href="#ki-einstellungen">
           <Badge variant="outline" className="cursor-pointer hover:bg-muted">
             <Brain className="h-3 w-3 mr-1" />
@@ -563,6 +602,55 @@ export default function EinstellungenPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Kalender-Farben */}
+      {istAdmin && (
+        <Card id="kalender-farben">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Kalender-Farben
+            </CardTitle>
+            <CardDescription>
+              Farben fuer die verschiedenen Event-Typen im Kalender anpassen
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {(Object.keys(EVENT_TYP_LABEL) as Array<keyof EventFarben>).map((typ) => (
+              <div key={typ} className="flex items-center gap-4">
+                <Input
+                  type="color"
+                  value={eventFarben[typ]}
+                  onChange={(e) => handleEventFarbeAendern(typ, e.target.value)}
+                  className="w-12 h-10 p-1 cursor-pointer shrink-0"
+                />
+                <div className="flex-1">
+                  <span className="text-sm font-medium">{EVENT_TYP_LABEL[typ]}</span>
+                </div>
+                <Badge
+                  className="text-white text-xs"
+                  style={{ backgroundColor: eventFarben[typ] }}
+                >
+                  {EVENT_TYP_LABEL[typ]}
+                </Badge>
+              </div>
+            ))}
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button variant="outline" onClick={handleEventFarbenSpeichern}>
+                <Save className="h-4 w-4 mr-2" />
+                Farben speichern
+              </Button>
+              <Button variant="ghost" onClick={handleEventFarbenZuruecksetzen}>
+                Zuruecksetzen
+              </Button>
+              {eventFarbenGespeichert && (
+                <span className="text-sm text-green-600">Gespeichert!</span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Benutzerinfo */}
       <Card>

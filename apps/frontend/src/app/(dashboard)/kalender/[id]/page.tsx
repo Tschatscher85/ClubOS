@@ -75,6 +75,7 @@ interface EventDetail {
   location: string;
   hallName: string | null;
   hallAddress: string | null;
+  untergrund: string | null;
   lat: number | null;
   lng: number | null;
   notes: string | null;
@@ -82,6 +83,17 @@ interface EventDetail {
   attendances: AnmeldungData[];
   comments: KommentarData[];
 }
+
+const UNTERGRUND_LABEL: Record<string, string> = {
+  HALLE: 'Halle',
+  RASEN: 'Rasen',
+  KUNSTRASEN: 'Kunstrasen',
+  ASCHE: 'Asche',
+  HARTPLATZ: 'Hartplatz',
+  TARTANBAHN: 'Tartanbahn',
+  SCHWIMMBAD: 'Schwimmbad',
+  SONSTIGES: 'Sonstiges',
+};
 
 const TYP_LABEL: Record<string, { text: string; variant: 'default' | 'secondary' | 'outline' }> = {
   TRAINING: { text: 'Training', variant: 'secondary' },
@@ -325,10 +337,15 @@ export default function EventDetailPage() {
               {event.location}
               {event.hallName && ` (${event.hallName})`}
             </span>
+            {event.untergrund && (
+              <Badge variant="outline" className="text-xs ml-1">
+                {UNTERGRUND_LABEL[event.untergrund] || event.untergrund}
+              </Badge>
+            )}
           </div>
-          {event.hallAddress && (
+          {(event.hallAddress || event.location) && (
             <a
-              href={`https://maps.google.com/?q=${encodeURIComponent(event.hallAddress)}`}
+              href={`https://maps.google.com/?q=${encodeURIComponent(event.hallAddress || event.location)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm text-primary hover:underline ml-6"

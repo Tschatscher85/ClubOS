@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EventFormular } from '@/components/kalender/event-formular';
 import { apiClient } from '@/lib/api-client';
+import { getEventFarben, EVENT_TYP_LABEL } from '@/lib/event-farben';
+import type { EventFarben } from '@/lib/event-farben';
 
 interface EventData {
   id: string;
@@ -15,8 +17,7 @@ interface EventData {
   date: string;
   endDate: string | null;
   location: string;
-  hallName: string | null;
-  hallAddress: string | null;
+  untergrund: string | null;
   teamId: string;
   notes: string | null;
   team: { id: string; name: string; sport: string };
@@ -24,23 +25,18 @@ interface EventData {
   _count: { attendances: number };
 }
 
-const TYP_FARBE: Record<string, string> = {
-  TRAINING: 'bg-green-500',
-  MATCH: 'bg-blue-600',
-  TOURNAMENT: 'bg-purple-600',
-  TRIP: 'bg-orange-500',
-  MEETING: 'bg-gray-500',
-};
-
-const TYP_LABEL: Record<string, string> = {
-  TRAINING: 'Training',
-  MATCH: 'Spiel',
-  TOURNAMENT: 'Turnier',
-  TRIP: 'Ausflug',
-  MEETING: 'Besprechung',
-};
+interface BelegungData {
+  id: string;
+  wochentag: string;
+  von: string;
+  bis: string;
+  notiz: string | null;
+  halle: { id: string; name: string };
+  team: { id: string; name: string };
+}
 
 const WOCHENTAGE = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const WOCHENTAG_MAP: Record<string, number> = { MO: 0, DI: 1, MI: 2, DO: 3, FR: 4, SA: 5, SO: 6 };
 const MONATSNAMEN = [
   'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
   'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
@@ -53,20 +49,31 @@ function formatUhrzeit(iso: string): string {
 export default function KalenderInhalt() {
   const router = useRouter();
   const [events, setEvents] = useState<EventData[]>([]);
+  const [belegungen, setBelegungen] = useState<BelegungData[]>([]);
   const [ladend, setLadend] = useState(true);
   const [formularOffen, setFormularOffen] = useState(false);
   const [aktuellerMonat, setAktuellerMonat] = useState(new Date());
   const [ansicht, setAnsicht] = useState<'monat' | 'liste' | 'timeline'>('monat');
+  const [farben, setFarben] = useState<EventFarben>(getEventFarben());
+
+  // Farben live aktualisieren
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setFarben((e as CustomEvent).detail);
+    };
+    window.addEventListener('event-farben-changed', handler);
+    return () => window.removeEventListener('event-farben-changed', handler);
+  }, []);
 
   const datenLaden = useCallback(async () => {
     try {
-      // Events + Turnier-Spiele laden
-      const [eventDaten, turnierDaten] = await Promise.all([
+      const [eventDaten, turnierDaten, wochenplan] = await Promise.all([
         apiClient.get<EventData[]>('/veranstaltungen'),
         apiClient.get<{ id: string; name: string; matches: { id: string; team1: string; team2: string; time: string | null; status: string; score1: number | null; score2: number | null }[] }[]>('/turniere').catch(() => []),
+        apiClient.get<Record<string, BelegungData[]>>('/hallen/wochenplan').catch(() => ({})),
       ]);
 
-      // Turnier-Spiele als Events einfügen
+      // Turnier-Spiele als Events einfuegen
       const turnierEvents: EventData[] = [];
       for (const turnier of turnierDaten) {
         for (const spiel of turnier.matches || []) {
@@ -78,8 +85,7 @@ export default function KalenderInhalt() {
               date: spiel.time,
               endDate: null,
               location: turnier.name,
-              hallName: null,
-              hallAddress: null,
+              untergrund: null,
               teamId: '',
               notes: spiel.score1 !== null ? `${spiel.score1}:${spiel.score2}` : null,
               team: { id: '', name: turnier.name, sport: '' },
@@ -89,6 +95,13 @@ export default function KalenderInhalt() {
           }
         }
       }
+
+      // Belegungen sammeln
+      const alleBelegungen: BelegungData[] = [];
+      for (const tagesListe of Object.values(wochenplan)) {
+        alleBelegungen.push(...tagesListe);
+      }
+      setBelegungen(alleBelegungen);
 
       setEvents([...eventDaten, ...turnierEvents]);
     } catch (error) {
@@ -113,6 +126,11 @@ export default function KalenderInhalt() {
     }
   };
 
+  // Farbe fuer Event-Typ als Hex
+  const typFarbe = (typ: string): string => {
+    return farben[typ as keyof EventFarben] || farben.MEETING;
+  };
+
   // Kalendertage berechnen
   const kalenderTage = useMemo(() => {
     const jahr = aktuellerMonat.getFullYear();
@@ -120,24 +138,20 @@ export default function KalenderInhalt() {
     const ersterTag = new Date(jahr, monat, 1);
     const letzterTag = new Date(jahr, monat + 1, 0);
 
-    // Montag als erster Wochentag (0=Mo, 6=So)
     let startTag = ersterTag.getDay() - 1;
     if (startTag < 0) startTag = 6;
 
     const tage: { datum: Date; istAktuellerMonat: boolean }[] = [];
 
-    // Tage vor dem Monat
     for (let i = startTag - 1; i >= 0; i--) {
       const d = new Date(jahr, monat, -i);
       tage.push({ datum: d, istAktuellerMonat: false });
     }
 
-    // Tage im Monat
     for (let i = 1; i <= letzterTag.getDate(); i++) {
       tage.push({ datum: new Date(jahr, monat, i), istAktuellerMonat: true });
     }
 
-    // Tage nach dem Monat (bis 42 Tage = 6 Wochen)
     while (tage.length < 42) {
       const naechsterTag = tage.length - startTag - letzterTag.getDate() + 1;
       tage.push({ datum: new Date(jahr, monat + 1, naechsterTag), istAktuellerMonat: false });
@@ -156,6 +170,19 @@ export default function KalenderInhalt() {
     }
     return map;
   }, [events]);
+
+  // Belegungen pro Wochentag-Index (0=Mo, 6=So)
+  const belegungenProTag = useMemo(() => {
+    const map = new Map<number, BelegungData[]>();
+    for (const b of belegungen) {
+      const idx = WOCHENTAG_MAP[b.wochentag];
+      if (idx !== undefined) {
+        if (!map.has(idx)) map.set(idx, []);
+        map.get(idx)!.push(b);
+      }
+    }
+    return map;
+  }, [belegungen]);
 
   const heute = new Date().toISOString().split('T')[0];
 
@@ -239,7 +266,6 @@ export default function KalenderInhalt() {
       {/* Monatsansicht */}
       {ansicht === 'monat' && (
         <div className="border rounded-lg overflow-hidden">
-          {/* Wochentag-Header */}
           <div className="grid grid-cols-7 bg-muted">
             {WOCHENTAGE.map((tag) => (
               <div key={tag} className="py-2 text-center text-xs font-medium text-muted-foreground border-r last:border-r-0">
@@ -247,12 +273,15 @@ export default function KalenderInhalt() {
               </div>
             ))}
           </div>
-          {/* Kalender-Grid */}
           <div className="grid grid-cols-7">
             {kalenderTage.map(({ datum, istAktuellerMonat }, idx) => {
               const key = datum.toISOString().split('T')[0];
               const tagesEvents = eventsProTag.get(key) || [];
               const istHeute = key === heute;
+              // Wochentag-Index (0=Mo, 6=So)
+              let wtIdx = datum.getDay() - 1;
+              if (wtIdx < 0) wtIdx = 6;
+              const tagesBelegungen = belegungenProTag.get(wtIdx) || [];
 
               return (
                 <div
@@ -269,19 +298,31 @@ export default function KalenderInhalt() {
                     {datum.getDate()}
                   </div>
                   <div className="space-y-0.5">
+                    {/* Belegungen (gedaempft dargestellt) */}
+                    {tagesBelegungen.slice(0, 1).map((b) => (
+                      <div
+                        key={b.id}
+                        className="w-full text-[10px] leading-tight px-1 py-0.5 rounded truncate bg-muted text-muted-foreground border border-dashed"
+                        title={`${b.von}–${b.bis} ${b.team.name} @ ${b.halle.name}`}
+                      >
+                        {b.von}–{b.bis} {b.team.name}
+                      </div>
+                    ))}
+                    {/* Events */}
                     {tagesEvents.slice(0, 3).map((event) => (
                       <button
                         key={event.id}
                         onClick={() => router.push(`/kalender/${event.id}`)}
-                        className={`w-full text-left text-[10px] leading-tight px-1 py-0.5 rounded text-white truncate ${TYP_FARBE[event.type] || 'bg-gray-500'}`}
+                        className="w-full text-left text-[10px] leading-tight px-1 py-0.5 rounded text-white truncate"
+                        style={{ backgroundColor: typFarbe(event.type) }}
                         title={`${formatUhrzeit(event.date)} ${event.title} (${event.team.name})`}
                       >
                         {formatUhrzeit(event.date)} {event.title}
                       </button>
                     ))}
-                    {tagesEvents.length > 3 && (
+                    {(tagesEvents.length + tagesBelegungen.length) > 4 && (
                       <div className="text-[10px] text-muted-foreground px-1">
-                        +{tagesEvents.length - 3} weitere
+                        +{tagesEvents.length + tagesBelegungen.length - 4} weitere
                       </div>
                     )}
                   </div>
@@ -322,7 +363,10 @@ export default function KalenderInhalt() {
                 {/* Event-Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${TYP_FARBE[event.type] || 'bg-gray-500'}`} />
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: typFarbe(event.type) }}
+                    />
                     <span className="font-medium truncate">{event.title}</span>
                     <Badge variant="outline" className="text-xs shrink-0">
                       {event.team.name}
@@ -347,18 +391,23 @@ export default function KalenderInhalt() {
                   </div>
                 </div>
 
-                {/* Typ-Badge + Löschen */}
-                <Badge className={`text-white ${TYP_FARBE[event.type] || 'bg-gray-500'} shrink-0`}>
-                  {TYP_LABEL[event.type] || event.type}
-                </Badge>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0"
-                  onClick={(e) => handleLoeschen(event.id, e)}
+                {/* Typ-Badge + Loeschen */}
+                <Badge
+                  className="text-white shrink-0"
+                  style={{ backgroundColor: typFarbe(event.type) }}
                 >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+                  {EVENT_TYP_LABEL[event.type] || event.type}
+                </Badge>
+                {!event.id.startsWith('turnier-') && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={(e) => handleLoeschen(event.id, e)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                )}
               </div>
             ))
           )}
@@ -367,7 +416,6 @@ export default function KalenderInhalt() {
 
       {/* Timeline-Ansicht */}
       {ansicht === 'timeline' && (() => {
-        // Events nach Datum gruppieren
         const sortiert = [...events]
           .filter((e) => new Date(e.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -383,7 +431,6 @@ export default function KalenderInhalt() {
 
         return (
           <div className="relative">
-            {/* Vertikale Linie */}
             <div className="absolute left-[19px] top-0 bottom-0 w-0.5 bg-border" />
 
             {nachDatum.size === 0 ? (
@@ -394,7 +441,6 @@ export default function KalenderInhalt() {
               <div className="space-y-6">
                 {Array.from(nachDatum.entries()).slice(0, 30).map(([tag, tagesEvents]) => (
                   <div key={tag}>
-                    {/* Datum-Marker */}
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold z-10">
                         {tagesEvents[0] ? new Date(tagesEvents[0].date).getDate() : ''}
@@ -402,7 +448,6 @@ export default function KalenderInhalt() {
                       <span className="font-semibold text-sm">{tag}</span>
                     </div>
 
-                    {/* Events des Tages */}
                     <div className="ml-[40px] space-y-2">
                       {tagesEvents.map((event) => (
                         <div
@@ -412,7 +457,10 @@ export default function KalenderInhalt() {
                             event.id.startsWith('turnier-') ? '' : 'cursor-pointer hover:bg-accent/50'
                           }`}
                         >
-                          <div className={`w-1 h-10 rounded-full ${TYP_FARBE[event.type] || 'bg-gray-500'}`} />
+                          <div
+                            className="w-1 h-10 rounded-full shrink-0"
+                            style={{ backgroundColor: typFarbe(event.type) }}
+                          />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="font-medium text-sm truncate">{event.title}</span>
@@ -425,8 +473,11 @@ export default function KalenderInhalt() {
                               <span>{event.location || event.team.name}</span>
                             </div>
                           </div>
-                          <Badge className={`text-white text-xs shrink-0 ${TYP_FARBE[event.type] || 'bg-gray-500'}`}>
-                            {TYP_LABEL[event.type] || event.type}
+                          <Badge
+                            className="text-white text-xs shrink-0"
+                            style={{ backgroundColor: typFarbe(event.type) }}
+                          >
+                            {EVENT_TYP_LABEL[event.type] || event.type}
                           </Badge>
                         </div>
                       ))}
@@ -441,12 +492,21 @@ export default function KalenderInhalt() {
 
       {/* Legende */}
       <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-        {Object.entries(TYP_LABEL).map(([key, label]) => (
+        {Object.entries(EVENT_TYP_LABEL).map(([key, label]) => (
           <span key={key} className="flex items-center gap-1">
-            <span className={`w-2.5 h-2.5 rounded-full ${TYP_FARBE[key]}`} />
+            <span
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: typFarbe(key) }}
+            />
             {label}
           </span>
         ))}
+        {belegungen.length > 0 && (
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded border border-dashed bg-muted" />
+            Belegung
+          </span>
+        )}
       </div>
 
       <EventFormular

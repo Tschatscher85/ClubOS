@@ -13,11 +13,18 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { apiClient } from '@/lib/api-client';
+import { AdressSuche } from './adress-suche';
 
 interface Team {
   id: string;
   name: string;
   sport: string;
+}
+
+interface Halle {
+  id: string;
+  name: string;
+  adresse: string | null;
 }
 
 interface EventData {
@@ -27,10 +34,10 @@ interface EventData {
   date: string;
   endDate: string | null;
   location: string;
-  hallName: string | null;
-  hallAddress: string | null;
+  untergrund: string | null;
   teamId: string;
   notes: string | null;
+  halleId?: string | null;
 }
 
 interface EventFormularProps {
@@ -48,6 +55,18 @@ const EVENT_TYPEN = [
   { wert: 'MEETING', label: 'Besprechung' },
 ];
 
+const UNTERGRUND_TYPEN = [
+  { wert: '', label: '-- Kein Untergrund --' },
+  { wert: 'HALLE', label: 'Halle' },
+  { wert: 'RASEN', label: 'Rasen' },
+  { wert: 'KUNSTRASEN', label: 'Kunstrasen' },
+  { wert: 'ASCHE', label: 'Asche' },
+  { wert: 'HARTPLATZ', label: 'Hartplatz' },
+  { wert: 'TARTANBAHN', label: 'Tartanbahn' },
+  { wert: 'SCHWIMMBAD', label: 'Schwimmbad' },
+  { wert: 'SONSTIGES', label: 'Sonstiges' },
+];
+
 export function EventFormular({
   offen,
   onSchliessen,
@@ -55,40 +74,81 @@ export function EventFormular({
   event,
 }: EventFormularProps) {
   const istBearbeitung = !!event;
-  const [titel, setTitel] = useState(event?.title || '');
-  const [typ, setTyp] = useState(event?.type || 'TRAINING');
-  const [datum, setDatum] = useState(
-    event?.date ? event.date.slice(0, 16) : '',
-  );
-  const [endDatum, setEndDatum] = useState(
-    event?.endDate ? event.endDate.slice(0, 16) : '',
-  );
-  const [ort, setOrt] = useState(event?.location || '');
-  const [hallenName, setHallenName] = useState(event?.hallName || '');
-  const [hallenAdresse, setHallenAdresse] = useState(event?.hallAddress || '');
-  const [teamId, setTeamId] = useState(event?.teamId || '');
-  const [notizen, setNotizen] = useState(event?.notes || '');
+  const [titel, setTitel] = useState('');
+  const [typ, setTyp] = useState('TRAINING');
+  const [datum, setDatum] = useState('');
+  const [endDatum, setEndDatum] = useState('');
+  const [ort, setOrt] = useState('');
+  const [untergrund, setUntergrund] = useState('');
+  const [halleId, setHalleId] = useState('');
+  const [teamId, setTeamId] = useState('');
+  const [notizen, setNotizen] = useState('');
   const [teams, setTeams] = useState<Team[]>([]);
+  const [hallen, setHallen] = useState<Halle[]>([]);
+
+  // Wiederholung
   const [istWiederkehrend, setIstWiederkehrend] = useState(false);
   const [wiederholung, setWiederholung] = useState('WEEKLY');
   const [wiederholungTage, setWiederholungTage] = useState<string[]>([]);
   const [wiederholungEnde, setWiederholungEnde] = useState('');
+
   const [ladend, setLadend] = useState(false);
   const [fehler, setFehler] = useState('');
 
+  // Daten laden
   useEffect(() => {
-    if (offen) {
-      apiClient
-        .get<Team[]>('/teams')
-        .then((daten) => {
-          setTeams(daten);
-          if (!teamId && daten.length > 0) {
-            setTeamId(daten[0].id);
-          }
-        })
-        .catch(() => {});
+    if (!offen) return;
+
+    Promise.all([
+      apiClient.get<Team[]>('/teams').catch(() => []),
+      apiClient.get<Halle[]>('/hallen').catch(() => []),
+    ]).then(([teamDaten, hallenDaten]) => {
+      setTeams(teamDaten);
+      setHallen(hallenDaten);
+      if (!teamId && teamDaten.length > 0) {
+        setTeamId(teamDaten[0].id);
+      }
+    });
+
+    // Felder setzen bei Bearbeitung
+    if (event) {
+      setTitel(event.title || '');
+      setTyp(event.type || 'TRAINING');
+      setDatum(event.date ? event.date.slice(0, 16) : '');
+      setEndDatum(event.endDate ? event.endDate.slice(0, 16) : '');
+      setOrt(event.location || '');
+      setUntergrund(event.untergrund || '');
+      setTeamId(event.teamId || '');
+      setNotizen(event.notes || '');
+      setHalleId(event.halleId || '');
+    } else {
+      setTitel('');
+      setTyp('TRAINING');
+      setDatum('');
+      setEndDatum('');
+      setOrt('');
+      setUntergrund('');
+      setNotizen('');
+      setHalleId('');
+      setIstWiederkehrend(false);
+      setWiederholung('WEEKLY');
+      setWiederholungTage([]);
+      setWiederholungEnde('');
     }
-  }, [offen, teamId]);
+    setFehler('');
+  }, [offen, event]);
+
+  // Wenn Halle ausgewaehlt wird, Adresse und Untergrund uebernehmen
+  const handleHalleAendern = (id: string) => {
+    setHalleId(id);
+    if (id) {
+      const halle = hallen.find((h) => h.id === id);
+      if (halle) {
+        setOrt(halle.adresse || halle.name);
+        if (!untergrund) setUntergrund('HALLE');
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,14 +162,16 @@ export function EventFormular({
         datum: new Date(datum).toISOString(),
         ...(endDatum && { endDatum: new Date(endDatum).toISOString() }),
         ort,
-        ...(hallenName && { hallenName }),
-        ...(hallenAdresse && { hallenAdresse }),
+        ...(untergrund && { untergrund }),
+        ...(halleId && { halleId }),
         teamId,
         ...(notizen && { notizen }),
         ...(istWiederkehrend && {
           wiederholung,
           wiederholungTage,
-          wiederholungEnde: wiederholungEnde ? new Date(wiederholungEnde).toISOString() : undefined,
+          wiederholungEnde: wiederholungEnde
+            ? new Date(wiederholungEnde).toISOString()
+            : undefined,
         }),
       };
 
@@ -122,7 +184,9 @@ export function EventFormular({
       onGespeichert();
       onSchliessen();
     } catch (error) {
-      setFehler(error instanceof Error ? error.message : 'Fehler beim Speichern.');
+      setFehler(
+        error instanceof Error ? error.message : 'Fehler beim Speichern.',
+      );
     } finally {
       setLadend(false);
     }
@@ -133,7 +197,9 @@ export function EventFormular({
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {istBearbeitung ? 'Veranstaltung bearbeiten' : 'Neue Veranstaltung'}
+            {istBearbeitung
+              ? 'Veranstaltung bearbeiten'
+              : 'Neue Veranstaltung'}
           </DialogTitle>
           <DialogDescription>
             Training, Spiel oder andere Veranstaltung planen
@@ -141,6 +207,7 @@ export function EventFormular({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Titel */}
           <div className="space-y-2">
             <Label htmlFor="titel">Titel *</Label>
             <Input
@@ -152,25 +219,39 @@ export function EventFormular({
             />
           </div>
 
+          {/* Typ + Team */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="typ">Typ</Label>
-              <Select id="typ" value={typ} onChange={(e) => setTyp(e.target.value)}>
+              <Select
+                id="typ"
+                value={typ}
+                onChange={(e) => setTyp(e.target.value)}
+              >
                 {EVENT_TYPEN.map((t) => (
-                  <option key={t.wert} value={t.wert}>{t.label}</option>
+                  <option key={t.wert} value={t.wert}>
+                    {t.label}
+                  </option>
                 ))}
               </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="team">Team *</Label>
-              <Select id="team" value={teamId} onChange={(e) => setTeamId(e.target.value)}>
+              <Select
+                id="team"
+                value={teamId}
+                onChange={(e) => setTeamId(e.target.value)}
+              >
                 {teams.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
                 ))}
               </Select>
             </div>
           </div>
 
+          {/* Datum & Uhrzeit */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="datum">Datum & Uhrzeit *</Label>
@@ -193,6 +274,7 @@ export function EventFormular({
             </div>
           </div>
 
+          {/* Wiederholung */}
           <div className="space-y-2">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -201,7 +283,9 @@ export function EventFormular({
                 onChange={(e) => setIstWiederkehrend(e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300"
               />
-              <span className="text-sm font-medium">Wiederkehrendes Event</span>
+              <span className="text-sm font-medium">
+                Wiederkehrendes Event
+              </span>
             </label>
           </div>
 
@@ -214,48 +298,57 @@ export function EventFormular({
                   value={wiederholung}
                   onChange={(e) => setWiederholung(e.target.value)}
                 >
+                  <option value="DAILY">Taeglich</option>
                   <option value="WEEKLY">Woechentlich</option>
                   <option value="BIWEEKLY">Alle 2 Wochen</option>
+                  <option value="MONTHLY">Monatlich</option>
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Wochentage</Label>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { wert: 'MO', label: 'Mo' },
-                    { wert: 'DI', label: 'Di' },
-                    { wert: 'MI', label: 'Mi' },
-                    { wert: 'DO', label: 'Do' },
-                    { wert: 'FR', label: 'Fr' },
-                    { wert: 'SA', label: 'Sa' },
-                    { wert: 'SO', label: 'So' },
-                  ].map((tag) => (
-                    <label
-                      key={tag.wert}
-                      className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm cursor-pointer transition-colors ${
-                        wiederholungTage.includes(tag.wert)
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'hover:bg-accent'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={wiederholungTage.includes(tag.wert)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setWiederholungTage([...wiederholungTage, tag.wert]);
-                          } else {
-                            setWiederholungTage(wiederholungTage.filter((t) => t !== tag.wert));
-                          }
-                        }}
-                        className="sr-only"
-                      />
-                      {tag.label}
-                    </label>
-                  ))}
+              {(wiederholung === 'WEEKLY' || wiederholung === 'BIWEEKLY') && (
+                <div className="space-y-2">
+                  <Label>Wochentage</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { wert: 'MO', label: 'Mo' },
+                      { wert: 'DI', label: 'Di' },
+                      { wert: 'MI', label: 'Mi' },
+                      { wert: 'DO', label: 'Do' },
+                      { wert: 'FR', label: 'Fr' },
+                      { wert: 'SA', label: 'Sa' },
+                      { wert: 'SO', label: 'So' },
+                    ].map((tag) => (
+                      <label
+                        key={tag.wert}
+                        className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm cursor-pointer transition-colors ${
+                          wiederholungTage.includes(tag.wert)
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'hover:bg-accent'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={wiederholungTage.includes(tag.wert)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setWiederholungTage([
+                                ...wiederholungTage,
+                                tag.wert,
+                              ]);
+                            } else {
+                              setWiederholungTage(
+                                wiederholungTage.filter((t) => t !== tag.wert),
+                              );
+                            }
+                          }}
+                          className="sr-only"
+                        />
+                        {tag.label}
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="wiederholungEnde">Wiederholen bis</Label>
@@ -269,38 +362,55 @@ export function EventFormular({
             </div>
           )}
 
+          {/* Ort aus Belegung oder freie Eingabe */}
+          {hallen.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="halleId">Ort (aus Belegung)</Label>
+              <Select
+                id="halleId"
+                value={halleId}
+                onChange={(e) => handleHalleAendern(e.target.value)}
+              >
+                <option value="">-- Freie Adresseingabe --</option>
+                {hallen.map((h) => (
+                  <option key={h.id} value={h.id}>
+                    {h.name}
+                    {h.adresse ? ` (${h.adresse})` : ''}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          )}
+
+          {/* Adresse mit Suche */}
           <div className="space-y-2">
-            <Label htmlFor="ort">Ort *</Label>
-            <Input
+            <Label htmlFor="ort">Adresse *</Label>
+            <AdressSuche
               id="ort"
               value={ort}
-              onChange={(e) => setOrt(e.target.value)}
-              placeholder="Sportplatz am Bach"
+              onChange={setOrt}
+              placeholder="Adresse suchen (z.B. Jahnhalle, Musterstadt)"
               required
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="hallenName">Hallenname</Label>
-              <Input
-                id="hallenName"
-                value={hallenName}
-                onChange={(e) => setHallenName(e.target.value)}
-                placeholder="Jahnhalle"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="hallenAdresse">Hallenadresse</Label>
-              <Input
-                id="hallenAdresse"
-                value={hallenAdresse}
-                onChange={(e) => setHallenAdresse(e.target.value)}
-                placeholder="Jahnstr. 5"
-              />
-            </div>
+          {/* Untergrund */}
+          <div className="space-y-2">
+            <Label htmlFor="untergrund">Untergrund</Label>
+            <Select
+              id="untergrund"
+              value={untergrund}
+              onChange={(e) => setUntergrund(e.target.value)}
+            >
+              {UNTERGRUND_TYPEN.map((u) => (
+                <option key={u.wert} value={u.wert}>
+                  {u.label}
+                </option>
+              ))}
+            </Select>
           </div>
 
+          {/* Notizen */}
           <div className="space-y-2">
             <Label htmlFor="notizen">Notizen</Label>
             <Input
@@ -322,7 +432,11 @@ export function EventFormular({
               Abbrechen
             </Button>
             <Button type="submit" disabled={ladend}>
-              {ladend ? 'Speichern...' : istBearbeitung ? 'Aktualisieren' : 'Erstellen'}
+              {ladend
+                ? 'Speichern...'
+                : istBearbeitung
+                  ? 'Aktualisieren'
+                  : 'Erstellen'}
             </Button>
           </div>
         </form>
