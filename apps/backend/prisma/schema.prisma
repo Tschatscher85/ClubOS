@@ -10,70 +10,70 @@ datasource db {
 // ==================== Verein (Tenant) ====================
 
 model Tenant {
-  id           String   @id @default(cuid())
-  name         String
-  slug         String   @unique
-  logo         String?
-  primaryColor String   @default("#1a56db")
-  plan         Plan     @default(STARTER)
-  domain       String?
-  kiProvider   String   @default("anthropic")
-  kiApiKey     String?
-  kiModell     String?
+  id                           String    @id @default(cuid())
+  name                         String
+  slug                         String    @unique
+  logo                         String?
+  primaryColor                 String    @default("#1a56db")
+  plan                         Plan      @default(STARTER)
+  domain                       String?
+  kiProvider                   String    @default("anthropic")
+  kiApiKey                     String?
+  kiModell                     String?
   // Vereinsdaten (Pflicht fuer Impressum/Rechtliches)
-  vereinsNr          String?  // Vereinsregisternummer (z.B. VR 12345)
-  amtsgericht        String?  // Zustaendiges Amtsgericht
-  gruendungsjahr     Int?
-  anschrift          String?  // Vereinsadresse
-  plz                String?
-  ort                String?
-  bundesland         String?
-  telefon            String?
-  email              String?  // Offizielle Vereins-E-Mail
-  webseite           String?
+  vereinsNr                    String? // Vereinsregisternummer (z.B. VR 12345)
+  amtsgericht                  String? // Zustaendiges Amtsgericht
+  gruendungsjahr               Int?
+  anschrift                    String? // Vereinsadresse
+  plz                          String?
+  ort                          String?
+  bundesland                   String?
+  telefon                      String?
+  email                        String? // Offizielle Vereins-E-Mail
+  webseite                     String?
   // Vorstand / Vertretungsberechtigte
-  vorstand1Name      String?  // 1. Vorsitzender
-  vorstand1Funktion  String?  // z.B. "1. Vorsitzender"
-  vorstand2Name      String?  // 2. Vorsitzender
-  vorstand2Funktion  String?
-  kassenwart         String?
-  schriftfuehrer     String?
-  jugendwart         String?
+  vorstand1Name                String? // 1. Vorsitzender
+  vorstand1Funktion            String? // z.B. "1. Vorsitzender"
+  vorstand2Name                String? // 2. Vorsitzender
+  vorstand2Funktion            String?
+  kassenwart                   String?
+  schriftfuehrer               String?
+  jugendwart                   String?
   // Rechtliches
-  satzungUrl         String?  // Hochgeladene Satzung (PDF)
-  satzungDatum       DateTime? // Datum der aktuellen Satzung
-  impressum          String?  // Freitext Impressum (HTML)
-  datenschutzUrl     String?  // Datenschutzerklaerung (PDF oder URL)
-  datenschutzText    String?  // Freitext Datenschutz (HTML)
+  satzungUrl                   String? // Hochgeladene Satzung (PDF)
+  satzungDatum                 DateTime? // Datum der aktuellen Satzung
+  impressum                    String? // Freitext Impressum (HTML)
+  datenschutzUrl               String? // Datenschutzerklaerung (PDF oder URL)
+  datenschutzText              String? // Freitext Datenschutz (HTML)
   // Versicherungen
-  haftpflichtVersicherung    String?  // Vereinshaftpflicht Anbieter
-  haftpflichtPoliceNr        String?  // Policennummer
-  haftpflichtGueltigBis      DateTime?
-  unfallVersicherung         String?  // Sportlunfallversicherung
-  unfallPoliceNr             String?
-  unfallGueltigBis           DateTime?
+  haftpflichtVersicherung      String? // Vereinshaftpflicht Anbieter
+  haftpflichtPoliceNr          String? // Policennummer
+  haftpflichtGueltigBis        DateTime?
+  unfallVersicherung           String? // Sportlunfallversicherung
+  unfallPoliceNr               String?
+  unfallGueltigBis             DateTime?
   gewaehrleistungsVersicherung String? // D&O / Vermoegens­schaden­haftpflicht
   // Finanzen
-  steuernummer       String?  // Steuernummer
-  finanzamt          String?  // Zustaendiges Finanzamt
-  gemeinnuetzigBis   DateTime? // Gemeinnuetzigkeitsbescheid gueltig bis
-  gemeinnuetzigUrl   String?  // Freistellungsbescheid (PDF)
-  iban               String?  // Vereins-IBAN
-  bic                String?
-  bankName           String?
+  steuernummer                 String? // Steuernummer
+  finanzamt                    String? // Zustaendiges Finanzamt
+  gemeinnuetzigBis             DateTime? // Gemeinnuetzigkeitsbescheid gueltig bis
+  gemeinnuetzigUrl             String? // Freistellungsbescheid (PDF)
+  iban                         String? // Vereins-IBAN
+  bic                          String?
+  bankName                     String?
   // SMTP (globaler Vereins-Mailserver)
-  smtpHost           String?
-  smtpPort           Int?     @default(587)
-  smtpUser           String?
-  smtpPass           String?  // Base64-kodiert
-  smtpAbsenderEmail  String?  // z.B. info@fckunchen.de
-  smtpAbsenderName   String?  // z.B. "FC Kunchen 1920 e.V."
+  smtpHost                     String?
+  smtpPort                     Int?      @default(587)
+  smtpUser                     String?
+  smtpPass                     String? // Base64-kodiert
+  smtpAbsenderEmail            String? // z.B. info@fckunchen.de
+  smtpAbsenderName             String? // z.B. "FC Kunchen 1920 e.V."
   // Sportverband-Mitgliedschaften
-  landessportbund    String?  // z.B. "WLSB - Wuerttembergischer LSB"
-  sportverband       String?  // z.B. "WFV - Wuerttembergischer FV"
-  verbandsMitgliedsNr String? // Mitgliedsnummer beim Verband
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  landessportbund              String? // z.B. "WLSB - Wuerttembergischer LSB"
+  sportverband                 String? // z.B. "WFV - Wuerttembergischer FV"
+  verbandsMitgliedsNr          String? // Mitgliedsnummer beim Verband
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
 
   users              User[]
   abteilungen        Abteilung[]
@@ -94,6 +94,7 @@ model Tenant {
   customSportarten   CustomSportart[]
   pinboardItems      PinboardItem[]
   rollenVorlagen     RollenVorlage[]
+  spielberichte      Spielbericht[]
 
   @@index([slug])
 }
@@ -109,34 +110,34 @@ enum Plan {
 // ==================== Benutzer ====================
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String?
-  role         Role
-  tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  refreshToken String?
+  id                     String              @id @default(cuid())
+  email                  String              @unique
+  passwordHash           String?
+  role                   Role
+  tenantId               String
+  tenant                 Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  refreshToken           String?
   // E-Mail-Verifizierung
-  emailVerifiziert     Boolean  @default(false)
-  emailVerifyToken     String?  @unique
-  emailVerifyExpiresAt DateTime?
+  emailVerifiziert       Boolean             @default(false)
+  emailVerifyToken       String?             @unique
+  emailVerifyExpiresAt   DateTime?
   // Passwort vergessen
-  passwortResetToken     String?  @unique
+  passwortResetToken     String?             @unique
   passwortResetExpiresAt DateTime?
   // Google OAuth
-  googleId             String?  @unique
+  googleId               String?             @unique
   // Vereinsrollen (mehrere moeglich, z.B. ["Trainer","Kassenpruefer"])
-  vereinsRollen     String[]   // Verweise auf RollenVorlage.name
+  vereinsRollen          String[] // Verweise auf RollenVorlage.name
   // Berechtigungen (berechnet aus Vereinsrollen + individuelle Anpassungen)
-  berechtigungen    String[]   // z.B. ["MITGLIEDER","TEAMS","KALENDER","TURNIERE","NACHRICHTEN","BUCHHALTUNG","FORMULARE","DOKUMENTE","EINSTELLUNGEN"]
-  istAktiv          Boolean    @default(true)
-  letzterLogin      DateTime?
-  eingeladenVon     String?    // userId des Einladenden
-  notizen           String?    // Admin-Notizen zum Benutzer
-  profile              Member?
-  emailEinstellungen   EmailEinstellungen?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  berechtigungen         String[] // z.B. ["MITGLIEDER","TEAMS","KALENDER","TURNIERE","NACHRICHTEN","BUCHHALTUNG","FORMULARE","DOKUMENTE","EINSTELLUNGEN"]
+  istAktiv               Boolean             @default(true)
+  letzterLogin           DateTime?
+  eingeladenVon          String? // userId des Einladenden
+  notizen                String? // Admin-Notizen zum Benutzer
+  profile                Member?
+  emailEinstellungen     EmailEinstellungen?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
 
   @@index([tenantId])
   @@index([email])
@@ -156,11 +157,11 @@ model RollenVorlage {
   id             String   @id @default(cuid())
   tenantId       String
   tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name           String   // z.B. "Vorstand", "Trainer", "Kassenpruefer"
-  beschreibung   String?  // Kurze Beschreibung der Rolle
-  systemRolle    Role     // Welches System-Zugriffslevel (hoechste gewinnt)
+  name           String // z.B. "Vorstand", "Trainer", "Kassenpruefer"
+  beschreibung   String? // Kurze Beschreibung der Rolle
+  systemRolle    Role // Welches System-Zugriffslevel (hoechste gewinnt)
   berechtigungen String[] // Welche Berechtigungen diese Rolle mitbringt
-  farbe          String?  // Optionale Badge-Farbe (Hex)
+  farbe          String? // Optionale Badge-Farbe (Hex)
   sortierung     Int      @default(0) // Reihenfolge in der Anzeige
   istStandard    Boolean  @default(false) // Vom System vorgegeben (nicht loeschbar)
   createdAt      DateTime @default(now())
@@ -173,40 +174,42 @@ model RollenVorlage {
 // ==================== Mitglied ====================
 
 model Member {
-  id           String       @id @default(cuid())
-  userId       String?      @unique
-  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  tenantId     String
-  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  memberNumber String
-  firstName    String
-  lastName     String
-  email        String?
-  birthDate    DateTime?
-  phone        String?
-  address      String?
-  joinDate     DateTime     @default(now())
-  exitDate     DateTime?
-  status       MemberStatus @default(PENDING)
-  sport        String[]
-  qrCode       String?
-  parentEmail  String?
-  signatureUrl String?
+  id                         String         @id @default(cuid())
+  userId                     String?        @unique
+  user                       User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tenantId                   String
+  tenant                     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  memberNumber               String
+  firstName                  String
+  lastName                   String
+  email                      String?
+  birthDate                  DateTime?
+  phone                      String?
+  address                    String?
+  joinDate                   DateTime       @default(now())
+  exitDate                   DateTime?
+  status                     MemberStatus   @default(PENDING)
+  sport                      String[]
+  qrCode                     String?
+  parentEmail                String?
+  signatureUrl               String?
   // Beitrag & Ermaessigung
-  beitragsArt       String?            // z.B. "Jahresbeitrag Erwachsene", "Jugend", "Familie"
-  beitragBetrag     Float?             // Individueller Beitrag (ueberschreibt Standard)
-  beitragIntervall  String?            // MONATLICH, QUARTALSWEISE, HALBJAEHRLICH, JAEHRLICH
-  ermaessigung      Ermaessigung?      // Ermaessigungsgrund
-  ermaessigungProzent Float?           // z.B. 50 fuer 50% Ermaessigung
-  ermaessigungBis   DateTime?          // Gueltig bis (z.B. Ende Semester)
-  nachweisDokUrl    String?            // Hochgeladener Nachweis (Studentenausweis, etc.)
-  nachweisStatus    NachweisStatus     @default(NICHT_ERFORDERLICH)
+  beitragsArt                String? // z.B. "Jahresbeitrag Erwachsene", "Jugend", "Familie"
+  beitragBetrag              Float? // Individueller Beitrag (ueberschreibt Standard)
+  beitragIntervall           String? // MONATLICH, QUARTALSWEISE, HALBJAEHRLICH, JAEHRLICH
+  ermaessigung               Ermaessigung? // Ermaessigungsgrund
+  ermaessigungProzent        Float? // z.B. 50 fuer 50% Ermaessigung
+  ermaessigungBis            DateTime? // Gueltig bis (z.B. Ende Semester)
+  nachweisDokUrl             String? // Hochgeladener Nachweis (Studentenausweis, etc.)
+  nachweisStatus             NachweisStatus @default(NICHT_ERFORDERLICH)
   nachweisErinnerungGesendet DateTime? // Wann letzte Erinnerung gesendet wurde
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  createdAt                  DateTime       @default(now())
+  updatedAt                  DateTime       @updatedAt
 
-  attendances  Attendance[]
-  teamMembers  TeamMember[]
+  attendances    Attendance[]
+  teamMembers    TeamMember[]
+  kasseBuchungen KasseBuchung[]
+  trikotVergaben TrikotVergabe[]
 
   @@index([tenantId])
   @@index([email])
@@ -221,40 +224,40 @@ enum MemberStatus {
 
 enum Ermaessigung {
   KEINE
-  STUDENT           // Studentenausweis erforderlich
-  SCHUELER          // Schuelerausweis
-  AZUBI             // Ausbildungsnachweis
-  RENTNER           // Rentenausweis
-  SCHWERBEHINDERT   // Schwerbehindertenausweis
-  EHRENAMT          // Ehrenamtlich taetig
-  FAMILIE           // Familienermaessigung (ab 2. Mitglied)
-  SOZIAL            // Sozialpass / ALG-Bescheid
-  SONSTIGE          // Individuell vereinbart
+  STUDENT // Studentenausweis erforderlich
+  SCHUELER // Schuelerausweis
+  AZUBI // Ausbildungsnachweis
+  RENTNER // Rentenausweis
+  SCHWERBEHINDERT // Schwerbehindertenausweis
+  EHRENAMT // Ehrenamtlich taetig
+  FAMILIE // Familienermaessigung (ab 2. Mitglied)
+  SOZIAL // Sozialpass / ALG-Bescheid
+  SONSTIGE // Individuell vereinbart
 }
 
 enum NachweisStatus {
-  NICHT_ERFORDERLICH  // Kein Nachweis noetig
-  AUSSTEHEND          // Nachweis fehlt noch
-  EINGEREICHT         // Nachweis hochgeladen, wartet auf Pruefung
-  GENEHMIGT           // Nachweis geprueft und genehmigt
-  ABGELEHNT           // Nachweis abgelehnt
-  ABGELAUFEN          // Nachweis ist abgelaufen (z.B. Semester vorbei)
+  NICHT_ERFORDERLICH // Kein Nachweis noetig
+  AUSSTEHEND // Nachweis fehlt noch
+  EINGEREICHT // Nachweis hochgeladen, wartet auf Pruefung
+  GENEHMIGT // Nachweis geprueft und genehmigt
+  ABGELEHNT // Nachweis abgelehnt
+  ABGELAUFEN // Nachweis ist abgelaufen (z.B. Semester vorbei)
 }
 
 // ==================== Abteilung (z.B. Fussball, Handball) ====================
 
 model Abteilung {
-  id          String   @id @default(cuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name        String   // z.B. "Fussball", "Handball"
-  sport       Sport
-  leiterIds   String[] // UserIDs der Abteilungsleiter
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name         String // z.B. "Fussball", "Handball"
+  sport        Sport
+  leiterIds    String[] // UserIDs der Abteilungsleiter
   beschreibung String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  teams       Team[]
+  teams Team[]
 
   @@unique([tenantId, sport])
   @@index([tenantId])
@@ -263,23 +266,26 @@ model Abteilung {
 // ==================== Mannschaft ====================
 
 model Team {
-  id           String  @id @default(cuid())
-  name         String
-  sport        Sport
-  ageGroup     String
-  trainerId    String
-  tenantId     String
-  tenant       Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  abteilungId  String?
-  abteilung    Abteilung? @relation(fields: [abteilungId], references: [id], onDelete: SetNull)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String     @id @default(cuid())
+  name        String
+  sport       Sport
+  ageGroup    String
+  trainerId   String
+  tenantId    String
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  abteilungId String?
+  abteilung   Abteilung? @relation(fields: [abteilungId], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   events           Event[]
   messages         Message[]
   teamMembers      TeamMember[]
   hallenbelegungen Hallenbelegung[]
   pinboardItems    PinboardItem[]
+  kasse            TeamKasse?
+  strafkatalog     Strafkatalog[]
+  trikots          Trikot[]
 
   @@index([tenantId])
   @@index([abteilungId])
@@ -372,20 +378,20 @@ enum Sport {
   PETANQUE
   CURLING
   SONSTIGES
-  CUSTOM        // Fuer vom Verein selbst definierte Sportarten
+  CUSTOM // Fuer vom Verein selbst definierte Sportarten
 }
 
 // ==================== Eigene Sportarten (pro Verein) ====================
 
 model CustomSportart {
-  id         String   @id @default(cuid())
-  tenantId   String
-  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name       String   // z.B. "Unterwasser-Rugby", "Quidditch"
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name         String // z.B. "Unterwasser-Rugby", "Quidditch"
   beschreibung String?
-  icon       String?  // Optionales Icon/Emoji
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  icon         String? // Optionales Icon/Emoji
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -394,31 +400,32 @@ model CustomSportart {
 // ==================== Veranstaltungen ====================
 
 model Event {
-  id          String    @id @default(cuid())
-  title       String
-  type        EventType
-  date        DateTime
-  endDate     DateTime?
-  location    String
-  hallName    String?
-  hallAddress String?
-  teamId      String
-  team        Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  tenantId    String
-  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  notes       String?
+  id             String    @id @default(cuid())
+  title          String
+  type           EventType
+  date           DateTime
+  endDate        DateTime?
+  location       String
+  hallName       String?
+  hallAddress    String?
+  teamId         String
+  team           Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  tenantId       String
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  notes          String?
   // Wiederkehrende Events
-  recurrenceRule  String?   // z.B. "WEEKLY:DI,DO" oder "BIWEEKLY:MI"
-  recurrenceEnd   DateTime? // Bis wann wiederholen
-  parentEventId   String?   // Referenz auf das Eltern-Event (Vorlage)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  recurrenceRule String? // z.B. "WEEKLY:DI,DO" oder "BIWEEKLY:MI"
+  recurrenceEnd  DateTime? // Bis wann wiederholen
+  parentEventId  String? // Referenz auf das Eltern-Event (Vorlage)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  attendances      Attendance[]
-  reminders        Reminder[]
-  comments         EventComment[]
-  schnellTokens    SchnellAnmeldungToken[]
-  landingpage      EventLandingpage?
+  attendances   Attendance[]
+  reminders     Reminder[]
+  comments      EventComment[]
+  schnellTokens SchnellAnmeldungToken[]
+  landingpage   EventLandingpage?
+  spielbericht  Spielbericht?
 
   @@index([tenantId])
   @@index([teamId])
@@ -475,17 +482,17 @@ enum AttendanceStatus {
 // ==================== Turnier ====================
 
 model Tournament {
-  id        String          @id @default(cuid())
+  id        String           @id @default(cuid())
   name      String
   sport     Sport
   format    TournamentFormat
-  publicUrl String          @unique
+  publicUrl String           @unique
   tenantId  String
-  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  isLive    Boolean         @default(false)
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  isLive    Boolean          @default(false)
   qrCode    String?
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
   matches     TournamentMatch[]
   landingpage TurnierLandingpage?
@@ -528,14 +535,14 @@ enum MatchStatus {
 // ==================== Formulare ====================
 
 model FormTemplate {
-  id       String   @id @default(cuid())
-  tenantId String
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name     String
-  type     FormType
-  fileUrl  String
-  fields   Json
-  isActive Boolean  @default(true)
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  type      FormType
+  fileUrl   String
+  fields    Json
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -554,21 +561,21 @@ enum FormType {
 // ==================== Formular-Einreichungen (Online-Antraege) ====================
 
 model FormSubmission {
-  id             String           @id @default(cuid())
-  tenantId       String
-  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  templateId     String
-  template       FormTemplate     @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  eingereichtVon String?          // userId, falls angemeldet
-  email          String           // E-Mail des Antragstellers
-  daten          Json             // Ausgefuellte Felder als JSON
-  signatureUrl   String?          // Digitale Unterschrift als Data-URL
-  signaturDatenUrl String?        // Base64-Signaturdaten (data:image/png;base64,...)
-  status         SubmissionStatus @default(EINGEREICHT)
-  kommentar      String?          // Interner Kommentar vom Admin
-  archiviertePdf String?          // URL der archivierten PDF
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id               String           @id @default(cuid())
+  tenantId         String
+  tenant           Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  templateId       String
+  template         FormTemplate     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  eingereichtVon   String? // userId, falls angemeldet
+  email            String // E-Mail des Antragstellers
+  daten            Json // Ausgefuellte Felder als JSON
+  signatureUrl     String? // Digitale Unterschrift als Data-URL
+  signaturDatenUrl String? // Base64-Signaturdaten (data:image/png;base64,...)
+  status           SubmissionStatus @default(EINGEREICHT)
+  kommentar        String? // Interner Kommentar vom Admin
+  archiviertePdf   String? // URL der archivierten PDF
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   @@index([tenantId])
   @@index([templateId])
@@ -576,29 +583,29 @@ model FormSubmission {
 }
 
 enum SubmissionStatus {
-  EINGEREICHT   // Antrag gestellt
-  IN_PRUEFUNG   // Wird geprueft
-  GENEHMIGT     // Genehmigt → Mitglied wird angelegt
-  ABGELEHNT     // Abgelehnt
-  ARCHIVIERT    // Archiviert
+  EINGEREICHT // Antrag gestellt
+  IN_PRUEFUNG // Wird geprueft
+  GENEHMIGT // Genehmigt → Mitglied wird angelegt
+  ABGELEHNT // Abgelehnt
+  ARCHIVIERT // Archiviert
 }
 
 // ==================== Dokumenten-Ablage ====================
 
 model Dokument {
-  id          String       @id @default(cuid())
-  tenantId    String
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name        String
-  beschreibung String?
-  dateiUrl    String       // Pfad im S3/Storage
-  dateiGroesse Int         // Groesse in Bytes
-  dateiTyp    String       // MIME-Type (application/pdf, image/png, etc.)
-  kategorie   DokumentKategorie @default(SONSTIGES)
-  ordner      String?      // Optionaler Ordner-Pfad
-  hochgeladenVon String    // userId
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id             String            @id @default(cuid())
+  tenantId       String
+  tenant         Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name           String
+  beschreibung   String?
+  dateiUrl       String // Pfad im S3/Storage
+  dateiGroesse   Int // Groesse in Bytes
+  dateiTyp       String // MIME-Type (application/pdf, image/png, etc.)
+  kategorie      DokumentKategorie @default(SONSTIGES)
+  ordner         String? // Optionaler Ordner-Pfad
+  hochgeladenVon String // userId
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   @@index([tenantId])
   @@index([kategorie])
@@ -641,13 +648,13 @@ enum ReminderType {
 // ==================== Nachrichten ====================
 
 model Message {
-  id         String      @id @default(cuid())
-  tenantId   String
-  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  teamId     String?
-  team       Team?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
-  senderId   String
-  content    String
+  id          String      @id @default(cuid())
+  tenantId    String
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teamId      String?
+  team        Team?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  senderId    String
+  content     String
   type        MessageType
   isEmergency Boolean     @default(false)
   silentFrom  String?
@@ -705,15 +712,15 @@ enum ReaktionTyp {
 // ==================== Benachrichtigungs-Einstellungen ====================
 
 model BenachrichtigungsEinstellung {
-  id                     String   @id @default(cuid())
-  userId                 String   @unique
-  pushAktiv              Boolean  @default(true)
-  emailAktiv             Boolean  @default(true)
-  stilleStundenVon       Int      @default(22)
-  stilleStundenBis       Int      @default(7)
-  notfallUeberschreiben  Boolean  @default(true)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  pushAktiv             Boolean  @default(true)
+  emailAktiv            Boolean  @default(true)
+  stilleStundenVon      Int      @default(22)
+  stilleStundenBis      Int      @default(7)
+  notfallUeberschreiben Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   @@index([userId])
 }
@@ -728,7 +735,7 @@ model FAQ {
   question  String
   answer    String
   useCount  Int      @default(0)
-  embedding Json?    // Float-Array fuer Similarity-Suche
+  embedding Json? // Float-Array fuer Similarity-Suche
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -744,15 +751,15 @@ enum FrageStatus {
 }
 
 model ElternFrage {
-  id            String       @id @default(cuid())
+  id            String      @id @default(cuid())
   tenantId      String
   teamId        String?
-  fragenderId   String       // userId des Elternteils
+  fragenderId   String // userId des Elternteils
   frage         String
   antwort       String?
-  automatisch   Boolean      @default(false)
-  status        FrageStatus  @default(OFFEN)
-  createdAt     DateTime     @default(now())
+  automatisch   Boolean     @default(false)
+  status        FrageStatus @default(OFFEN)
+  createdAt     DateTime    @default(now())
   beantwortetAm DateTime?
 
   @@index([tenantId])
@@ -763,14 +770,14 @@ model ElternFrage {
 // ==================== Schnell-Anmeldung per E-Mail-Link ====================
 
 model SchnellAnmeldungToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  eventId   String
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  memberId  String
-  benutzt   Boolean  @default(false)
+  id         String   @id @default(cuid())
+  token      String   @unique
+  eventId    String
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  memberId   String
+  benutzt    Boolean  @default(false)
   gueltigBis DateTime
-  createdAt DateTime @default(now())
+  createdAt  DateTime @default(now())
 
   @@index([token])
   @@index([eventId])
@@ -779,20 +786,20 @@ model SchnellAnmeldungToken {
 // ==================== Fahrtenborse ====================
 
 model Fahrgemeinschaft {
-  id          String   @id @default(cuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  eventId     String?
-  fahrerId    String   // userId des Fahrers
-  startort    String
-  zielort     String
-  abfahrt     DateTime
-  plaetze     Int      @default(4)
-  kommentar   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  eventId   String?
+  fahrerId  String // userId des Fahrers
+  startort  String
+  zielort   String
+  abfahrt   DateTime
+  plaetze   Int      @default(4)
+  kommentar String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  mitfahrer   Mitfahrer[]
+  mitfahrer Mitfahrer[]
 
   @@index([tenantId])
   @@index([eventId])
@@ -812,15 +819,15 @@ model Mitfahrer {
 // ==================== Schiedsrichter-Einteilung ====================
 
 model SchiedsrichterEinteilung {
-  id         String   @id @default(cuid())
+  id         String       @id @default(cuid())
   tenantId   String
   eventId    String
-  memberId   String   // Mitglied das als Schiedsrichter eingeteilt ist
+  memberId   String // Mitglied das als Schiedsrichter eingeteilt ist
   status     SchiriStatus @default(EINGETEILT)
-  bestaetigt Boolean  @default(false)
+  bestaetigt Boolean      @default(false)
   notiz      String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 
   @@unique([eventId, memberId])
   @@index([tenantId])
@@ -837,7 +844,7 @@ enum SchiriStatus {
 // ==================== Buchhaltung / SEPA ====================
 
 model Rechnung {
-  id           String          @id @default(cuid())
+  id           String         @id @default(cuid())
   tenantId     String
   memberId     String
   rechnungsNr  String
@@ -845,10 +852,10 @@ model Rechnung {
   beschreibung String
   faelligAm    DateTime
   bezahltAm    DateTime?
-  status       RechnungStatus  @default(OFFEN)
-  sepaMandat   String?         // SEPA-Mandatsreferenz
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  status       RechnungStatus @default(OFFEN)
+  sepaMandat   String? // SEPA-Mandatsreferenz
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   @@index([tenantId])
   @@index([memberId])
@@ -863,14 +870,14 @@ enum RechnungStatus {
 }
 
 model Beitrag {
-  id          String   @id @default(cuid())
-  tenantId    String
-  name        String   // z.B. "Jahresbeitrag Erwachsene"
-  betrag      Float
-  intervall   String   // MONATLICH, QUARTALSWEISE, JAEHRLICH
-  sportart    String?  // Optional: nur fuer bestimmte Sportart
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String // z.B. "Jahresbeitrag Erwachsene"
+  betrag    Float
+  intervall String // MONATLICH, QUARTALSWEISE, JAEHRLICH
+  sportart  String? // Optional: nur fuer bestimmte Sportart
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([tenantId])
 }
@@ -881,14 +888,14 @@ model Workflow {
   id           String   @id @default(cuid())
   tenantId     String
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name         String   // z.B. "Neues Mitglied Fussball"
-  beschreibung String?  // z.B. "Alle Unterlagen fuer neue Fussball-Mitglieder"
+  name         String // z.B. "Neues Mitglied Fussball"
+  beschreibung String? // z.B. "Alle Unterlagen fuer neue Fussball-Mitglieder"
   templateIds  String[] // Welche Formulare gesendet werden
   sportarten   String[] // Vorbelegte Sportarten
-  emailBetreff String?  // Optionaler eigener E-Mail-Betreff
-  emailText    String?  // Optionaler eigener E-Mail-Text
+  emailBetreff String? // Optionaler eigener E-Mail-Betreff
+  emailText    String? // Optionaler eigener E-Mail-Text
   istAktiv     Boolean  @default(true)
-  erstelltVon  String   // userId des Erstellers (Admin/Vorstand)
+  erstelltVon  String // userId des Erstellers (Admin/Vorstand)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -898,9 +905,9 @@ model Workflow {
 // ==================== Hallenbelegung ====================
 
 model Halle {
-  id          String   @id @default(cuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name          String
   adresse       String?
   kapazitaet    Int?
@@ -912,7 +919,7 @@ model Halle {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  belegungen  Hallenbelegung[]
+  belegungen Hallenbelegung[]
 
   @@index([tenantId])
 }
@@ -923,9 +930,9 @@ model Hallenbelegung {
   halle     Halle    @relation(fields: [halleId], references: [id], onDelete: Cascade)
   teamId    String
   team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  wochentag String   // MO, DI, MI, DO, FR, SA, SO
-  von       String   // "18:00"
-  bis       String   // "20:00"
+  wochentag String // MO, DI, MI, DO, FR, SA, SO
+  von       String // "18:00"
+  bis       String // "20:00"
   notiz     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -962,10 +969,10 @@ model EmailEinstellungen {
   smtpHost      String
   smtpPort      Int      @default(587)
   smtpUser      String
-  smtpPass      String   // Base64-kodiert gespeichert (TODO: richtige Verschluesselung mit AES-256)
-  absenderEmail String   // z.B. trainer.mueller@fcmusterstadt.de
-  absenderName  String   // z.B. "Thomas Mueller - FC Musterstadt"
-  signatur      String?  // HTML-Signatur fuer E-Mails
+  smtpPass      String // Base64-kodiert gespeichert (TODO: richtige Verschluesselung mit AES-256)
+  absenderEmail String // z.B. trainer.mueller@fcmusterstadt.de
+  absenderName  String // z.B. "Thomas Mueller - FC Musterstadt"
+  signatur      String? // HTML-Signatur fuer E-Mails
   istAktiv      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -976,23 +983,23 @@ model EmailEinstellungen {
 // ==================== E-Mail Posteingang ====================
 
 model EmailPosteingang {
-  id            String   @id @default(cuid())
-  tenantId      String
-  empfaengerId  String?  // userId des Empfaengers (null = Vereins-Postfach)
-  von           String   // Absender E-Mail
-  vonName       String?  // Absender Name
-  an            String   // Empfaenger E-Mail
-  betreff       String
-  inhalt        String   // HTML oder Plain-Text
-  inhaltText    String?  // Plain-Text Version
-  gelesen       Boolean  @default(false)
-  istWichtig    Boolean  @default(false)
-  ordner        String      @default("POSTEINGANG")
-  anhaenge      String[] // URLs zu Anhaengen
-  messageId     String?  // Original Message-ID Header
-  inReplyTo     String?  // Referenz auf vorherige Nachricht
-  empfangenAm   DateTime @default(now())
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  tenantId     String
+  empfaengerId String? // userId des Empfaengers (null = Vereins-Postfach)
+  von          String // Absender E-Mail
+  vonName      String? // Absender Name
+  an           String // Empfaenger E-Mail
+  betreff      String
+  inhalt       String // HTML oder Plain-Text
+  inhaltText   String? // Plain-Text Version
+  gelesen      Boolean  @default(false)
+  istWichtig   Boolean  @default(false)
+  ordner       String   @default("POSTEINGANG")
+  anhaenge     String[] // URLs zu Anhaengen
+  messageId    String? // Original Message-ID Header
+  inReplyTo    String? // Referenz auf vorherige Nachricht
+  empfangenAm  DateTime @default(now())
+  createdAt    DateTime @default(now())
 
   @@index([tenantId])
   @@index([empfaengerId])
@@ -1009,15 +1016,15 @@ enum EmailOrdner {
 }
 
 model EmailEntwurf {
-  id            String   @id @default(cuid())
-  tenantId      String
-  absenderId    String   // userId
-  an            String[] // Empfaenger-Adressen
-  betreff       String?
-  inhalt        String?
-  anhaenge      String[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String   @id @default(cuid())
+  tenantId   String
+  absenderId String // userId
+  an         String[] // Empfaenger-Adressen
+  betreff    String?
+  inhalt     String?
+  anhaenge   String[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([tenantId])
   @@index([absenderId])
@@ -1038,101 +1045,101 @@ model Profilbild {
 // ==================== Vereinshomepage ====================
 
 model Homepage {
-  id          String         @id @default(cuid())
-  tenantId    String         @unique
-  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  istAktiv    Boolean        @default(false)
-  subdomain   String?        @unique  // z.B. "fckunchen" -> fckunchen.clubos.de
-  customDomain String?       @unique  // z.B. "www.fc-kunchen.de"
+  id               String   @id @default(cuid())
+  tenantId         String   @unique
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  istAktiv         Boolean  @default(false)
+  subdomain        String?  @unique // z.B. "fckunchen" -> fckunchen.clubos.de
+  customDomain     String?  @unique // z.B. "www.fc-kunchen.de"
   // Inhalte
-  heroTitel       String?    // z.B. "Willkommen beim FC Kunchen"
-  heroUntertitel  String?    // z.B. "Seit 1920 - Ihr Sportverein im Filstal"
-  heroBildUrl     String?
-  ueberUns        String?    // Freitext HTML/Markdown
-  gruendungsjahr  Int?
-  mitgliederAnzahl Int?      // Wird automatisch berechnet
-  kontaktEmail    String?
-  kontaktTelefon  String?
-  kontaktAdresse  String?
-  oeffnungszeiten String?
-  impressum       String?
-  datenschutz     String?
-  socialFacebook  String?
-  socialInstagram String?
-  socialYoutube   String?
+  heroTitel        String? // z.B. "Willkommen beim FC Kunchen"
+  heroUntertitel   String? // z.B. "Seit 1920 - Ihr Sportverein im Filstal"
+  heroBildUrl      String?
+  ueberUns         String? // Freitext HTML/Markdown
+  gruendungsjahr   Int?
+  mitgliederAnzahl Int? // Wird automatisch berechnet
+  kontaktEmail     String?
+  kontaktTelefon   String?
+  kontaktAdresse   String?
+  oeffnungszeiten  String?
+  impressum        String?
+  datenschutz      String?
+  socialFacebook   String?
+  socialInstagram  String?
+  socialYoutube    String?
   // SEO
-  seoTitel        String?
-  seoBeschreibung String?
+  seoTitel         String?
+  seoBeschreibung  String?
   // Design
-  headerBildUrl   String?
-  footerText      String?
-  customCss       String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  headerBildUrl    String?
+  footerText       String?
+  customCss        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  sektionen  HomepageSektion[]
+  sektionen HomepageSektion[]
 
   @@index([tenantId])
   @@index([subdomain])
 }
 
 model HomepageSektion {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   homepageId  String
-  homepage    Homepage @relation(fields: [homepageId], references: [id], onDelete: Cascade)
+  homepage    Homepage    @relation(fields: [homepageId], references: [id], onDelete: Cascade)
   typ         SektionsTyp
   titel       String?
-  inhalt      String?    // HTML/Markdown Inhalt
+  inhalt      String? // HTML/Markdown Inhalt
   bildUrl     String?
-  reihenfolge Int        @default(0)
-  istSichtbar Boolean    @default(true)
-  daten       Json?      // Zusaetzliche strukturierte Daten
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  reihenfolge Int         @default(0)
+  istSichtbar Boolean     @default(true)
+  daten       Json? // Zusaetzliche strukturierte Daten
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   @@index([homepageId])
   @@index([reihenfolge])
 }
 
 enum SektionsTyp {
-  HERO              // Grosses Header-Bild mit Titel
-  UEBER_UNS         // Ueber den Verein
-  ABTEILUNGEN       // Sportarten/Abteilungen Uebersicht
-  MANNSCHAFTEN      // Teams anzeigen
-  TERMINE           // Naechste Events/Spiele
-  NEUIGKEITEN       // Aktuelles/News
-  KONTAKT           // Kontaktformular/Infos
-  SPONSOREN         // Sponsor-Logos
-  GALERIE           // Bildergalerie
-  MITGLIED_WERDEN   // CTA zum Beitreten
-  FREITEXT          // Freier HTML-Inhalt
-  TURNIER           // Turnier Landing-Page Sektion
+  HERO // Grosses Header-Bild mit Titel
+  UEBER_UNS // Ueber den Verein
+  ABTEILUNGEN // Sportarten/Abteilungen Uebersicht
+  MANNSCHAFTEN // Teams anzeigen
+  TERMINE // Naechste Events/Spiele
+  NEUIGKEITEN // Aktuelles/News
+  KONTAKT // Kontaktformular/Infos
+  SPONSOREN // Sponsor-Logos
+  GALERIE // Bildergalerie
+  MITGLIED_WERDEN // CTA zum Beitreten
+  FREITEXT // Freier HTML-Inhalt
+  TURNIER // Turnier Landing-Page Sektion
 }
 
 // ==================== Turnier-Landingpage ====================
 
 model TurnierLandingpage {
-  id            String   @id @default(cuid())
-  tournamentId  String   @unique
-  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  istAktiv      Boolean  @default(true)
-  slug          String   @unique    // z.B. "hallencup-2026"
+  id              String     @id @default(cuid())
+  tournamentId    String     @unique
+  tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  istAktiv        Boolean    @default(true)
+  slug            String     @unique // z.B. "hallencup-2026"
   // Inhalte
-  titel         String
-  beschreibung  String?  // HTML fuer Werbezwecke
-  bannerBildUrl String?
-  ort           String?
-  datum         String?  // Freitext: "14.-15. Juni 2026"
-  teilnahmeInfo String?  // Wie teilnehmen
-  preise        String?  // Preise/Pokale
-  sponsoren     String[] // Sponsor-Namen
-  sponsorLogos  String[] // Sponsor-Logo-URLs
-  kontaktEmail  String?
+  titel           String
+  beschreibung    String? // HTML fuer Werbezwecke
+  bannerBildUrl   String?
+  ort             String?
+  datum           String? // Freitext: "14.-15. Juni 2026"
+  teilnahmeInfo   String? // Wie teilnehmen
+  preise          String? // Preise/Pokale
+  sponsoren       String[] // Sponsor-Namen
+  sponsorLogos    String[] // Sponsor-Logo-URLs
+  kontaktEmail    String?
   // SEO
   seoTitel        String?
   seoBeschreibung String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   @@index([slug])
 }
@@ -1144,15 +1151,15 @@ model EventLandingpage {
   eventId         String   @unique
   event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   istAktiv        Boolean  @default(true)
-  slug            String   @unique    // z.B. "sommercamp-2026"
+  slug            String   @unique // z.B. "sommercamp-2026"
   // Inhalte
   titel           String
-  beschreibung    String?  // HTML fuer Werbezwecke
+  beschreibung    String? // HTML fuer Werbezwecke
   bannerBildUrl   String?
   ort             String?
-  datum           String?  // Freitext: "14.-15. Juni 2026"
-  zeitplan        String?  // Ablauf/Zeitplan
-  anfahrt         String?  // Anfahrtsbeschreibung
+  datum           String? // Freitext: "14.-15. Juni 2026"
+  zeitplan        String? // Ablauf/Zeitplan
+  anfahrt         String? // Anfahrtsbeschreibung
   kontaktEmail    String?
   kontaktTelefon  String?
   // SEO
@@ -1173,12 +1180,12 @@ model Einladung {
   vorname       String
   nachname      String
   email         String
-  templateIds   String[]        // Mehrere Formulare (Antrag, EWE, Datenschutz)
-  sportarten    String[]        // Sportarten fuer die Anmeldung
-  geburtsdatum  String?         // Optionales Geburtsdatum
-  workflowId    String?         // Welcher Workflow verwendet wurde
+  templateIds   String[] // Mehrere Formulare (Antrag, EWE, Datenschutz)
+  sportarten    String[] // Sportarten fuer die Anmeldung
+  geburtsdatum  String? // Optionales Geburtsdatum
+  workflowId    String? // Welcher Workflow verwendet wurde
   status        EinladungStatus @default(GESENDET)
-  eingeladenVon String          // userId des Trainers/Vorstands
+  eingeladenVon String // userId des Trainers/Vorstands
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
@@ -1187,10 +1194,10 @@ model Einladung {
 }
 
 enum EinladungStatus {
-  GESENDET      // E-Mail verschickt
-  GEOEFFNET     // Link wurde geklickt
-  AUSGEFUELLT   // Formular wurde ausgefuellt
-  ABGELAUFEN    // Token abgelaufen (30 Tage)
+  GESENDET // E-Mail verschickt
+  GEOEFFNET // Link wurde geklickt
+  AUSGEFUELLT // Formular wurde ausgefuellt
+  ABGELAUFEN // Token abgelaufen (30 Tage)
 }
 
 // ==================== Pinboard (Team-Pinnwand) ====================
@@ -1211,4 +1218,96 @@ model PinboardItem {
 
   @@index([teamId])
   @@index([tenantId])
+}
+
+// ==================== Spielbericht ====================
+
+model Spielbericht {
+  id              String   @id @default(cuid())
+  eventId         String   @unique
+  tenantId        String
+  ergebnis        String
+  gegner          String
+  aufstellung     Json?
+  torschuetzen    Json?
+  assists         Json?
+  gelbeKarten     Json?
+  roteKarten      Json?
+  trainerNotiz    String?
+  kiText          String?
+  veroeffentlicht Boolean  @default(false)
+  erstelltAm      DateTime @default(now())
+  aktualisiertAm  DateTime @updatedAt
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+// ==================== Mannschaftskasse ====================
+
+model TeamKasse {
+  id        String         @id @default(cuid())
+  teamId    String         @unique
+  stand     Float          @default(0)
+  team      Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  buchungen KasseBuchung[]
+}
+
+model KasseBuchung {
+  id          String      @id @default(cuid())
+  kasseId     String
+  memberId    String
+  betrag      Float
+  grund       String
+  typ         BuchungsTyp
+  erstelltVon String
+  erstelltAm  DateTime    @default(now())
+  kasse       TeamKasse   @relation(fields: [kasseId], references: [id], onDelete: Cascade)
+  member      Member      @relation(fields: [memberId], references: [id])
+
+  @@index([kasseId])
+  @@index([memberId])
+}
+
+enum BuchungsTyp {
+  STRAFE
+  EINZAHLUNG
+  AUSGABE
+}
+
+model Strafkatalog {
+  id     String @id @default(cuid())
+  teamId String
+  name   String
+  betrag Float
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+}
+
+// ==================== Trikotverwaltung ====================
+
+model Trikot {
+  id       String          @id @default(cuid())
+  teamId   String
+  nummer   Int
+  groesse  String?
+  farbe    String?
+  zustand  String?
+  vergaben TrikotVergabe[]
+  team     Team            @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, nummer, farbe])
+}
+
+model TrikotVergabe {
+  id         String    @id @default(cuid())
+  trikotId   String
+  memberId   String
+  vergabenAm DateTime  @default(now())
+  zurueckAm  DateTime?
+  notiz      String?
+  trikot     Trikot    @relation(fields: [trikotId], references: [id], onDelete: Cascade)
+  member     Member    @relation(fields: [memberId], references: [id])
 }

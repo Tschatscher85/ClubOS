@@ -13,6 +13,8 @@ import {
   Users,
   Search,
   BarChart3,
+  Shirt,
+  Wallet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -220,13 +222,29 @@ export default function TeamDetailPage() {
             </div>
           </div>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => router.push(`/teams/${teamId}/anwesenheit`)}
-        >
-          <BarChart3 className="h-4 w-4 mr-2" />
-          Anwesenheit
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/teams/${teamId}/kasse`)}
+          >
+            <Wallet className="h-4 w-4 mr-2" />
+            Kasse
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/teams/${teamId}/trikots`)}
+          >
+            <Shirt className="h-4 w-4 mr-2" />
+            Trikots
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/teams/${teamId}/anwesenheit`)}
+          >
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Anwesenheit
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}

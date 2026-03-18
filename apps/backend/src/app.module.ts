@@ -35,6 +35,9 @@ import { SportartModule } from './sportart/sportart.module';
 import { PosteingangModule } from './posteingang/posteingang.module';
 import { PinboardModule } from './pinboard/pinboard.module';
 import { RollenVorlageModule } from './rollen-vorlage/rollen-vorlage.module';
+import { SpielberichtModule } from './spielbericht/spielbericht.module';
+import { TrikotModule } from './trikot/trikot.module';
+import { KasseModule } from './kasse/kasse.module';
 import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
 import configuration from './config/configuration';
 
@@ -94,6 +97,9 @@ import configuration from './config/configuration';
     PosteingangModule,
     PinboardModule,
     RollenVorlageModule,
+    SpielberichtModule,
+    TrikotModule,
+    KasseModule,
   ],
   providers: [
     {

@@ -14,6 +14,7 @@ import {
   Send,
   Download,
   Zap,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -267,6 +268,16 @@ export default function EventDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {event.type === 'MATCH' && benutzer && (benutzer.rolle === 'TRAINER' || benutzer.rolle === 'ADMIN' || benutzer.rolle === 'SUPERADMIN') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/spielberichte/${eventId}`)}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Spielbericht
+            </Button>
+          )}
           <Button variant="outline" size="icon" onClick={handleCsvExport} title="CSV Export">
             <Download className="h-4 w-4" />
           </Button>
