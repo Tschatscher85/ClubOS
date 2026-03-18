@@ -103,13 +103,12 @@ export function TeamFormular({
         ))
         .catch(() => [] as Benutzer[]),
     ]).then(([mitglieder, benutzerListe]) => {
-      // Finde User-IDs die Trainer-Rolle haben
+      // Finde User-IDs die NUR Trainer-Vereinsrolle haben
       const trainerUserIds = new Set(
         benutzerListe
           .filter((b) =>
             (b.vereinsRollen || []).includes('Trainer') ||
-            (b.vereinsRollen || []).includes('Vorstand') ||
-            ['TRAINER', 'ADMIN', 'SUPERADMIN'].includes(b.role),
+            b.role === 'TRAINER',
           )
           .map((b) => b.id),
       );
