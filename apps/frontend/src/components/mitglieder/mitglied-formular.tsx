@@ -28,6 +28,21 @@ interface Mitglied {
   parentEmail: string | null;
   status: string;
   joinDate: string;
+  beitragsklasseId?: string | null;
+  beitragBetrag?: number | null;
+  beitragIntervall?: string | null;
+}
+
+interface Beitragsklasse {
+  id: string;
+  name: string;
+  beschreibung: string | null;
+  betrag: number;
+  intervall: string;
+  sportarten: string[];
+  altersVon: number | null;
+  altersBis: number | null;
+  istAktiv: boolean;
 }
 
 interface MitgliedFormularProps {
@@ -46,6 +61,20 @@ const SPORTARTEN_LABEL: Record<string, string> = {
   FUSSBALL: 'Fußball', HANDBALL: 'Handball', BASKETBALL: 'Basketball',
   FOOTBALL: 'Football', TENNIS: 'Tennis', TURNEN: 'Turnen',
   SCHWIMMEN: 'Schwimmen', LEICHTATHLETIK: 'Leichtathletik', SONSTIGES: 'Sonstiges',
+};
+
+const INTERVALL_LABEL: Record<string, string> = {
+  MONATLICH: 'Monat',
+  QUARTALSWEISE: 'Quartal',
+  HALBJAEHRLICH: 'Halbjahr',
+  JAEHRLICH: 'Jahr',
+};
+
+const formatBetrag = (betrag: number) => {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(betrag);
 };
 
 function berechneAlter(geburtsdatum: string): number | null {
@@ -81,6 +110,28 @@ export function MitgliedFormular({
   const [ladend, setLadend] = useState(false);
   const [fehler, setFehler] = useState('');
 
+  // Beitragsklasse
+  const [beitragsklassen, setBeitragsklassen] = useState<Beitragsklasse[]>([]);
+  const [beitragsklasseId, setBeitragsklasseId] = useState('');
+  const [individuellerBeitrag, setIndividuellerBeitrag] = useState(false);
+  const [individuellerBetrag, setIndividuellerBetrag] = useState('');
+  const [individuellerIntervall, setIndividuellerIntervall] = useState('MONATLICH');
+
+  // Beitragsklassen laden
+  useEffect(() => {
+    if (offen) {
+      apiClient.get<Beitragsklasse[]>('/beitragsklassen')
+        .then((result) => setBeitragsklassen(result.filter((k) => k.istAktiv)))
+        .catch(() => {/* Fehler ignorieren - optionales Feature */});
+    }
+  }, [offen]);
+
+  // Gewaehlte Beitragsklasse
+  const gewaehlteBeitragsklasse = useMemo(() => {
+    if (!beitragsklasseId) return null;
+    return beitragsklassen.find((k) => k.id === beitragsklasseId) || null;
+  }, [beitragsklasseId, beitragsklassen]);
+
   // Felder aktualisieren wenn ein anderes Mitglied geoeffnet wird
   useEffect(() => {
     if (offen && mitglied) {
@@ -94,6 +145,16 @@ export function MitgliedFormular({
       setGewaehlteSportarten(mitglied.sport || []);
       setElternEmail(mitglied.parentEmail || '');
       setStatus(mitglied.status || 'PENDING');
+      setBeitragsklasseId(mitglied.beitragsklasseId || '');
+      if (mitglied.beitragBetrag && mitglied.beitragBetrag > 0 && !mitglied.beitragsklasseId) {
+        setIndividuellerBeitrag(true);
+        setIndividuellerBetrag(mitglied.beitragBetrag.toString());
+        setIndividuellerIntervall(mitglied.beitragIntervall || 'MONATLICH');
+      } else {
+        setIndividuellerBeitrag(false);
+        setIndividuellerBetrag('');
+        setIndividuellerIntervall('MONATLICH');
+      }
       setFehler('');
     } else if (offen && !mitglied) {
       // Neues Mitglied - alles zuruecksetzen
@@ -107,6 +168,10 @@ export function MitgliedFormular({
       setGewaehlteSportarten([]);
       setElternEmail('');
       setStatus('PENDING');
+      setBeitragsklasseId('');
+      setIndividuellerBeitrag(false);
+      setIndividuellerBetrag('');
+      setIndividuellerIntervall('MONATLICH');
       setFehler('');
     }
   }, [offen, mitglied]);
@@ -146,6 +211,11 @@ export function MitgliedFormular({
         sportarten: gewaehlteSportarten,
         ...(istMinderjaehrig && elternEmail && { elternEmail }),
         status,
+        beitragsklasseId: individuellerBeitrag ? null : (beitragsklasseId || null),
+        ...(individuellerBeitrag && individuellerBetrag && {
+          beitragBetrag: parseFloat(individuellerBetrag),
+          beitragIntervall: individuellerIntervall,
+        }),
       };
 
       if (istBearbeitung && mitglied) {
@@ -313,6 +383,89 @@ export function MitgliedFormular({
               <p className="text-xs text-orange-700">
                 Eltern erhalten Zugang zum Eltern-Portal und sehen Teams, Kalender und Nachrichten ihres Kindes.
               </p>
+            </div>
+          )}
+
+          {/* Beitragsklasse */}
+          {beitragsklassen.length > 0 && (
+            <div className="space-y-3 rounded-lg border p-4">
+              <Label className="text-base font-medium">Beitragsklasse</Label>
+
+              {!individuellerBeitrag && (
+                <div className="space-y-2">
+                  <Select
+                    id="beitragsklasse"
+                    value={beitragsklasseId}
+                    onChange={(e) => setBeitragsklasseId(e.target.value)}
+                  >
+                    <option value="">-- Keine Beitragsklasse --</option>
+                    {beitragsklassen.map((k) => (
+                      <option key={k.id} value={k.id}>
+                        {k.name} - {formatBetrag(k.betrag)} / {INTERVALL_LABEL[k.intervall] || k.intervall}
+                      </option>
+                    ))}
+                  </Select>
+                  {gewaehlteBeitragsklasse && (
+                    <p className="text-sm text-muted-foreground">
+                      {formatBetrag(gewaehlteBeitragsklasse.betrag)} / {INTERVALL_LABEL[gewaehlteBeitragsklasse.intervall] || gewaehlteBeitragsklasse.intervall}
+                      {gewaehlteBeitragsklasse.beschreibung && (
+                        <span className="block text-xs mt-0.5">{gewaehlteBeitragsklasse.beschreibung}</span>
+                      )}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={individuellerBeitrag}
+                  onChange={(e) => {
+                    setIndividuellerBeitrag(e.target.checked);
+                    if (e.target.checked) {
+                      setBeitragsklasseId('');
+                    }
+                  }}
+                  className="rounded border-gray-300"
+                />
+                <span className="text-sm">Individueller Beitrag</span>
+              </label>
+
+              {individuellerBeitrag && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="ind-betrag">Betrag (EUR)</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                        &euro;
+                      </span>
+                      <Input
+                        id="ind-betrag"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={individuellerBetrag}
+                        onChange={(e) => setIndividuellerBetrag(e.target.value)}
+                        placeholder="0,00"
+                        className="pl-8"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="ind-intervall">Intervall</Label>
+                    <Select
+                      id="ind-intervall"
+                      value={individuellerIntervall}
+                      onChange={(e) => setIndividuellerIntervall(e.target.value)}
+                    >
+                      <option value="MONATLICH">Monatlich</option>
+                      <option value="QUARTALSWEISE">Quartalsweise</option>
+                      <option value="HALBJAEHRLICH">Halbjaehrlich</option>
+                      <option value="JAEHRLICH">Jaehrlich</option>
+                    </Select>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

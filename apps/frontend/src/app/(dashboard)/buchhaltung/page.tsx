@@ -11,6 +11,8 @@ import {
   Euro,
   TrendingUp,
   AlertTriangle,
+  CreditCard,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,6 +63,41 @@ interface Statistik {
   gesamtBezahlt: number;
 }
 
+interface SportartUebersicht {
+  sportart: string;
+  mitglieder: number;
+  monatsSoll: number;
+}
+
+interface KlassenUebersicht {
+  klasse: string;
+  mitglieder: number;
+  betrag: number;
+  monatsSoll: number;
+}
+
+interface BeitragsUebersicht {
+  monatsSoll: number;
+  jahresSoll: number;
+  anzahlMitglieder: number;
+  anzahlOhneBeitrag: number;
+  nachSportart: SportartUebersicht[];
+  nachKlasse: KlassenUebersicht[];
+}
+
+const SPORTARTEN_LABEL: Record<string, string> = {
+  FUSSBALL: 'Fussball', HANDBALL: 'Handball', BASKETBALL: 'Basketball',
+  FOOTBALL: 'Football', TENNIS: 'Tennis', TURNEN: 'Turnen',
+  SCHWIMMEN: 'Schwimmen', LEICHTATHLETIK: 'Leichtathletik', SONSTIGES: 'Sonstiges',
+};
+
+const formatBetrag = (betrag: number) => {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(betrag);
+};
+
 const STATUS_FARBE: Record<string, string> = {
   OFFEN: 'bg-orange-100 text-orange-800',
   BEZAHLT: 'bg-green-100 text-green-800',
@@ -79,6 +116,7 @@ export default function BuchhaltungPage() {
   const [rechnungen, setRechnungen] = useState<Rechnung[]>([]);
   const [beitraege, setBeitraege] = useState<Beitrag[]>([]);
   const [statistik, setStatistik] = useState<Statistik | null>(null);
+  const [beitragsUebersicht, setBeitragsUebersicht] = useState<BeitragsUebersicht | null>(null);
   const [ladend, setLadend] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
 
@@ -100,14 +138,16 @@ export default function BuchhaltungPage() {
   const datenLaden = useCallback(async () => {
     try {
       const url = `/buchhaltung/rechnungen${statusFilter ? `?status=${statusFilter}` : ''}`;
-      const [rechnungenDaten, beitraegeDaten, statistikDaten] = await Promise.all([
+      const [rechnungenDaten, beitraegeDaten, statistikDaten, uebersichtDaten] = await Promise.all([
         apiClient.get<Rechnung[]>(url),
         apiClient.get<Beitrag[]>('/buchhaltung/beitraege'),
         apiClient.get<Statistik>('/buchhaltung/statistik'),
+        apiClient.get<BeitragsUebersicht>('/beitragsklassen/uebersicht').catch(() => null),
       ]);
       setRechnungen(rechnungenDaten);
       setBeitraege(beitraegeDaten);
       setStatistik(statistikDaten);
+      if (uebersichtDaten) setBeitragsUebersicht(uebersichtDaten);
     } catch (error) {
       console.error('Fehler:', error);
     } finally {
@@ -290,6 +330,7 @@ export default function BuchhaltungPage() {
         <TabsList>
           <TabsTrigger value="rechnungen">Rechnungen</TabsTrigger>
           <TabsTrigger value="beitraege">Beitragsvorlagen</TabsTrigger>
+          <TabsTrigger value="mitgliedsbeitraege">Mitgliedsbeitraege</TabsTrigger>
         </TabsList>
 
         <TabsContent value="rechnungen" className="space-y-4">
@@ -383,6 +424,142 @@ export default function BuchhaltungPage() {
                 </Card>
               ))}
             </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="mitgliedsbeitraege" className="space-y-4">
+          {!beitragsUebersicht ? (
+            <div className="text-center py-12 text-muted-foreground">
+              Keine Beitragsklassen konfiguriert. Erstellen Sie unter Einstellungen &gt; Beitraege Ihre Beitragsklassen.
+            </div>
+          ) : (
+            <>
+              {/* Uebersicht-Karten */}
+              <div className="grid gap-4 md:grid-cols-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                      <CreditCard className="h-3.5 w-3.5" /> Monats-Soll
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-primary">
+                      {formatBetrag(beitragsUebersicht.monatsSoll)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Erwartete Beitraege pro Monat</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                      <TrendingUp className="h-3.5 w-3.5" /> Jahres-Soll
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">
+                      {formatBetrag(beitragsUebersicht.jahresSoll)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Hochrechnung auf 12 Monate</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                      <Users className="h-3.5 w-3.5" /> Aktive Mitglieder
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{beitragsUebersicht.anzahlMitglieder}</div>
+                    <p className="text-xs text-muted-foreground">Mit Beitragspflicht</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                      <AlertTriangle className="h-3.5 w-3.5" /> Ohne Beitrag
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-orange-600">
+                      {beitragsUebersicht.anzahlOhneBeitrag}
+                    </div>
+                    {beitragsUebersicht.anzahlOhneBeitrag > 0 && (
+                      <Badge variant="secondary" className="text-xs mt-1 bg-orange-100 text-orange-800">
+                        Beitragsklasse zuweisen
+                      </Badge>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Nach Sportart */}
+              {beitragsUebersicht.nachSportart.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Aufschluesselung nach Sportart</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/50">
+                            <th className="text-left p-3 font-medium">Sportart</th>
+                            <th className="text-right p-3 font-medium">Mitglieder</th>
+                            <th className="text-right p-3 font-medium">Monats-Soll</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {beitragsUebersicht.nachSportart.map((s) => (
+                            <tr key={s.sportart} className="border-b last:border-0">
+                              <td className="p-3">
+                                <Badge variant="outline">
+                                  {SPORTARTEN_LABEL[s.sportart] || s.sportart}
+                                </Badge>
+                              </td>
+                              <td className="p-3 text-right">{s.mitglieder}</td>
+                              <td className="p-3 text-right font-medium">{formatBetrag(s.monatsSoll)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Nach Beitragsklasse */}
+              {beitragsUebersicht.nachKlasse.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Aufschluesselung nach Beitragsklasse</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/50">
+                            <th className="text-left p-3 font-medium">Klasse</th>
+                            <th className="text-right p-3 font-medium">Mitglieder</th>
+                            <th className="text-right p-3 font-medium">Betrag/Monat</th>
+                            <th className="text-right p-3 font-medium">Monats-Soll</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {beitragsUebersicht.nachKlasse.map((k) => (
+                            <tr key={k.klasse} className="border-b last:border-0">
+                              <td className="p-3 font-medium">{k.klasse}</td>
+                              <td className="p-3 text-right">{k.mitglieder}</td>
+                              <td className="p-3 text-right">{formatBetrag(k.betrag)}</td>
+                              <td className="p-3 text-right font-medium">{formatBetrag(k.monatsSoll)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
         </TabsContent>
       </Tabs>

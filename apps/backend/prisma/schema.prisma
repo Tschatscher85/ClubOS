@@ -105,6 +105,7 @@ model Tenant {
   aufstellungen      Aufstellung[]
   entwicklungsboegen Entwicklungsbogen[]
   referral           Referral?
+  beitragsklassen    Beitragsklasse[]
 
   @@index([slug])
 }
@@ -219,6 +220,7 @@ model Member {
   nachweisDokUrl             String? // Hochgeladener Nachweis (Studentenausweis, etc.)
   nachweisStatus             NachweisStatus @default(NICHT_ERFORDERLICH)
   nachweisErinnerungGesendet DateTime? // Wann letzte Erinnerung gesendet wurde
+  beitragsklasseId           String? // Verknuepfung zur Beitragsklasse
   createdAt                  DateTime       @default(now())
   updatedAt                  DateTime       @updatedAt
 
@@ -260,6 +262,26 @@ enum NachweisStatus {
   GENEHMIGT // Nachweis geprueft und genehmigt
   ABGELEHNT // Nachweis abgelehnt
   ABGELAUFEN // Nachweis ist abgelaufen (z.B. Semester vorbei)
+}
+
+// ==================== Beitragsklasse ====================
+
+model Beitragsklasse {
+  id             String   @id @default(cuid())
+  tenantId       String
+  name           String   // z.B. "Jugend Fussball", "Erwachsene Tennis"
+  beschreibung   String?
+  betrag         Float    // Monatsbetrag in EUR
+  intervall      String   @default("MONATLICH") // MONATLICH, QUARTALSWEISE, HALBJAEHRLICH, JAEHRLICH
+  sportarten     String[] // Fuer welche Sportarten gilt diese Klasse
+  altersVon      Int?     // Ab Alter (null = kein Minimum)
+  altersBis      Int?     // Bis Alter (null = kein Maximum)
+  istAktiv       Boolean  @default(true)
+  sortierung     Int      @default(0)
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+
+  @@index([tenantId])
 }
 
 // ==================== Abteilung (z.B. Fussball, Handball) ====================

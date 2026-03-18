@@ -1,216 +1,470 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CreditCard, Send, ArrowLeft } from 'lucide-react';
+import { CreditCard, Plus, Pencil, Trash2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/use-auth';
 import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';
 
-interface MitgliedErmaessigung {
+interface Beitragsklasse {
   id: string;
-  vorname: string;
-  nachname: string;
-  beitragsart: string;
+  name: string;
+  beschreibung: string | null;
   betrag: number;
-  ermaessigung: string;
-  prozent: number;
-  nachweisStatus: 'AUSSTEHEND' | 'EINGEREICHT' | 'GEPRUEFT' | 'ABGELEHNT' | 'ABGELAUFEN';
+  intervall: string;
+  sportarten: string[];
+  altersVon: number | null;
+  altersBis: number | null;
+  istAktiv: boolean;
+  sortierung: number;
 }
 
-const NACHWEIS_STATUS_CONFIG: Record<
-  string,
-  { label: string; klasse: string }
-> = {
-  AUSSTEHEND: {
-    label: 'Ausstehend',
-    klasse: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  },
-  EINGEREICHT: {
-    label: 'Eingereicht',
-    klasse: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  },
-  GEPRUEFT: {
-    label: 'Geprueft',
-    klasse: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  },
-  ABGELEHNT: {
-    label: 'Abgelehnt',
-    klasse: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  },
-  ABGELAUFEN: {
-    label: 'Abgelaufen',
-    klasse: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
-  },
+const INTERVALL_LABEL: Record<string, string> = {
+  MONATLICH: 'Monatlich',
+  QUARTALSWEISE: 'Quartalsweise',
+  HALBJAEHRLICH: 'Halbjaehrlich',
+  JAEHRLICH: 'Jaehrlich',
+};
+
+const SPORTARTEN = [
+  'FUSSBALL', 'HANDBALL', 'BASKETBALL', 'FOOTBALL',
+  'TENNIS', 'TURNEN', 'SCHWIMMEN', 'LEICHTATHLETIK', 'SONSTIGES',
+];
+
+const SPORTARTEN_LABEL: Record<string, string> = {
+  FUSSBALL: 'Fussball', HANDBALL: 'Handball', BASKETBALL: 'Basketball',
+  FOOTBALL: 'Football', TENNIS: 'Tennis', TURNEN: 'Turnen',
+  SCHWIMMEN: 'Schwimmen', LEICHTATHLETIK: 'Leichtathletik', SONSTIGES: 'Sonstiges',
+};
+
+const formatBetrag = (betrag: number) => {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(betrag);
 };
 
 export default function BeitraegePage() {
   const { benutzer } = useAuth();
-  const [mitglieder, setMitglieder] = useState<MitgliedErmaessigung[]>([]);
+  const [klassen, setKlassen] = useState<Beitragsklasse[]>([]);
   const [ladend, setLadend] = useState(true);
   const [fehler, setFehler] = useState('');
-  const [erfolg, setErfolg] = useState('');
-  const [erinnerungLadend, setErinnerungLadend] = useState(false);
+
+  // Dialog-State
+  const [dialogOffen, setDialogOffen] = useState(false);
+  const [bearbeitungsKlasse, setBearbeitungsKlasse] = useState<Beitragsklasse | null>(null);
+
+  // Formular-Felder
+  const [formName, setFormName] = useState('');
+  const [formBeschreibung, setFormBeschreibung] = useState('');
+  const [formBetrag, setFormBetrag] = useState('');
+  const [formIntervall, setFormIntervall] = useState('MONATLICH');
+  const [formSportarten, setFormSportarten] = useState<string[]>([]);
+  const [formAltersVon, setFormAltersVon] = useState('');
+  const [formAltersBis, setFormAltersBis] = useState('');
+  const [speichernd, setSpeichernd] = useState(false);
 
   const istAdmin = benutzer?.rolle === 'ADMIN' || benutzer?.rolle === 'SUPERADMIN';
 
-  useEffect(() => {
-    const laden = async () => {
-      setLadend(true);
-      try {
-        const result = await apiClient.get<MitgliedErmaessigung[]>(
-          '/mitglieder/ermaessigungen-uebersicht',
-        );
-        setMitglieder(result);
-      } catch {
-        setFehler('Fehler beim Laden der Ermaessigungsuebersicht.');
-      } finally {
-        setLadend(false);
-      }
-    };
-    laden();
-  }, []);
-
-  const handleErinnerungenSenden = async () => {
-    if (!confirm('Erinnerungen an alle Mitglieder mit ausstehendem Nachweis senden?')) return;
-    setErinnerungLadend(true);
-    setFehler('');
-    setErfolg('');
+  const laden = async () => {
+    setLadend(true);
     try {
-      const result = await apiClient.post<{ gesendet: number }>(
-        '/mitglieder/nachweis-erinnerungen',
-        {},
-      );
-      setErfolg(`${result.gesendet} Erinnerung(en) erfolgreich gesendet.`);
-      setTimeout(() => setErfolg(''), 5000);
-    } catch (error) {
-      setFehler(
-        error instanceof Error ? error.message : 'Fehler beim Senden der Erinnerungen.',
-      );
+      const result = await apiClient.get<Beitragsklasse[]>('/beitragsklassen');
+      setKlassen(result);
+    } catch {
+      setFehler('Fehler beim Laden der Beitragsklassen.');
     } finally {
-      setErinnerungLadend(false);
+      setLadend(false);
     }
   };
 
-  const ausstehendAnzahl = mitglieder.filter(
-    (m) => m.nachweisStatus === 'AUSSTEHEND' || m.nachweisStatus === 'ABGELAUFEN',
-  ).length;
+  useEffect(() => {
+    laden();
+  }, []);
 
-  const formatBetrag = (betrag: number) => {
-    return new Intl.NumberFormat('de-DE', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(betrag);
+  const dialogOeffnen = (klasse?: Beitragsklasse) => {
+    if (klasse) {
+      setBearbeitungsKlasse(klasse);
+      setFormName(klasse.name);
+      setFormBeschreibung(klasse.beschreibung || '');
+      setFormBetrag(klasse.betrag.toString());
+      setFormIntervall(klasse.intervall);
+      setFormSportarten(klasse.sportarten);
+      setFormAltersVon(klasse.altersVon?.toString() || '');
+      setFormAltersBis(klasse.altersBis?.toString() || '');
+    } else {
+      setBearbeitungsKlasse(null);
+      setFormName('');
+      setFormBeschreibung('');
+      setFormBetrag('');
+      setFormIntervall('MONATLICH');
+      setFormSportarten([]);
+      setFormAltersVon('');
+      setFormAltersBis('');
+    }
+    setDialogOffen(true);
+  };
+
+  const handleSportartToggle = (sportart: string) => {
+    setFormSportarten((prev) =>
+      prev.includes(sportart)
+        ? prev.filter((s) => s !== sportart)
+        : [...prev, sportart],
+    );
+  };
+
+  const handleSpeichern = async () => {
+    if (!formName || !formBetrag) return;
+    setSpeichernd(true);
+    setFehler('');
+
+    try {
+      const daten = {
+        name: formName,
+        beschreibung: formBeschreibung || undefined,
+        betrag: parseFloat(formBetrag),
+        intervall: formIntervall,
+        sportarten: formSportarten,
+        altersVon: formAltersVon ? parseInt(formAltersVon) : undefined,
+        altersBis: formAltersBis ? parseInt(formAltersBis) : undefined,
+      };
+
+      if (bearbeitungsKlasse) {
+        await apiClient.put(`/beitragsklassen/${bearbeitungsKlasse.id}`, daten);
+      } else {
+        await apiClient.post('/beitragsklassen', daten);
+      }
+
+      setDialogOffen(false);
+      laden();
+    } catch (error) {
+      setFehler(error instanceof Error ? error.message : 'Fehler beim Speichern.');
+    } finally {
+      setSpeichernd(false);
+    }
+  };
+
+  const handleLoeschen = async (id: string) => {
+    if (!confirm('Beitragsklasse wirklich loeschen? Zugewiesene Mitglieder verlieren ihre Zuordnung.')) return;
+    try {
+      await apiClient.delete(`/beitragsklassen/${id}`);
+      laden();
+    } catch (error) {
+      setFehler(error instanceof Error ? error.message : 'Fehler beim Loeschen.');
+    }
+  };
+
+  const handleAktivToggle = async (klasse: Beitragsklasse) => {
+    try {
+      await apiClient.put(`/beitragsklassen/${klasse.id}`, {
+        istAktiv: !klasse.istAktiv,
+      });
+      laden();
+    } catch (error) {
+      setFehler(error instanceof Error ? error.message : 'Fehler beim Aktualisieren.');
+    }
+  };
+
+  const formatiereAltersbereich = (von: number | null, bis: number | null) => {
+    if (von !== null && bis !== null) return `${von}-${bis} Jahre`;
+    if (von !== null) return `Ab ${von} Jahre`;
+    if (bis !== null) return `Bis ${bis} Jahre`;
+    return 'Alle Alter';
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Link href="/einstellungen">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Zurueck
-          </Button>
-        </Link>
-        <CreditCard className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Beitraege & Ermaessigungen</h1>
-          <p className="text-muted-foreground">Uebersicht aller Mitglieder mit Ermaessigungen</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link href="/einstellungen">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Zurueck
+            </Button>
+          </Link>
+          <CreditCard className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-2xl font-bold">Beitragsklassen</h1>
+            <p className="text-muted-foreground">
+              Verwalten Sie die Beitragsklassen Ihres Vereins
+            </p>
+          </div>
         </div>
+        {istAdmin && (
+          <Button onClick={() => dialogOeffnen()}>
+            <Plus className="h-4 w-4 mr-2" />
+            Neue Klasse
+          </Button>
+        )}
       </div>
 
       {fehler && (
         <div className="text-sm text-destructive bg-destructive/10 rounded-md p-3">{fehler}</div>
       )}
-      {erfolg && (
-        <div className="text-sm text-green-600 bg-green-50 dark:bg-green-900/20 rounded-md p-3">{erfolg}</div>
-      )}
 
-      {/* Aktionen */}
-      {istAdmin && ausstehendAnzahl > 0 && (
+      {ladend ? (
+        <div className="flex items-center justify-center h-[40vh]">
+          <div className="animate-pulse text-muted-foreground">Beitragsklassen werden geladen...</div>
+        </div>
+      ) : klassen.length === 0 ? (
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">
-                  {ausstehendAnzahl} Mitglied(er) mit ausstehendem oder abgelaufenem Nachweis
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Senden Sie Erinnerungen per E-Mail an alle betroffenen Mitglieder.
-                </p>
-              </div>
-              <Button
-                onClick={handleErinnerungenSenden}
-                disabled={erinnerungLadend}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                {erinnerungLadend ? 'Wird gesendet...' : 'Erinnerungen senden'}
+          <CardContent className="py-12 text-center">
+            <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">Noch keine Beitragsklassen</h3>
+            <p className="text-muted-foreground mb-4">
+              Erstellen Sie Beitragsklassen, um Mitgliedsbeitraege zu verwalten.
+            </p>
+            {istAdmin && (
+              <Button onClick={() => dialogOeffnen()}>
+                <Plus className="h-4 w-4 mr-2" />
+                Erste Klasse erstellen
               </Button>
-            </div>
+            )}
           </CardContent>
         </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {klassen.map((klasse) => (
+            <Card
+              key={klasse.id}
+              className={!klasse.istAktiv ? 'opacity-60' : ''}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-base">{klasse.name}</CardTitle>
+                    {klasse.beschreibung && (
+                      <CardDescription className="mt-1">
+                        {klasse.beschreibung}
+                      </CardDescription>
+                    )}
+                  </div>
+                  {istAdmin && (
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => dialogOeffnen(klasse)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleLoeschen(klasse.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {/* Betrag + Intervall */}
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold">
+                    {formatBetrag(klasse.betrag)}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    / {INTERVALL_LABEL[klasse.intervall] || klasse.intervall}
+                  </span>
+                </div>
+
+                {/* Sportarten als Badges */}
+                {klasse.sportarten.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {klasse.sportarten.map((s) => (
+                      <Badge key={s} variant="secondary" className="text-xs">
+                        {SPORTARTEN_LABEL[s] || s}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {/* Altersbereich */}
+                <div className="text-sm text-muted-foreground">
+                  {formatiereAltersbereich(klasse.altersVon, klasse.altersBis)}
+                </div>
+
+                {/* Aktiv/Inaktiv Toggle */}
+                {istAdmin && (
+                  <div className="pt-2 border-t">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => handleAktivToggle(klasse)}
+                    >
+                      {klasse.istAktiv ? 'Deaktivieren' : 'Aktivieren'}
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
 
-      {/* Tabelle */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Ermaessigungsuebersicht</CardTitle>
-          <CardDescription>
-            Alle Mitglieder mit Ermaessigungen und deren Nachweis-Status
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {ladend ? (
-            <p className="text-muted-foreground">Wird geladen...</p>
-          ) : mitglieder.length === 0 ? (
-            <p className="text-muted-foreground">Keine Mitglieder mit Ermaessigungen vorhanden.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-2 font-medium">Name</th>
-                    <th className="text-left py-3 px-2 font-medium">Beitragsart</th>
-                    <th className="text-right py-3 px-2 font-medium">Betrag</th>
-                    <th className="text-left py-3 px-2 font-medium">Ermaessigung</th>
-                    <th className="text-right py-3 px-2 font-medium">Prozent</th>
-                    <th className="text-left py-3 px-2 font-medium">Nachweis-Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mitglieder.map((mitglied) => {
-                    const statusConfig =
-                      NACHWEIS_STATUS_CONFIG[mitglied.nachweisStatus] ||
-                      NACHWEIS_STATUS_CONFIG.AUSSTEHEND;
-                    return (
-                      <tr key={mitglied.id} className="border-b last:border-0 hover:bg-muted/50">
-                        <td className="py-3 px-2 font-medium">
-                          {mitglied.vorname} {mitglied.nachname}
-                        </td>
-                        <td className="py-3 px-2">{mitglied.beitragsart}</td>
-                        <td className="py-3 px-2 text-right">
-                          {formatBetrag(mitglied.betrag)}
-                        </td>
-                        <td className="py-3 px-2">{mitglied.ermaessigung}</td>
-                        <td className="py-3 px-2 text-right">{mitglied.prozent}%</td>
-                        <td className="py-3 px-2">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusConfig.klasse}`}
-                          >
-                            {statusConfig.label}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+      {/* Dialog: Neue Klasse / Bearbeiten */}
+      <Dialog open={dialogOffen} onOpenChange={setDialogOffen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {bearbeitungsKlasse ? 'Beitragsklasse bearbeiten' : 'Neue Beitragsklasse'}
+            </DialogTitle>
+            <DialogDescription>
+              {bearbeitungsKlasse
+                ? `${bearbeitungsKlasse.name} bearbeiten`
+                : 'Erstellen Sie eine neue Beitragsklasse fuer Ihren Verein'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Name */}
+            <div className="space-y-2">
+              <Label htmlFor="bk-name">Name *</Label>
+              <Input
+                id="bk-name"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder="z.B. Jugend Fussball"
+              />
             </div>
-          )}
-        </CardContent>
-      </Card>
+
+            {/* Beschreibung */}
+            <div className="space-y-2">
+              <Label htmlFor="bk-beschreibung">Beschreibung</Label>
+              <Input
+                id="bk-beschreibung"
+                value={formBeschreibung}
+                onChange={(e) => setFormBeschreibung(e.target.value)}
+                placeholder="Optionale Beschreibung"
+              />
+            </div>
+
+            {/* Betrag + Intervall */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="bk-betrag">Betrag (EUR) *</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    &euro;
+                  </span>
+                  <Input
+                    id="bk-betrag"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formBetrag}
+                    onChange={(e) => setFormBetrag(e.target.value)}
+                    placeholder="0,00"
+                    className="pl-8"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bk-intervall">Intervall *</Label>
+                <Select
+                  id="bk-intervall"
+                  value={formIntervall}
+                  onChange={(e) => setFormIntervall(e.target.value)}
+                >
+                  <option value="MONATLICH">Monatlich</option>
+                  <option value="QUARTALSWEISE">Quartalsweise</option>
+                  <option value="HALBJAEHRLICH">Halbjaehrlich</option>
+                  <option value="JAEHRLICH">Jaehrlich</option>
+                </Select>
+              </div>
+            </div>
+
+            {/* Sportarten */}
+            <div className="space-y-2">
+              <Label>Sportarten</Label>
+              <p className="text-xs text-muted-foreground">
+                Fuer welche Sportarten gilt diese Beitragsklasse? (Keine Auswahl = alle)
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {SPORTARTEN.map((s) => (
+                  <label
+                    key={s}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 cursor-pointer transition-colors ${
+                      formSportarten.includes(s)
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-border hover:bg-muted/50'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formSportarten.includes(s)}
+                      onChange={() => handleSportartToggle(s)}
+                      className="rounded border-gray-300"
+                    />
+                    <span className="text-sm">{SPORTARTEN_LABEL[s]}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Altersbereich */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="bk-altersVon">Alter von</Label>
+                <Input
+                  id="bk-altersVon"
+                  type="number"
+                  min="0"
+                  max="99"
+                  value={formAltersVon}
+                  onChange={(e) => setFormAltersVon(e.target.value)}
+                  placeholder="z.B. 6"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bk-altersBis">Alter bis</Label>
+                <Input
+                  id="bk-altersBis"
+                  type="number"
+                  min="0"
+                  max="99"
+                  value={formAltersBis}
+                  onChange={(e) => setFormAltersBis(e.target.value)}
+                  placeholder="z.B. 18"
+                />
+              </div>
+            </div>
+
+            {/* Aktionen */}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setDialogOffen(false)}>
+                Abbrechen
+              </Button>
+              <Button
+                onClick={handleSpeichern}
+                disabled={!formName || !formBetrag || speichernd}
+              >
+                {speichernd
+                  ? 'Wird gespeichert...'
+                  : bearbeitungsKlasse
+                    ? 'Aktualisieren'
+                    : 'Erstellen'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

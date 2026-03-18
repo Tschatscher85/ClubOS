@@ -47,6 +47,7 @@ import { AufstellungModule } from './aufstellung/aufstellung.module';
 import { VerletzungModule } from './verletzung/verletzung.module';
 import { PushModule } from './push/push.module';
 import { BillingModule } from './billing/billing.module';
+import { BeitragModule } from './beitrag/beitrag.module';
 import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
 import configuration from './config/configuration';
 
@@ -118,6 +119,7 @@ import configuration from './config/configuration';
     VerletzungModule,
     PushModule,
     BillingModule,
+    BeitragModule,
   ],
   providers: [
     {
