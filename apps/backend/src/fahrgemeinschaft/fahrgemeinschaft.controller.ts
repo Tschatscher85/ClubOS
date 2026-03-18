@@ -14,10 +14,13 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RollenGuard } from '../common/guards/rollen.guard';
 import { TenantGuard } from '../common/guards/tenant.guard';
 import { AktuellerBenutzer } from '../common/decorators/aktueller-benutzer.decorator';
+import { BerechtigungenGuard } from '../common/guards/berechtigungen.guard';
+import { Berechtigungen } from '../common/decorators/berechtigungen.decorator';
 
 @ApiTags('Fahrgemeinschaften')
 @Controller('fahrgemeinschaften')
-@UseGuards(JwtAuthGuard, RollenGuard, TenantGuard)
+@UseGuards(JwtAuthGuard, RollenGuard, TenantGuard, BerechtigungenGuard)
+@Berechtigungen('FAHRGEMEINSCHAFTEN')
 @ApiBearerAuth()
 export class FahrgemeinschaftController {
   constructor(private fahrgemeinschaftService: FahrgemeinschaftService) {}

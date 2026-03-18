@@ -19,10 +19,11 @@ interface BenutzerState {
   rolle: string;
   tenantId: string;
   emailVerifiziert?: boolean;
+  berechtigungen: string[];
 }
 
 interface AnmeldeAntwort {
-  benutzer: BenutzerState;
+  benutzer: BenutzerState & { vereinsRollen?: string[] };
   tenant: TenantState;
   accessToken: string;
   refreshToken: string;
@@ -34,6 +35,7 @@ interface ProfilAntwort {
   rolle: string;
   tenantId: string;
   emailVerifiziert: boolean;
+  berechtigungen: string[];
   tenant: TenantState;
   erstelltAm: string;
 }
@@ -149,6 +151,7 @@ export const useAuthStore = create<AuthState>()(
                 rolle: profil.rolle,
                 tenantId: profil.tenantId,
                 emailVerifiziert: profil.emailVerifiziert,
+                berechtigungen: profil.berechtigungen ?? [],
               },
               tenant: profil.tenant,
               istAngemeldet: true,

@@ -156,6 +156,22 @@ export class UserController {
     return this.userService.benutzerAktivieren(tenantId, id);
   }
 
+  @Put('verwaltung/:id/vereinsrollen')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Vereinsrollen eines Benutzers zuweisen (berechnet Berechtigungen automatisch)' })
+  async vereinsRollenZuweisen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: { vereinsRollen: string[]; zusaetzlicheBerechtigungen?: string[] },
+  ) {
+    return this.userService.vereinsRollenZuweisen(
+      tenantId,
+      id,
+      dto.vereinsRollen,
+      dto.zusaetzlicheBerechtigungen,
+    );
+  }
+
   @Delete('verwaltung/:id')
   @Rollen(Role.SUPERADMIN, Role.ADMIN)
   @ApiOperation({ summary: 'Benutzer endgueltig loeschen (nicht sich selbst)' })

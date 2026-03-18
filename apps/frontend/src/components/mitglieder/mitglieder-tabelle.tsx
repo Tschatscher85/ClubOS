@@ -68,6 +68,7 @@ export function MitgliederTabelle({
             <th className="h-12 px-4 text-left font-medium">Nr.</th>
             <th className="h-12 px-4 text-left font-medium">Name</th>
             <th className="h-12 px-4 text-left font-medium hidden md:table-cell">E-Mail</th>
+            <th className="h-12 px-4 text-left font-medium hidden lg:table-cell">Geburtsdatum</th>
             <th className="h-12 px-4 text-left font-medium hidden lg:table-cell">Sportarten</th>
             <th className="h-12 px-4 text-left font-medium hidden xl:table-cell">Eintritt</th>
             <th className="h-12 px-4 text-left font-medium">Status</th>
@@ -100,6 +101,11 @@ export function MitgliederTabelle({
                 </td>
                 <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">
                   {m.email || '—'}
+                </td>
+                <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground">
+                  {m.birthDate
+                    ? new Date(m.birthDate).toLocaleDateString('de-DE')
+                    : '—'}
                 </td>
                 <td className="px-4 py-3 hidden lg:table-cell">
                   <div className="flex flex-wrap gap-1">

@@ -59,6 +59,7 @@ const BENUTZER_SELECT = {
   email: true,
   role: true,
   tenantId: true,
+  vereinsRollen: true,
   berechtigungen: true,
   istAktiv: true,
   letzterLogin: true,
@@ -365,6 +366,102 @@ export class UserService {
     await this.prisma.user.delete({ where: { id } });
 
     return { nachricht: 'Benutzer erfolgreich geloescht.' };
+  }
+
+  // ==================== Vereinsrollen ====================
+
+  /**
+   * Berechnet Berechtigungen und System-Rolle aus Vereinsrollen.
+   * Liest die RollenVorlagen aus der DB und bildet die Vereinigung aller Berechtigungen.
+   * Die System-Rolle wird auf die hoechste gesetzte Rolle gesetzt.
+   */
+  async berechtigungenAusRollenBerechnen(
+    tenantId: string,
+    vereinsRollen: string[],
+  ): Promise<{ systemRolle: Role; berechtigungen: string[] }> {
+    if (vereinsRollen.length === 0) {
+      return { systemRolle: Role.MEMBER, berechtigungen: [] };
+    }
+
+    const vorlagen = await this.prisma.rollenVorlage.findMany({
+      where: {
+        tenantId,
+        name: { in: vereinsRollen },
+      },
+    });
+
+    // Berechtigungen zusammenfuehren (Vereinigung)
+    const alleBerechtigungen = new Set<string>();
+    for (const vorlage of vorlagen) {
+      for (const b of vorlage.berechtigungen) {
+        alleBerechtigungen.add(b);
+      }
+    }
+
+    // Hoechste System-Rolle bestimmen
+    const ROLLEN_HIERARCHIE: Record<string, number> = {
+      [Role.PARENT]: 0,
+      [Role.MEMBER]: 1,
+      [Role.TRAINER]: 2,
+      [Role.ADMIN]: 3,
+      [Role.SUPERADMIN]: 4,
+    };
+
+    let hoechsteRolle: Role = Role.MEMBER;
+    for (const vorlage of vorlagen) {
+      if (
+        ROLLEN_HIERARCHIE[vorlage.systemRolle] >
+        ROLLEN_HIERARCHIE[hoechsteRolle]
+      ) {
+        hoechsteRolle = vorlage.systemRolle as Role;
+      }
+    }
+
+    return {
+      systemRolle: hoechsteRolle,
+      berechtigungen: Array.from(alleBerechtigungen),
+    };
+  }
+
+  /**
+   * Vereinsrollen eines Benutzers aktualisieren.
+   * Berechnet automatisch die Berechtigungen und System-Rolle neu.
+   * Optionale individuelle Berechtigungen werden addiert.
+   */
+  async vereinsRollenZuweisen(
+    tenantId: string,
+    id: string,
+    vereinsRollen: string[],
+    zusaetzlicheBerechtigungen?: string[],
+  ) {
+    const benutzer = await this.prisma.user.findFirst({
+      where: { id, tenantId },
+    });
+
+    if (!benutzer) {
+      throw new NotFoundException('Benutzer nicht gefunden.');
+    }
+
+    const { systemRolle, berechtigungen } =
+      await this.berechtigungenAusRollenBerechnen(tenantId, vereinsRollen);
+
+    // Zusaetzliche individuelle Berechtigungen hinzufuegen
+    const alleBerechtigungen = new Set(berechtigungen);
+    if (zusaetzlicheBerechtigungen) {
+      for (const b of zusaetzlicheBerechtigungen) {
+        alleBerechtigungen.add(b);
+      }
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        vereinsRollen,
+        role: systemRolle,
+        berechtigungen: Array.from(alleBerechtigungen),
+      },
+      select: BENUTZER_SELECT,
+    });
   }
 
   // ==================== Hilfsmethoden ====================

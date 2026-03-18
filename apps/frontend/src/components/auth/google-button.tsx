@@ -39,6 +39,7 @@ interface GoogleAuthAntwort {
     rolle: string;
     tenantId: string;
     emailVerifiziert: boolean;
+    berechtigungen: string[];
   };
   tenant: {
     id: string;

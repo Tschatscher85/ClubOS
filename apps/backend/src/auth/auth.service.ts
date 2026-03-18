@@ -103,6 +103,8 @@ export class AuthService {
         email: ergebnis.benutzer.email,
         rolle: ergebnis.benutzer.role,
         tenantId: ergebnis.tenant.id,
+        berechtigungen: ergebnis.benutzer.berechtigungen ?? [],
+        vereinsRollen: ergebnis.benutzer.vereinsRollen ?? [],
       },
       tenant: {
         id: ergebnis.tenant.id,
@@ -157,6 +159,8 @@ export class AuthService {
         rolle: benutzer.role,
         tenantId: benutzer.tenantId,
         emailVerifiziert: benutzer.emailVerifiziert,
+        berechtigungen: benutzer.berechtigungen ?? [],
+        vereinsRollen: benutzer.vereinsRollen ?? [],
       },
       tenant: {
         id: benutzer.tenant.id,
@@ -233,6 +237,8 @@ export class AuthService {
       rolle: benutzer.role,
       tenantId: benutzer.tenantId,
       emailVerifiziert: benutzer.emailVerifiziert,
+      berechtigungen: benutzer.berechtigungen ?? [],
+      vereinsRollen: benutzer.vereinsRollen ?? [],
       tenant: {
         id: benutzer.tenant.id,
         name: benutzer.tenant.name,
@@ -475,6 +481,8 @@ export class AuthService {
           rolle: benutzer.role,
           tenantId: benutzer.tenantId,
           emailVerifiziert: benutzer.emailVerifiziert,
+          berechtigungen: benutzer.berechtigungen ?? [],
+          vereinsRollen: benutzer.vereinsRollen ?? [],
         },
         tenant: {
           id: benutzer.tenant.id,
@@ -521,6 +529,7 @@ export class AuthService {
           rolle: benutzer.role,
           tenantId: benutzer.tenantId,
           emailVerifiziert: true,
+          berechtigungen: benutzer.berechtigungen ?? [],
         },
         tenant: {
           id: benutzer.tenant.id,
@@ -576,6 +585,8 @@ export class AuthService {
         rolle: ergebnis.benutzer.role,
         tenantId: ergebnis.tenant.id,
         emailVerifiziert: true,
+        berechtigungen: ergebnis.benutzer.berechtigungen ?? [],
+        vereinsRollen: ergebnis.benutzer.vereinsRollen ?? [],
       },
       tenant: {
         id: ergebnis.tenant.id,

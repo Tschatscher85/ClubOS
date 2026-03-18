@@ -93,6 +93,7 @@ model Tenant {
   homepage           Homepage?
   customSportarten   CustomSportart[]
   pinboardItems      PinboardItem[]
+  rollenVorlagen     RollenVorlage[]
 
   @@index([slug])
 }
@@ -124,7 +125,9 @@ model User {
   passwortResetExpiresAt DateTime?
   // Google OAuth
   googleId             String?  @unique
-  // Berechtigungen (granulare Freischaltung)
+  // Vereinsrollen (mehrere moeglich, z.B. ["Trainer","Kassenpruefer"])
+  vereinsRollen     String[]   // Verweise auf RollenVorlage.name
+  // Berechtigungen (berechnet aus Vereinsrollen + individuelle Anpassungen)
   berechtigungen    String[]   // z.B. ["MITGLIEDER","TEAMS","KALENDER","TURNIERE","NACHRICHTEN","BUCHHALTUNG","FORMULARE","DOKUMENTE","EINSTELLUNGEN"]
   istAktiv          Boolean    @default(true)
   letzterLogin      DateTime?
@@ -145,6 +148,26 @@ enum Role {
   TRAINER
   MEMBER
   PARENT
+}
+
+// ==================== Rollen-Vorlagen (pro Verein konfigurierbar) ====================
+
+model RollenVorlage {
+  id             String   @id @default(cuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name           String   // z.B. "Vorstand", "Trainer", "Kassenpruefer"
+  beschreibung   String?  // Kurze Beschreibung der Rolle
+  systemRolle    Role     // Welches System-Zugriffslevel (hoechste gewinnt)
+  berechtigungen String[] // Welche Berechtigungen diese Rolle mitbringt
+  farbe          String?  // Optionale Badge-Farbe (Hex)
+  sortierung     Int      @default(0) // Reihenfolge in der Anzeige
+  istStandard    Boolean  @default(false) // Vom System vorgegeben (nicht loeschbar)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
 }
 
 // ==================== Mitglied ====================

@@ -18,10 +18,13 @@ import { RollenGuard } from '../common/guards/rollen.guard';
 import { TenantGuard } from '../common/guards/tenant.guard';
 import { Rollen } from '../common/decorators/rollen.decorator';
 import { AktuellerBenutzer } from '../common/decorators/aktueller-benutzer.decorator';
+import { BerechtigungenGuard } from '../common/guards/berechtigungen.guard';
+import { Berechtigungen } from '../common/decorators/berechtigungen.decorator';
 
 @ApiTags('Teams')
 @Controller('teams')
-@UseGuards(JwtAuthGuard, RollenGuard, TenantGuard)
+@UseGuards(JwtAuthGuard, RollenGuard, TenantGuard, BerechtigungenGuard)
+@Berechtigungen('TEAMS')
 @ApiBearerAuth()
 export class TeamController {
   constructor(private teamService: TeamService) {}

@@ -34,6 +34,7 @@ import { ProfilbildModule } from './profilbild/profilbild.module';
 import { SportartModule } from './sportart/sportart.module';
 import { PosteingangModule } from './posteingang/posteingang.module';
 import { PinboardModule } from './pinboard/pinboard.module';
+import { RollenVorlageModule } from './rollen-vorlage/rollen-vorlage.module';
 import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
 import configuration from './config/configuration';
 
@@ -92,6 +93,7 @@ import configuration from './config/configuration';
     SportartModule,
     PosteingangModule,
     PinboardModule,
+    RollenVorlageModule,
   ],
   providers: [
     {

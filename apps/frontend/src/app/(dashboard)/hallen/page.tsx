@@ -160,7 +160,7 @@ export default function HallenPage() {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="animate-pulse text-muted-foreground">
-          Hallenbelegung wird geladen...
+          Belegung wird geladen...
         </div>
       </div>
     );
@@ -173,7 +173,7 @@ export default function HallenPage() {
         <div className="flex items-center gap-3">
           <Building className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold">Hallenbelegung</h1>
+            <h1 className="text-2xl font-bold">Belegung</h1>
             <p className="text-muted-foreground">
               Wochenplan fuer Sporthallen und Trainingszeiten
             </p>

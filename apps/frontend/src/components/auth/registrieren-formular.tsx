@@ -15,6 +15,7 @@ interface RegistrierenAntwort {
     email: string;
     rolle: string;
     tenantId: string;
+    berechtigungen: string[];
   };
   tenant: {
     id: string;
