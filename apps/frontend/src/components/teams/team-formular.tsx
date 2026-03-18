@@ -94,17 +94,21 @@ export function TeamFormular({
       .then(setAbteilungen)
       .catch(() => {});
 
-    // Trainer laden: Mitglieder mit Trainer-Rolle (über Benutzer-API)
+    // Trainer laden: Versuche Verwaltungs-API, Fallback auf /benutzer
     Promise.all([
       apiClient.get<Mitglied[]>('/mitglieder'),
-      apiClient.get<Benutzer[]>('/benutzer/verwaltung/liste').catch(() => [] as Benutzer[]),
+      apiClient.get<Benutzer[]>('/benutzer/verwaltung/liste')
+        .catch(() => apiClient.get<Benutzer[]>('/benutzer').then((users) =>
+          users.map((u) => ({ ...u, vereinsRollen: [] as string[] })),
+        ))
+        .catch(() => [] as Benutzer[]),
     ]).then(([mitglieder, benutzerListe]) => {
       // Finde User-IDs die Trainer-Rolle haben
       const trainerUserIds = new Set(
         benutzerListe
           .filter((b) =>
-            b.vereinsRollen.includes('Trainer') ||
-            b.vereinsRollen.includes('Vorstand') ||
+            (b.vereinsRollen || []).includes('Trainer') ||
+            (b.vereinsRollen || []).includes('Vorstand') ||
             ['TRAINER', 'ADMIN', 'SUPERADMIN'].includes(b.role),
           )
           .map((b) => b.id),
@@ -118,7 +122,7 @@ export function TeamFormular({
           name: `${m.firstName} ${m.lastName}`,
         }));
 
-      // Fallback: Auch User ohne Mitglied-Profil anzeigen (z.B. Admin)
+      // Fallback: User ohne Mitglied-Profil (z.B. Admin ohne Member-Eintrag)
       const vorhandeneUserIds = new Set(trainerMitglieder.map((t) => t.id));
       const ohneProfileTrainer = benutzerListe
         .filter((b) => trainerUserIds.has(b.id) && !vorhandeneUserIds.has(b.id))

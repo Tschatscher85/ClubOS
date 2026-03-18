@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { AdressSuche } from '@/components/ui/adress-suche';
 import {
   Dialog,
   DialogContent,
@@ -370,11 +371,11 @@ export function MitgliedFormular({
           {/* Adresse */}
           <div className="space-y-2">
             <Label htmlFor="adresse">Adresse</Label>
-            <Input
+            <AdressSuche
               id="adresse"
               value={adresse}
-              onChange={(e) => setAdresse(e.target.value)}
-              placeholder="Musterstr. 1, 73037 Göppingen"
+              onChange={(neueAdresse) => setAdresse(neueAdresse)}
+              placeholder="Adresse suchen..."
             />
           </div>
 
