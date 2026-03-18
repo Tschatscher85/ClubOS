@@ -2,12 +2,13 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, UserCheck, UserX } from 'lucide-react';
 
 interface Mitglied {
   id: string;
   firstName: string;
   lastName: string;
+  email: string | null;
   memberNumber: string;
   birthDate: string | null;
   phone: string | null;
@@ -16,6 +17,7 @@ interface Mitglied {
   parentEmail: string | null;
   status: string;
   joinDate: string;
+  userId?: string | null;
 }
 
 const STATUS_LABEL: Record<string, { text: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -65,9 +67,11 @@ export function MitgliederTabelle({
           <tr className="border-b bg-muted/50">
             <th className="h-12 px-4 text-left font-medium">Nr.</th>
             <th className="h-12 px-4 text-left font-medium">Name</th>
-            <th className="h-12 px-4 text-left font-medium hidden md:table-cell">Telefon</th>
-            <th className="h-12 px-4 text-left font-medium hidden lg:table-cell">Sportart</th>
+            <th className="h-12 px-4 text-left font-medium hidden md:table-cell">E-Mail</th>
+            <th className="h-12 px-4 text-left font-medium hidden lg:table-cell">Sportarten</th>
+            <th className="h-12 px-4 text-left font-medium hidden xl:table-cell">Eintritt</th>
             <th className="h-12 px-4 text-left font-medium">Status</th>
+            <th className="h-12 px-4 text-left font-medium hidden md:table-cell">Login</th>
             <th className="h-12 px-4 text-right font-medium">Aktionen</th>
           </tr>
         </thead>
@@ -86,17 +90,41 @@ export function MitgliederTabelle({
                 <td className="px-4 py-3 text-muted-foreground">
                   {m.memberNumber}
                 </td>
-                <td className="px-4 py-3 font-medium">
-                  {m.firstName} {m.lastName}
+                <td className="px-4 py-3">
+                  <div className="font-medium">{m.firstName} {m.lastName}</div>
+                  {m.parentEmail && (
+                    <div className="text-xs text-muted-foreground">
+                      Eltern: {m.parentEmail}
+                    </div>
+                  )}
                 </td>
                 <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">
-                  {m.phone || '—'}
+                  {m.email || '—'}
                 </td>
                 <td className="px-4 py-3 hidden lg:table-cell">
-                  {m.sport.map((s) => SPORTARTEN_LABEL[s] || s).join(', ') || '—'}
+                  <div className="flex flex-wrap gap-1">
+                    {m.sport.map((s) => (
+                      <Badge key={s} variant="secondary" className="text-xs">
+                        {SPORTARTEN_LABEL[s] || s}
+                      </Badge>
+                    ))}
+                    {m.sport.length === 0 && <span className="text-muted-foreground">—</span>}
+                  </div>
+                </td>
+                <td className="px-4 py-3 hidden xl:table-cell text-muted-foreground">
+                  {m.joinDate
+                    ? new Date(m.joinDate).toLocaleDateString('de-DE')
+                    : '—'}
                 </td>
                 <td className="px-4 py-3">
                   <Badge variant={statusInfo.variant}>{statusInfo.text}</Badge>
+                </td>
+                <td className="px-4 py-3 hidden md:table-cell">
+                  {m.userId ? (
+                    <UserCheck className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <UserX className="h-4 w-4 text-muted-foreground" />
+                  )}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>

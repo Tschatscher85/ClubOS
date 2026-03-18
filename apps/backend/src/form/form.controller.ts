@@ -7,10 +7,18 @@ import {
   Param,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  FileTypeValidator,
+  MaxFileSizeValidator,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
+import { Role, FormType } from '@prisma/client';
 import { FormService } from './form.service';
+import { KiKonvertierungService } from './ki-konvertierung.service';
 import {
   ErstelleTemplateDto,
   ErstelleSubmissionDto,
@@ -27,7 +35,10 @@ import { AktuellerBenutzer } from '../common/decorators/aktueller-benutzer.decor
 @UseGuards(JwtAuthGuard, RollenGuard, TenantGuard)
 @ApiBearerAuth()
 export class FormController {
-  constructor(private formService: FormService) {}
+  constructor(
+    private formService: FormService,
+    private kiKonvertierungService: KiKonvertierungService,
+  ) {}
 
   // ==================== Vorlagen ====================
 
@@ -54,6 +65,60 @@ export class FormController {
     @Param('id') id: string,
   ) {
     return this.formService.templateAbrufen(tenantId, id);
+  }
+
+  // ==================== KI-Konvertierung ====================
+
+  @Post('vorlagen/ki-konvertierung')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({
+    summary: 'PDF-Formular per KI analysieren und Vorlage erstellen',
+    description:
+      'Laedt ein PDF hoch, extrahiert per KI die Formularfelder und erstellt eine neue Formularvorlage.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('datei'))
+  async kiKonvertierung(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Body('name') name: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new FileTypeValidator({ fileType: 'application/pdf' }),
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10 MB
+        ],
+      }),
+    )
+    datei: Express.Multer.File,
+  ) {
+    if (!name || name.trim().length === 0) {
+      throw new BadRequestException('Name fuer die Vorlage ist erforderlich.');
+    }
+
+    // PDF per KI analysieren
+    const felder = await this.kiKonvertierungService.pdfZuFormular(
+      datei.buffer,
+      datei.originalname,
+    );
+
+    // Formularvorlage erstellen
+    const vorlage = await this.formService.templateErstellen(tenantId, {
+      name: name.trim(),
+      typ: FormType.MITGLIEDSANTRAG,
+      felder: felder.map((feld) => ({
+        name: feld.name,
+        label: feld.label,
+        typ: feld.typ,
+        pflicht: feld.pflicht,
+        optionen: feld.optionen,
+      })),
+    });
+
+    return {
+      vorlage,
+      erkannteFelder: felder.length,
+      felder,
+    };
   }
 
   // ==================== Einreichungen ====================

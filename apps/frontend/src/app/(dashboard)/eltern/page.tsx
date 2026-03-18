@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Heart, CalendarDays, MapPin } from 'lucide-react';
+import { Heart, CalendarDays, MapPin, Building2, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useBenutzer } from '@/hooks/use-auth';
@@ -14,7 +14,12 @@ interface Kind {
   lastName: string;
   memberNumber: string;
   status: string;
-  teamMembers: Array<{ id: string; teamId: string }>;
+  sport: string[];
+  teamMembers: Array<{
+    id: string;
+    teamId: string;
+    team?: { id: string; name: string; sport: string; ageGroup: string };
+  }>;
 }
 
 interface Team {
@@ -22,6 +27,14 @@ interface Team {
   name: string;
   sport: string;
   ageGroup: string;
+  abteilung?: { id: string; name: string; sport: string } | null;
+}
+
+interface Abteilung {
+  id: string;
+  name: string;
+  sport: string;
+  teams: Array<{ id: string; name: string; ageGroup: string }>;
 }
 
 interface Veranstaltung {
@@ -32,6 +45,18 @@ interface Veranstaltung {
   location: string;
   team: { name: string };
 }
+
+const SPORTARTEN_LABEL: Record<string, string> = {
+  FUSSBALL: 'Fussball',
+  HANDBALL: 'Handball',
+  BASKETBALL: 'Basketball',
+  FOOTBALL: 'Football',
+  TENNIS: 'Tennis',
+  TURNEN: 'Turnen',
+  SCHWIMMEN: 'Schwimmen',
+  LEICHTATHLETIK: 'Leichtathletik',
+  SONSTIGES: 'Sonstiges',
+};
 
 const VERANSTALTUNGSTYP_LABEL: Record<string, { text: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   TRAINING: { text: 'Training', variant: 'default' },
@@ -46,19 +71,28 @@ export default function ElternPortalPage() {
   const router = useRouter();
   const [kinder, setKinder] = useState<Kind[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [abteilungen, setAbteilungen] = useState<Abteilung[]>([]);
   const [veranstaltungen, setVeranstaltungen] = useState<Veranstaltung[]>([]);
   const [ladend, setLadend] = useState(true);
 
   const datenLaden = useCallback(async () => {
     try {
-      const [kinderDaten, teamsDaten, veranstaltungenDaten] = await Promise.all([
+      const [kinderDaten, teamsDaten, abteilungenDaten] = await Promise.all([
         apiClient.get<Kind[]>('/mitglieder/meine-kinder'),
         apiClient.get<Team[]>('/mitglieder/meine-kinder/teams'),
-        apiClient.get<Veranstaltung[]>('/veranstaltungen/meine-kinder'),
+        apiClient.get<Abteilung[]>('/mitglieder/meine-kinder/abteilungen'),
       ]);
       setKinder(kinderDaten);
       setTeams(teamsDaten);
-      setVeranstaltungen(veranstaltungenDaten);
+      setAbteilungen(abteilungenDaten);
+
+      // Veranstaltungen laden (optional, falls API existiert)
+      try {
+        const veranstaltungenDaten = await apiClient.get<Veranstaltung[]>('/veranstaltungen/meine-kinder');
+        setVeranstaltungen(veranstaltungenDaten);
+      } catch {
+        // Endpoint existiert ggf. noch nicht
+      }
     } catch (error) {
       console.error('Fehler beim Laden der Eltern-Daten:', error);
     } finally {
@@ -126,16 +160,75 @@ export default function ElternPortalPage() {
                     {kind.firstName} {kind.lastName}
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-2">
                   <p className="text-sm text-muted-foreground">
                     Mitgliedsnr. {kind.memberNumber}
                   </p>
+                  {kind.sport.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {kind.sport.map((s) => (
+                        <Badge key={s} variant="secondary" className="text-xs">
+                          {SPORTARTEN_LABEL[s] || s}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  {kind.teamMembers.length > 0 && (
+                    <div className="space-y-1">
+                      {kind.teamMembers.map((tm) => (
+                        <div
+                          key={tm.id}
+                          className="flex items-center gap-1 text-xs text-muted-foreground"
+                        >
+                          <Shield className="h-3 w-3" />
+                          {tm.team?.name || 'Team'} ({tm.team?.ageGroup || ''})
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
       </div>
+
+      {/* Abteilungen */}
+      {abteilungen.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold">Abteilungen</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {abteilungen.map((abt) => (
+              <Card key={abt.id}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-base">{abt.name}</CardTitle>
+                    <Badge variant="secondary" className="ml-auto">
+                      {SPORTARTEN_LABEL[abt.sport] || abt.sport}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {abt.teams.length > 0 && (
+                    <div className="space-y-1">
+                      {abt.teams.map((team) => (
+                        <div
+                          key={team.id}
+                          className="flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                          <Shield className="h-3.5 w-3.5" />
+                          {team.name} ({team.ageGroup})
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Teams meiner Kinder */}
       <div className="space-y-3">
@@ -149,6 +242,11 @@ export default function ElternPortalPage() {
             {teams.map((team) => (
               <Badge key={team.id} variant="secondary" className="text-sm py-1 px-3">
                 {team.name} ({team.ageGroup})
+                {team.abteilung && (
+                  <span className="ml-1 text-muted-foreground">
+                    — {team.abteilung.name}
+                  </span>
+                )}
               </Badge>
             ))}
           </div>

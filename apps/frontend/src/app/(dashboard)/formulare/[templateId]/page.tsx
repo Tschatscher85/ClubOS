@@ -32,6 +32,7 @@ interface Vorlage {
 const TYP_LABEL: Record<string, string> = {
   MITGLIEDSANTRAG: 'Mitgliedsantrag',
   EINVERSTAENDNIS: 'Einverstaendnis',
+  DATENSCHUTZ: 'Datenschutz',
   SONSTIGES: 'Sonstiges',
 };
 

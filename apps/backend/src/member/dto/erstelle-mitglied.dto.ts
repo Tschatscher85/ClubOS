@@ -21,6 +21,11 @@ export class ErstelleMitgliedDto {
   @MinLength(1, { message: 'Nachname darf nicht leer sein.' })
   nachname!: string;
 
+  @ApiPropertyOptional({ example: 'max@beispiel.de', description: 'E-Mail-Adresse des Mitglieds' })
+  @IsOptional()
+  @IsEmail({}, { message: 'Bitte eine gueltige E-Mail-Adresse angeben.' })
+  email?: string;
+
   @ApiPropertyOptional({ example: '2010-05-15', description: 'Geburtsdatum' })
   @IsOptional()
   @IsDateString({}, { message: 'Bitte ein gueltiges Datum angeben.' })
@@ -36,11 +41,16 @@ export class ErstelleMitgliedDto {
   @IsString()
   adresse?: string;
 
-  @ApiPropertyOptional({ example: ['FUSSBALL'], description: 'Sportarten' })
+  @ApiPropertyOptional({ example: ['FUSSBALL', 'HANDBALL'], description: 'Sportarten (mehrere moeglich)' })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   sportarten?: string[];
+
+  @ApiPropertyOptional({ example: '2024-01-15', description: 'Eintrittsdatum' })
+  @IsOptional()
+  @IsDateString({}, { message: 'Bitte ein gueltiges Eintrittsdatum angeben.' })
+  eintrittsdatum?: string;
 
   @ApiPropertyOptional({
     example: 'eltern@beispiel.de',
@@ -83,6 +93,11 @@ export class AktualisiereMitgliedDto {
   @MinLength(1)
   nachname?: string;
 
+  @ApiPropertyOptional({ example: 'max@beispiel.de' })
+  @IsOptional()
+  @IsEmail({}, { message: 'Bitte eine gueltige E-Mail-Adresse angeben.' })
+  email?: string;
+
   @ApiPropertyOptional({ example: '2010-05-15' })
   @IsOptional()
   @IsDateString()
@@ -98,11 +113,16 @@ export class AktualisiereMitgliedDto {
   @IsString()
   adresse?: string;
 
-  @ApiPropertyOptional({ example: ['FUSSBALL'] })
+  @ApiPropertyOptional({ example: ['FUSSBALL', 'HANDBALL'] })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   sportarten?: string[];
+
+  @ApiPropertyOptional({ example: '2024-01-15', description: 'Eintrittsdatum' })
+  @IsOptional()
+  @IsDateString()
+  eintrittsdatum?: string;
 
   @ApiPropertyOptional({ example: 'eltern@beispiel.de' })
   @IsOptional()

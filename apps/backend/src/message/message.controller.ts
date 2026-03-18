@@ -12,6 +12,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { MessageService } from './message.service';
 import { ErstelleNachrichtDto } from './dto/erstelle-nachricht.dto';
+import { NotfallBroadcastDto } from './dto/notfall-broadcast.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RollenGuard } from '../common/guards/rollen.guard';
 import { TenantGuard } from '../common/guards/tenant.guard';
@@ -53,6 +54,17 @@ export class MessageController {
     @AktuellerBenutzer('id') userId: string,
   ) {
     return this.messageService.ungeleseneAnzahl(tenantId, userId);
+  }
+
+  @Post('notfall')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
+  @ApiOperation({ summary: 'Notfall-Broadcast senden (ignoriert Stille-Stunden)' })
+  async notfallBroadcast(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @AktuellerBenutzer('id') senderId: string,
+    @Body() dto: NotfallBroadcastDto,
+  ) {
+    return this.messageService.notfallBroadcastSenden(tenantId, senderId, dto);
   }
 
   @Post(':id/gelesen')

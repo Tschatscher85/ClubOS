@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   FileText,
   Plus,
@@ -10,7 +10,9 @@ import {
   XCircle,
   Clock,
   Archive,
-  Search,
+  Upload,
+  Loader2,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,6 +35,7 @@ import {
   TabsContent,
 } from '@/components/ui/tabs';
 import { apiClient } from '@/lib/api-client';
+import { API_BASE_URL } from '@/lib/constants';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
 
@@ -67,6 +70,7 @@ interface Einreichung {
 const TYP_LABEL: Record<string, string> = {
   MITGLIEDSANTRAG: 'Mitgliedsantrag',
   EINVERSTAENDNIS: 'Einverstaendnis',
+  DATENSCHUTZ: 'Datenschutz',
   SONSTIGES: 'Sonstiges',
 };
 
@@ -101,6 +105,17 @@ export default function FormularePage() {
   const [ladend, setLadend] = useState(true);
   const [neueVorlageOffen, setNeueVorlageOffen] = useState(false);
   const [detailEinreichung, setDetailEinreichung] = useState<Einreichung | null>(null);
+
+  // PDF-Upload Dialog
+  const [uploadOffen, setUploadOffen] = useState(false);
+  const [uploadDatei, setUploadDatei] = useState<File | null>(null);
+  const [uploadName, setUploadName] = useState('');
+  const [uploadTyp, setUploadTyp] = useState('MITGLIEDSANTRAG');
+  const [uploadLadend, setUploadLadend] = useState(false);
+  const [uploadFehler, setUploadFehler] = useState('');
+  const [erkannteFelder, setErkannteFelder] = useState<FormularFeld[] | null>(null);
+  const [uploadErfolg, setUploadErfolg] = useState(false);
+  const dateiInputRef = useRef<HTMLInputElement>(null);
 
   // Neue Vorlage Formular
   const [vorlageName, setVorlageName] = useState('');
@@ -141,6 +156,8 @@ export default function FormularePage() {
   useEffect(() => {
     datenLaden();
   }, [datenLaden]);
+
+  // ==================== Manuelle Vorlage ====================
 
   const handleFeldHinzufuegen = useCallback(() => {
     setVorlageFelder((prev) => [...prev, { label: '', typ: 'text', pflicht: false }]);
@@ -185,6 +202,114 @@ export default function FormularePage() {
       setVorlageSpeichern(false);
     }
   }, [vorlageName, vorlageTyp, vorlageFelder, vorlagenLaden]);
+
+  // ==================== PDF Upload + KI ====================
+
+  const handleUploadOeffnen = useCallback(() => {
+    setUploadOffen(true);
+    setUploadDatei(null);
+    setUploadName('');
+    setUploadTyp('MITGLIEDSANTRAG');
+    setUploadLadend(false);
+    setUploadFehler('');
+    setErkannteFelder(null);
+    setUploadErfolg(false);
+  }, []);
+
+  const handleDateiAuswahl = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const datei = e.target.files?.[0];
+    if (!datei) return;
+
+    if (datei.type !== 'application/pdf') {
+      setUploadFehler('Bitte nur PDF-Dateien hochladen.');
+      return;
+    }
+
+    if (datei.size > 10 * 1024 * 1024) {
+      setUploadFehler('Datei darf maximal 10 MB gross sein.');
+      return;
+    }
+
+    setUploadDatei(datei);
+    setUploadFehler('');
+
+    // Name aus Dateiname ableiten, falls noch leer
+    if (!uploadName) {
+      const nameOhneEndung = datei.name.replace(/\.pdf$/i, '');
+      setUploadName(nameOhneEndung);
+    }
+  }, [uploadName]);
+
+  const handlePdfAnalysieren = useCallback(async () => {
+    if (!uploadDatei || !uploadName) return;
+
+    setUploadLadend(true);
+    setUploadFehler('');
+    setErkannteFelder(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('datei', uploadDatei);
+      formData.append('name', uploadName);
+
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        `${API_BASE_URL}/formulare/vorlagen/ki-konvertierung`,
+        {
+          method: 'POST',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: formData,
+        },
+      );
+
+      if (!response.ok) {
+        const fehlerDaten = await response.json().catch(() => null);
+        throw new Error(
+          fehlerDaten?.message || `Fehler ${response.status}: Analyse fehlgeschlagen.`,
+        );
+      }
+
+      const ergebnis = await response.json();
+      setErkannteFelder(ergebnis.felder);
+      setUploadErfolg(true);
+    } catch (error) {
+      setUploadFehler(
+        error instanceof Error ? error.message : 'Fehler bei der KI-Analyse.',
+      );
+    } finally {
+      setUploadLadend(false);
+    }
+  }, [uploadDatei, uploadName]);
+
+  const handleErkanntesFeldAendern = useCallback(
+    (index: number, key: string, value: string | boolean) => {
+      setErkannteFelder((prev) => {
+        if (!prev) return prev;
+        return prev.map((feld, i) =>
+          i === index ? { ...feld, [key]: value } : feld,
+        );
+      });
+    },
+    [],
+  );
+
+  const handleErkanntesFeldEntfernen = useCallback((index: number) => {
+    setErkannteFelder((prev) => {
+      if (!prev) return prev;
+      return prev.filter((_, i) => i !== index);
+    });
+  }, []);
+
+  const handleErkanntesFeldHinzufuegen = useCallback(() => {
+    setErkannteFelder((prev) => [
+      ...(prev || []),
+      { name: '', label: '', typ: 'text', pflicht: false },
+    ]);
+  }, []);
+
+  // ==================== Einreichung Status ====================
 
   const handleStatusAendern = useCallback(
     async (id: string, status: string) => {
@@ -243,16 +368,37 @@ export default function FormularePage() {
 
         {/* Tab: Vorlagen */}
         <TabsContent value="vorlagen" className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={handleUploadOeffnen}>
+              <Upload className="h-4 w-4 mr-2" />
+              PDF hochladen (KI)
+            </Button>
             <Button onClick={() => setNeueVorlageOffen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Neue Vorlage
+              Manuell erstellen
             </Button>
+          </div>
+
+          {/* Erklaerung */}
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <div className="flex gap-3">
+              <Sparkles className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">So funktioniert es:</p>
+                <ol className="list-decimal ml-4 space-y-0.5">
+                  <li>Laden Sie Ihr bestehendes PDF-Formular hoch (Mitgliedsantrag, EWE, Datenschutz...)</li>
+                  <li>Die KI erkennt automatisch alle Felder im Formular</li>
+                  <li>Sie pruefen und passen die erkannten Felder an</li>
+                  <li>Die digitale Vorlage wird gespeichert und kann Einladungen zugewiesen werden</li>
+                  <li>Mitglieder fuellen das Formular online aus und unterschreiben digital</li>
+                </ol>
+              </div>
+            </div>
           </div>
 
           {vorlagen.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              Noch keine Vorlagen erstellt. Erstellen Sie Ihre erste Formularvorlage.
+              Noch keine Vorlagen erstellt. Laden Sie Ihr erstes PDF hoch oder erstellen Sie eine Vorlage manuell.
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -351,13 +497,221 @@ export default function FormularePage() {
         </TabsContent>
       </Tabs>
 
-      {/* Dialog: Neue Vorlage */}
+      {/* ==================== Dialog: PDF Upload + KI ==================== */}
+      <Dialog open={uploadOffen} onOpenChange={setUploadOffen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              PDF-Formular hochladen
+            </DialogTitle>
+            <DialogDescription>
+              Laden Sie Ihr bestehendes PDF-Formular hoch. Die KI erkennt
+              automatisch alle Felder und erstellt eine digitale Vorlage.
+            </DialogDescription>
+          </DialogHeader>
+
+          {uploadErfolg && erkannteFelder ? (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                <div className="flex items-center gap-2 text-green-800">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="font-medium">
+                    {erkannteFelder.length} Felder erkannt und Vorlage
+                    &quot;{uploadName}&quot; erstellt!
+                  </span>
+                </div>
+              </div>
+
+              {/* Erkannte Felder anzeigen und bearbeiten */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-semibold">Erkannte Felder</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleErkanntesFeldHinzufuegen}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Feld
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Pruefen und passen Sie die Felder bei Bedarf an
+                </p>
+
+                {erkannteFelder.map((feld, index) => (
+                  <div
+                    key={index}
+                    className="flex items-end gap-2 p-3 rounded-lg border bg-muted/30"
+                  >
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-xs">Label</Label>
+                      <Input
+                        value={feld.label}
+                        onChange={(e) =>
+                          handleErkanntesFeldAendern(index, 'label', e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="w-28 space-y-1">
+                      <Label className="text-xs">Typ</Label>
+                      <Select
+                        value={feld.typ}
+                        onChange={(e) =>
+                          handleErkanntesFeldAendern(index, 'typ', e.target.value)
+                        }
+                      >
+                        <option value="text">Text</option>
+                        <option value="email">E-Mail</option>
+                        <option value="date">Datum</option>
+                        <option value="select">Auswahl</option>
+                        <option value="checkbox">Checkbox</option>
+                      </Select>
+                    </div>
+                    <div className="flex items-center gap-2 pb-1">
+                      <label className="flex items-center gap-1 text-xs cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={feld.pflicht}
+                          onChange={(e) =>
+                            handleErkanntesFeldAendern(index, 'pflicht', e.target.checked)
+                          }
+                          className="rounded"
+                        />
+                        Pflicht
+                      </label>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleErkanntesFeldEntfernen(index)}
+                      >
+                        <X className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={() => {
+                  setUploadOffen(false);
+                  vorlagenLaden();
+                }}>
+                  Fertig
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Datei-Upload */}
+              <div className="space-y-2">
+                <Label>PDF-Datei *</Label>
+                <div
+                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                    uploadDatei
+                      ? 'border-green-300 bg-green-50'
+                      : 'border-gray-300 hover:border-primary hover:bg-primary/5'
+                  }`}
+                  onClick={() => dateiInputRef.current?.click()}
+                >
+                  <input
+                    ref={dateiInputRef}
+                    type="file"
+                    accept="application/pdf"
+                    className="hidden"
+                    onChange={handleDateiAuswahl}
+                  />
+                  {uploadDatei ? (
+                    <div className="space-y-1">
+                      <FileText className="h-8 w-8 text-green-600 mx-auto" />
+                      <p className="text-sm font-medium text-green-800">
+                        {uploadDatei.name}
+                      </p>
+                      <p className="text-xs text-green-600">
+                        {(uploadDatei.size / 1024 / 1024).toFixed(1)} MB
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <Upload className="h-8 w-8 text-muted-foreground mx-auto" />
+                      <p className="text-sm text-muted-foreground">
+                        PDF hier ablegen oder klicken zum Auswaehlen
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Max. 10 MB
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Name der Vorlage *</Label>
+                  <Input
+                    value={uploadName}
+                    onChange={(e) => setUploadName(e.target.value)}
+                    placeholder="z.B. Mitgliedsantrag 2026"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Typ *</Label>
+                  <Select
+                    value={uploadTyp}
+                    onChange={(e) => setUploadTyp(e.target.value)}
+                  >
+                    <option value="MITGLIEDSANTRAG">Mitgliedsantrag</option>
+                    <option value="EINVERSTAENDNIS">Einverstaendniserklaerung</option>
+                    <option value="DATENSCHUTZ">Datenschutzerklaerung</option>
+                    <option value="SONSTIGES">Sonstiges</option>
+                  </Select>
+                </div>
+              </div>
+
+              {uploadFehler && (
+                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                  {uploadFehler}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setUploadOffen(false)}
+                >
+                  Abbrechen
+                </Button>
+                <Button
+                  onClick={handlePdfAnalysieren}
+                  disabled={!uploadDatei || !uploadName || uploadLadend}
+                >
+                  {uploadLadend ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      KI analysiert PDF...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      PDF analysieren
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== Dialog: Manuelle Vorlage ==================== */}
       <Dialog open={neueVorlageOffen} onOpenChange={setNeueVorlageOffen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Neue Formularvorlage</DialogTitle>
             <DialogDescription>
-              Erstellen Sie eine neue Vorlage fuer Mitgliedsantraege oder andere Formulare.
+              Erstellen Sie eine neue Vorlage manuell — Feld fuer Feld.
             </DialogDescription>
           </DialogHeader>
 
@@ -376,7 +730,8 @@ export default function FormularePage() {
               <Select value={vorlageTyp} onChange={(e) => setVorlageTyp(e.target.value)}>
                 <option value="">Typ waehlen...</option>
                 <option value="MITGLIEDSANTRAG">Mitgliedsantrag</option>
-                <option value="EINVERSTAENDNIS">Einverstaendnis</option>
+                <option value="EINVERSTAENDNIS">Einverstaendniserklaerung</option>
+                <option value="DATENSCHUTZ">Datenschutzerklaerung</option>
                 <option value="SONSTIGES">Sonstiges</option>
               </Select>
             </div>
@@ -472,7 +827,7 @@ export default function FormularePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Einreichung Detail */}
+      {/* ==================== Dialog: Einreichung Detail ==================== */}
       <Dialog
         open={detailEinreichung !== null}
         onOpenChange={(offen) => {

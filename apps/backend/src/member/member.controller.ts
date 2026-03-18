@@ -52,7 +52,7 @@ export class MemberController {
   @Get('suchen')
   @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
   @ApiOperation({ summary: 'Mitglieder suchen' })
-  @ApiQuery({ name: 'q', required: true, description: 'Suchbegriff (Vor-/Nachname)' })
+  @ApiQuery({ name: 'q', required: true, description: 'Suchbegriff (Vor-/Nachname/E-Mail)' })
   @ApiQuery({ name: 'status', required: false, description: 'Mitgliedsstatus filtern' })
   @ApiQuery({ name: 'sportart', required: false, description: 'Sportart filtern' })
   async suchen(
@@ -66,7 +66,7 @@ export class MemberController {
 
   @Post('batch-freigeben')
   @Rollen(Role.SUPERADMIN, Role.ADMIN)
-  @ApiOperation({ summary: 'Mehrere Mitglieder gleichzeitig freigeben' })
+  @ApiOperation({ summary: 'Mehrere Mitglieder gleichzeitig freigeben (mit Auto-Login)' })
   async batchFreigeben(
     @AktuellerBenutzer('tenantId') tenantId: string,
     @Body() dto: BatchFreigebenDto,
@@ -96,11 +96,33 @@ export class MemberController {
     return this.memberService.meineKinderTeams(tenantId, elternEmail);
   }
 
+  @Get('meine-kinder/abteilungen')
+  @Rollen(Role.PARENT)
+  @ApiOperation({ summary: 'Abteilungen der eigenen Kinder abrufen (Eltern-Portal)' })
+  async meineKinderAbteilungen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @AktuellerBenutzer('email') elternEmail: string,
+  ) {
+    return this.memberService.meineKinderAbteilungen(tenantId, elternEmail);
+  }
+
   @Get('statistik')
   @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
   @ApiOperation({ summary: 'Mitglieder-Statistik abrufen' })
   async statistik(@AktuellerBenutzer('tenantId') tenantId: string) {
     return this.memberService.statistik(tenantId);
+  }
+
+  // ==================== Login-Verwaltung ====================
+
+  @Post(':id/login-erstellen')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Login fuer Mitglied erstellen (User-Account anlegen)' })
+  async loginErstellen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.memberService.loginErstellen(tenantId, id);
   }
 
   @Get(':id')
@@ -126,7 +148,7 @@ export class MemberController {
 
   @Put(':id/status')
   @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
-  @ApiOperation({ summary: 'Mitgliedsstatus aendern' })
+  @ApiOperation({ summary: 'Mitgliedsstatus aendern (bei ACTIVE wird Login erstellt)' })
   async statusAendern(
     @AktuellerBenutzer('tenantId') tenantId: string,
     @Param('id') id: string,

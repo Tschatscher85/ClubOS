@@ -1,10 +1,19 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { MessageSquare, Plus, Trash2, Check, CheckCheck } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, Check, CheckCheck, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { NachrichtFormular } from '@/components/nachrichten/nachricht-formular';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/hooks/use-auth';
@@ -52,6 +61,13 @@ export default function NachrichtenPage() {
   const [formularOffen, setFormularOffen] = useState(false);
   const { benutzer } = useAuth();
 
+  // Notfall-Broadcast
+  const [notfallOffen, setNotfallOffen] = useState(false);
+  const [notfallInhalt, setNotfallInhalt] = useState('');
+  const [notfallBestaetigt, setNotfallBestaetigt] = useState(false);
+  const [notfallSendend, setNotfallSendend] = useState(false);
+  const [notfallErfolg, setNotfallErfolg] = useState(false);
+
   const datenLaden = useCallback(async () => {
     try {
       const daten = await apiClient.get<Nachricht[]>('/nachrichten');
@@ -73,6 +89,22 @@ export default function NachrichtenPage() {
       datenLaden();
     } catch (error) {
       console.error('Fehler:', error);
+    }
+  };
+
+  const handleNotfallSenden = async () => {
+    if (!notfallInhalt || !notfallBestaetigt) return;
+    setNotfallSendend(true);
+    try {
+      await apiClient.post('/nachrichten/notfall', {
+        inhalt: notfallInhalt,
+        bestaetigung: true,
+      });
+      setNotfallErfolg(true);
+    } catch (error) {
+      console.error('Fehler:', error);
+    } finally {
+      setNotfallSendend(false);
     }
   };
 
@@ -108,10 +140,26 @@ export default function NachrichtenPage() {
             </p>
           </div>
         </div>
-        <Button onClick={() => setFormularOffen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Neue Nachricht
-        </Button>
+        <div className="flex gap-2">
+          {(benutzer?.rolle === 'ADMIN' || benutzer?.rolle === 'SUPERADMIN' || benutzer?.rolle === 'TRAINER') && (
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setNotfallOffen(true);
+                setNotfallInhalt('');
+                setNotfallBestaetigt(false);
+                setNotfallErfolg(false);
+              }}
+            >
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Notfall
+            </Button>
+          )}
+          <Button onClick={() => setFormularOffen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Neue Nachricht
+          </Button>
+        </div>
       </div>
 
       {nachrichten.length === 0 ? (
@@ -190,6 +238,74 @@ export default function NachrichtenPage() {
         onSchliessen={() => setFormularOffen(false)}
         onGesendet={datenLaden}
       />
+
+      {/* Notfall-Broadcast Dialog */}
+      <Dialog open={notfallOffen} onOpenChange={setNotfallOffen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Notfall-Broadcast
+            </DialogTitle>
+            <DialogDescription>
+              Diese Nachricht wird sofort an ALLE Mitglieder gesendet — auch
+              ausserhalb der Stille-Stunden (22:00-07:00).
+            </DialogDescription>
+          </DialogHeader>
+
+          {notfallErfolg ? (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+                Notfall-Broadcast wurde erfolgreich an alle Mitglieder gesendet.
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={() => { setNotfallOffen(false); datenLaden(); }}>
+                  Schliessen
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                Achtung: Die Nachricht wird an alle Vereinsmitglieder per E-Mail
+                gesendet und ignoriert die Stille-Stunden.
+              </div>
+              <div className="space-y-2">
+                <Label>Notfall-Nachricht *</Label>
+                <Textarea
+                  value={notfallInhalt}
+                  onChange={(e) => setNotfallInhalt(e.target.value)}
+                  placeholder="z.B. Training heute wegen Unwetter abgesagt!"
+                  rows={4}
+                />
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={notfallBestaetigt}
+                  onChange={(e) => setNotfallBestaetigt(e.target.checked)}
+                  className="rounded border-red-300"
+                />
+                <span className="text-sm font-medium text-destructive">
+                  Ja, ich bestaetige, dass dies ein Notfall ist
+                </span>
+              </label>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setNotfallOffen(false)}>
+                  Abbrechen
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleNotfallSenden}
+                  disabled={!notfallInhalt || notfallInhalt.length < 5 || !notfallBestaetigt || notfallSendend}
+                >
+                  {notfallSendend ? 'Wird gesendet...' : 'Notfall-Broadcast senden'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

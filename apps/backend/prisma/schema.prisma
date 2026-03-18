@@ -21,6 +21,7 @@ model Tenant {
   updatedAt    DateTime @updatedAt
 
   users              User[]
+  abteilungen        Abteilung[]
   teams              Team[]
   events             Event[]
   tournaments        Tournament[]
@@ -31,6 +32,7 @@ model Tenant {
   faqs               FAQ[]
   fahrgemeinschaften Fahrgemeinschaft[]
   dokumente          Dokument[]
+  workflows          Workflow[]
 
   @@index([slug])
 }
@@ -80,10 +82,12 @@ model Member {
   memberNumber String
   firstName    String
   lastName     String
+  email        String?
   birthDate    DateTime?
   phone        String?
   address      String?
   joinDate     DateTime     @default(now())
+  exitDate     DateTime?
   status       MemberStatus @default(PENDING)
   sport        String[]
   qrCode       String?
@@ -96,6 +100,7 @@ model Member {
   teamMembers  TeamMember[]
 
   @@index([tenantId])
+  @@index([email])
 }
 
 enum MemberStatus {
@@ -105,24 +110,46 @@ enum MemberStatus {
   CANCELLED
 }
 
+// ==================== Abteilung (z.B. Fussball, Handball) ====================
+
+model Abteilung {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String   // z.B. "Fussball", "Handball"
+  sport       Sport
+  leiterIds   String[] // UserIDs der Abteilungsleiter
+  beschreibung String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  teams       Team[]
+
+  @@unique([tenantId, sport])
+  @@index([tenantId])
+}
+
 // ==================== Mannschaft ====================
 
 model Team {
-  id        String @id @default(cuid())
-  name      String
-  sport     Sport
-  ageGroup  String
-  trainerId String
-  tenantId  String
-  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String  @id @default(cuid())
+  name         String
+  sport        Sport
+  ageGroup     String
+  trainerId    String
+  tenantId     String
+  tenant       Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  abteilungId  String?
+  abteilung    Abteilung? @relation(fields: [abteilungId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   events      Event[]
   messages    Message[]
   teamMembers TeamMember[]
 
   @@index([tenantId])
+  @@index([abteilungId])
 }
 
 // ==================== Kader (Team-Mitglieder) ====================
@@ -307,6 +334,7 @@ model FormTemplate {
 enum FormType {
   MITGLIEDSANTRAG
   EINVERSTAENDNIS
+  DATENSCHUTZ
   SONSTIGES
 }
 
@@ -500,4 +528,53 @@ model Mitfahrer {
 
   @@unique([fahrgemeinschaftId, userId])
   @@index([fahrgemeinschaftId])
+}
+
+// ==================== Workflows (Einladungs-Pakete) ====================
+
+model Workflow {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name         String   // z.B. "Neues Mitglied Fussball"
+  beschreibung String?  // z.B. "Alle Unterlagen fuer neue Fussball-Mitglieder"
+  templateIds  String[] // Welche Formulare gesendet werden
+  sportarten   String[] // Vorbelegte Sportarten
+  emailBetreff String?  // Optionaler eigener E-Mail-Betreff
+  emailText    String?  // Optionaler eigener E-Mail-Text
+  istAktiv     Boolean  @default(true)
+  erstelltVon  String   // userId des Erstellers (Admin/Vorstand)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+// ==================== Einladungen ====================
+
+model Einladung {
+  id            String          @id @default(cuid())
+  tenantId      String
+  token         String          @unique
+  vorname       String
+  nachname      String
+  email         String
+  templateIds   String[]        // Mehrere Formulare (Antrag, EWE, Datenschutz)
+  sportarten    String[]        // Sportarten fuer die Anmeldung
+  geburtsdatum  String?         // Optionales Geburtsdatum
+  workflowId    String?         // Welcher Workflow verwendet wurde
+  status        EinladungStatus @default(GESENDET)
+  eingeladenVon String          // userId des Trainers/Vorstands
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([token])
+  @@index([tenantId])
+}
+
+enum EinladungStatus {
+  GESENDET      // E-Mail verschickt
+  GEOEFFNET     // Link wurde geklickt
+  AUSGEFUELLT   // Formular wurde ausgefuellt
+  ABGELAUFEN    // Token abgelaufen (30 Tage)
 }

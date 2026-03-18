@@ -194,7 +194,10 @@ export class FormService {
     const bestehendesMitglied = await this.prisma.member.findFirst({
       where: {
         tenantId,
-        user: { email },
+        OR: [
+          { email },
+          { user: { email } },
+        ],
       },
     });
 
@@ -202,17 +205,23 @@ export class FormService {
       return bestehendesMitglied;
     }
 
+    // Sportarten aus den Daten extrahieren
+    const sportarten = (daten['sportarten'] as string[]) || [];
+
     return this.prisma.member.create({
       data: {
         tenantId,
         firstName: vorname,
         lastName: nachname,
+        email,
         memberNumber: mitgliedsnummer,
         phone: (daten['telefon'] as string) || (daten['phone'] as string),
         address: (daten['adresse'] as string) || (daten['address'] as string),
         birthDate: daten['geburtsdatum']
           ? new Date(daten['geburtsdatum'] as string)
           : undefined,
+        sport: sportarten,
+        parentEmail: (daten['elternEmail'] as string) || undefined,
         status: 'ACTIVE',
       },
     });

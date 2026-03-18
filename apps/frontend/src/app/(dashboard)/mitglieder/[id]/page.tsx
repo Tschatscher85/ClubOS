@@ -17,6 +17,9 @@ import {
   PenTool,
   Shield,
   User,
+  QrCode,
+  Key,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,14 +50,17 @@ interface Mitglied {
   id: string;
   firstName: string;
   lastName: string;
+  email: string | null;
   memberNumber: string;
   phone: string | null;
   address: string | null;
   birthDate: string | null;
+  joinDate: string;
   status: string;
   sport: string[];
   parentEmail: string | null;
   signatureUrl: string | null;
+  qrCode: string | null;
   teamMembers: TeamMitgliedschaft[];
   user: BenutzerInfo | null;
 }
@@ -143,6 +149,12 @@ export default function MitgliedDetailPage() {
   const [ausgewaehlterBenutzerId, setAusgewaehlterBenutzerId] = useState('');
   const [verknuepfenLadend, setVerknuepfenLadend] = useState(false);
 
+  // QR-Code
+  const [qrLadend, setQrLadend] = useState(false);
+
+  // Login erstellen
+  const [loginErstellend, setLoginErstellend] = useState(false);
+
   // Unterschrift
   const [unterschriftPadOffen, setUnterschriftPadOffen] = useState(false);
   const [unterschriftSpeichernd, setUnterschriftSpeichernd] = useState(false);
@@ -193,6 +205,34 @@ export default function MitgliedDetailPage() {
       setVerknuepfenLadend(false);
     }
   }, [ausgewaehlterBenutzerId, mitgliedId, datenLaden]);
+
+  const handleQrGenerieren = useCallback(async () => {
+    setQrLadend(true);
+    try {
+      const ergebnis = await apiClient.get<{ qrCode: string }>(
+        `/qrcode/mitglied/${mitgliedId}`,
+      );
+      setMitglied((prev) =>
+        prev ? { ...prev, qrCode: ergebnis.qrCode } : prev,
+      );
+    } catch (error) {
+      console.error('Fehler beim Generieren des QR-Codes:', error);
+    } finally {
+      setQrLadend(false);
+    }
+  }, [mitgliedId]);
+
+  const handleLoginErstellen = useCallback(async () => {
+    setLoginErstellend(true);
+    try {
+      await apiClient.post(`/mitglieder/${mitgliedId}/login-erstellen`, {});
+      datenLaden();
+    } catch (error) {
+      console.error('Fehler:', error);
+    } finally {
+      setLoginErstellend(false);
+    }
+  }, [mitgliedId, datenLaden]);
 
   const handleUnterschriftGespeichert = useCallback(
     async (dataUrl: string) => {
@@ -512,6 +552,104 @@ export default function MitgliedDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* QR-Code Mitgliedsausweis */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <QrCode className="h-5 w-5" />
+            Digitaler Mitgliedsausweis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {mitglied.qrCode ? (
+            <div className="flex items-start gap-6">
+              <img
+                src={mitglied.qrCode}
+                alt="QR-Code Mitgliedsausweis"
+                className="rounded-lg border p-2 bg-white"
+                style={{ maxWidth: '180px' }}
+              />
+              <div className="space-y-2">
+                <p className="font-medium">
+                  {mitglied.firstName} {mitglied.lastName}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {mitglied.memberNumber}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleQrGenerieren}
+                  disabled={qrLadend}
+                >
+                  Neu generieren
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Noch kein QR-Code generiert.
+              </p>
+              <Button onClick={handleQrGenerieren} disabled={qrLadend}>
+                {qrLadend ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Wird generiert...
+                  </>
+                ) : (
+                  <>
+                    <QrCode className="h-4 w-4 mr-2" />
+                    QR-Code generieren
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Login erstellen (falls kein User verknuepft) */}
+      {!mitglied.user && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5" />
+              Login erstellen
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Erstellt einen Login-Zugang fuer dieses Mitglied. Ein temporaeres
+              Passwort wird generiert.
+              {!mitglied.email && !mitglied.parentEmail && (
+                <span className="block mt-1 text-destructive">
+                  Bitte zuerst eine E-Mail-Adresse hinterlegen.
+                </span>
+              )}
+            </p>
+            <Button
+              onClick={handleLoginErstellen}
+              disabled={
+                loginErstellend || (!mitglied.email && !mitglied.parentEmail)
+              }
+            >
+              {loginErstellend ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Wird erstellt...
+                </>
+              ) : (
+                <>
+                  <Key className="h-4 w-4 mr-2" />
+                  Login erstellen
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Digitale Unterschrift */}
       <Card>

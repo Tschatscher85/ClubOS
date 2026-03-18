@@ -18,6 +18,7 @@ interface Mitglied {
   id: string;
   firstName: string;
   lastName: string;
+  email: string | null;
   memberNumber: string;
   birthDate: string | null;
   phone: string | null;
@@ -25,6 +26,7 @@ interface Mitglied {
   sport: string[];
   parentEmail: string | null;
   status: string;
+  joinDate: string;
 }
 
 interface MitgliedFormularProps {
@@ -68,30 +70,52 @@ export function MitgliedFormular({
 
   const [vorname, setVorname] = useState(mitglied?.firstName || '');
   const [nachname, setNachname] = useState(mitglied?.lastName || '');
+  const [email, setEmail] = useState(mitglied?.email || '');
   const [geburtsdatum, setGeburtsdatum] = useState(
     mitglied?.birthDate ? mitglied.birthDate.split('T')[0] : '',
   );
+  const [eintrittsdatum, setEintrittsdatum] = useState(
+    mitglied?.joinDate ? mitglied.joinDate.split('T')[0] : new Date().toISOString().split('T')[0],
+  );
   const [telefon, setTelefon] = useState(mitglied?.phone || '');
   const [adresse, setAdresse] = useState(mitglied?.address || '');
-  const [sportart, setSportart] = useState(mitglied?.sport?.[0] || 'FUSSBALL');
+  const [gewaehlteSportarten, setGewaehlteSportarten] = useState<string[]>(
+    mitglied?.sport || [],
+  );
   const [elternEmail, setElternEmail] = useState(mitglied?.parentEmail || '');
   const [status, setStatus] = useState(mitglied?.status || 'PENDING');
   const [ladend, setLadend] = useState(false);
   const [fehler, setFehler] = useState('');
+
+  const handleSportartToggle = (sportart: string) => {
+    setGewaehlteSportarten((prev) =>
+      prev.includes(sportart)
+        ? prev.filter((s) => s !== sportart)
+        : [...prev, sportart],
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLadend(true);
     setFehler('');
 
+    if (gewaehlteSportarten.length === 0) {
+      setFehler('Bitte mindestens eine Sportart auswaehlen.');
+      setLadend(false);
+      return;
+    }
+
     try {
       const daten = {
         vorname,
         nachname,
+        ...(email && { email }),
         ...(geburtsdatum && { geburtsdatum }),
+        eintrittsdatum,
         ...(telefon && { telefon }),
         ...(adresse && { adresse }),
-        sportarten: [sportart],
+        sportarten: gewaehlteSportarten,
         ...(elternEmail && { elternEmail }),
         ...(istBearbeitung && { status }),
       };
@@ -152,13 +176,39 @@ export function MitgliedFormular({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="geburtsdatum">Geburtsdatum</Label>
+            <Label htmlFor="email">E-Mail-Adresse</Label>
             <Input
-              id="geburtsdatum"
-              type="date"
-              value={geburtsdatum}
-              onChange={(e) => setGeburtsdatum(e.target.value)}
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="max@beispiel.de"
             />
+            <p className="text-xs text-muted-foreground">
+              Wird fuer den persoenlichen Login verwendet
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="geburtsdatum">Geburtsdatum</Label>
+              <Input
+                id="geburtsdatum"
+                type="date"
+                value={geburtsdatum}
+                onChange={(e) => setGeburtsdatum(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="eintrittsdatum">Eintrittsdatum *</Label>
+              <Input
+                id="eintrittsdatum"
+                type="date"
+                value={eintrittsdatum}
+                onChange={(e) => setEintrittsdatum(e.target.value)}
+                required
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -181,19 +231,29 @@ export function MitgliedFormular({
             />
           </div>
 
+          {/* Mehrfach-Auswahl Sportarten */}
           <div className="space-y-2">
-            <Label htmlFor="sportart">Sportart</Label>
-            <Select
-              id="sportart"
-              value={sportart}
-              onChange={(e) => setSportart(e.target.value)}
-            >
+            <Label>Sportarten *</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {SPORTARTEN.map((s) => (
-                <option key={s} value={s}>
-                  {SPORTARTEN_LABEL[s]}
-                </option>
+                <label
+                  key={s}
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 cursor-pointer transition-colors ${
+                    gewaehlteSportarten.includes(s)
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border hover:bg-muted/50'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={gewaehlteSportarten.includes(s)}
+                    onChange={() => handleSportartToggle(s)}
+                    className="rounded border-gray-300"
+                  />
+                  <span className="text-sm">{SPORTARTEN_LABEL[s]}</span>
+                </label>
               ))}
-            </Select>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -205,6 +265,9 @@ export function MitgliedFormular({
               onChange={(e) => setElternEmail(e.target.value)}
               placeholder="eltern@beispiel.de"
             />
+            <p className="text-xs text-muted-foreground">
+              Eltern sehen dann ihr Kind und die zugehoerigen Abteilungen/Teams
+            </p>
           </div>
 
           {istBearbeitung && (

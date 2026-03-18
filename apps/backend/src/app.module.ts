@@ -12,7 +12,13 @@ import { MessageModule } from './message/message.module';
 import { FahrgemeinschaftModule } from './fahrgemeinschaft/fahrgemeinschaft.module';
 import { FormModule } from './form/form.module';
 import { DokumentModule } from './dokument/dokument.module';
+import { AbteilungModule } from './abteilung/abteilung.module';
+import { WorkflowModule } from './workflow/workflow.module';
+import { EinladungModule } from './einladung/einladung.module';
+import { FaqModule } from './faq/faq.module';
+import { QrcodeModule } from './qrcode/qrcode.module';
 import { HealthModule } from './health/health.module';
+import { QueueModule } from './queue/queue.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -33,7 +39,13 @@ import configuration from './config/configuration';
     FahrgemeinschaftModule,
     FormModule,
     DokumentModule,
+    AbteilungModule,
+    WorkflowModule,
+    EinladungModule,
+    FaqModule,
+    QrcodeModule,
     HealthModule,
+    QueueModule,
   ],
 })
 export class AppModule {}
