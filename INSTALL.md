@@ -27,7 +27,7 @@ sudo usermod -aG docker $USER
 
 ```bash
 # Repository klonen
-git clone https://github.com/DEIN_BENUTZER/clubos.git
+git clone https://github.com/Tschatscher85/ClubOS.git
 cd clubos
 
 # Installationsskript ausfuehren
@@ -50,7 +50,7 @@ Das Skript erledigt automatisch:
 ### 1. Repository klonen
 
 ```bash
-git clone https://github.com/DEIN_BENUTZER/clubos.git
+git clone https://github.com/Tschatscher85/ClubOS.git
 cd clubos
 ```
 

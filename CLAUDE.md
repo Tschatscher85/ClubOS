@@ -417,7 +417,7 @@ model FAQ {
 
 **Alle Sprints abgeschlossen (außer Mobile App)**
 
-### 36 Backend-Module:
+### 48 Backend-Module:
 - [x] Auth (JWT, Refresh, Passwort-Aenderung, Passwort-Reset, E-Mail-Verifizierung, Google OAuth)
 - [x] Multi-Tenant (Schema-per-Tenant)
 - [x] Mitgliederverwaltung (E-Mail, Multi-Sport, Auto-Login, QR-Ausweis)
@@ -454,15 +454,33 @@ model FAQ {
 - [x] Turnier-Landingpages (Werbung, Sponsoren, oeffentliche URLs)
 - [x] Vereinsrollen-System (RollenVorlage pro Verein, mehrere Rollen pro User, Auto-Berechnung)
 - [x] Berechtigungs-Guard (BerechtigungenGuard + Decorator auf Controllern)
+- [x] Sentry Error-Monitoring (Backend + Frontend, DSGVO-konform)
+- [x] Prisma Migrations (statt db push, sicher fuer Produktion)
+- [x] Anwesenheitsstatistik (Heatmap, Ampel-System, Fehl-Alerts)
+- [x] Spielbericht + KI-Textgenerierung (Claude/OpenAI, Veroeffentlichen auf Homepage)
+- [x] Mannschaftskasse + Strafenkatalog (Strafen, Einzahlungen, Saldo pro Mitglied)
+- [x] Trikotverwaltung (Ausgabe, Rueckgabe, Ausstehende)
+- [x] Wetter-Integration (Open-Meteo API, kostenlos, WetterBadge im Kalender)
+- [x] Ressourcen & Platzbuchung (Konflikt-Pruefung, Wochenkalender)
+- [x] KI-Trainingsplan-Generator (strukturierte Einheiten, Multi-KI-Provider)
+- [x] Aufstellungsplaner (CSS-Grid Spielfeld, Formation-Selector, oeffentliche URL)
+- [x] Verletzungsprotokoll (DSGVO Art.9, RehaStatus, nur Trainer/Admin)
+- [x] Spieler-Entwicklungsbogen (Sternebewertung, Radar-Chart, Trend)
+- [x] Affiliate & Empfehlungsprogramm (Referral-Codes, Gratismonate)
 
-### 22 Frontend-Seiten:
-Dashboard, Mitglieder (+Detail), Mitarbeiter, Abteilungen, Teams (+Detail),
-Kalender (+Detail), Turniere (+Detail), Nachrichten, Fahrgemeinschaften,
-Eltern-Portal, Belegung (Hallen+Sportplaetze), Schiedsrichter, Buchhaltung,
-Sponsoren, Workflows, Formulare (+Detail), Dokumente, DFBnet,
+### 30+ Frontend-Seiten:
+Dashboard, Mitglieder (+Detail, +Entwicklung), Mitarbeiter (Personaluebersicht),
+Abteilungen, Teams (+Detail, +Anwesenheit, +Kasse, +Trikots, +Aufstellung),
+Kalender (+Detail mit WetterBadge), Turniere (+Detail), Nachrichten,
+Fahrgemeinschaften, Eltern-Portal, Belegung (Hallen+Sportplaetze),
+Schiedsrichter, Buchhaltung, Sponsoren, Workflows, Formulare (+Detail),
+Dokumente, DFBnet, Ressourcen (Buchungskalender), Trainingsplaene (KI-Generator),
+Spielberichte (Wizard + KI-Text),
 Einstellungen (Verein, Vereinsdaten, Sportarten, Beitraege, Rollen, Benutzer,
-KI, E-Mail, Passwort), Einladung-Wizard, Registrierung, Passwort-Vergessen,
-Passwort-Zuruecksetzen, E-Mail-Verifizierung, Onboarding-Wizard
+Empfehlen, KI, E-Mail, Passwort),
+Einladung-Wizard, Registrierung (+Empfehlungscode), Passwort-Vergessen,
+Passwort-Zuruecksetzen, E-Mail-Verifizierung, Onboarding-Wizard,
+Aufstellung oeffentlich (kein Login)
 
 ### Erledigt (Stand: 18.03.2026):
 - [x] Registrierungs-Seite (Frontend + Backend)
@@ -482,6 +500,19 @@ Passwort-Zuruecksetzen, E-Mail-Verifizierung, Onboarding-Wizard
 - [x] Geburtsdatum-Spalte in Mitglieder-Tabelle
 - [x] Einstellungen > Rollen (Rollenvorlagen pro Verein konfigurieren)
 - [x] Einstellungen > Benutzer (Vereinsrollen zuweisen + individuelle Anpassung)
+- [x] Sentry Error-Monitoring (Backend @sentry/nestjs + Frontend @sentry/nextjs)
+- [x] Prisma Migrations (Baseline + migrate deploy statt db push)
+- [x] Anwesenheitsstatistik (Teams > Anwesenheit: Heatmap + Ampel + Alerts)
+- [x] Spielbericht + KI (Wizard: Ergebnis, Torschuetzen, Karten, KI-Text generieren)
+- [x] Mannschaftskasse (Teams > Kasse: Strafen, Einzahlungen, Strafkatalog, Saldo)
+- [x] Trikotverwaltung (Teams > Trikots: Ausgabe/Rueckgabe/Ausstehende)
+- [x] Wetter-Integration (WetterBadge im Kalender-Event, Open-Meteo, 3h Cache)
+- [x] Ressourcen & Platzbuchung (Wochenkalender, Konflikt-Pruefung)
+- [x] KI-Trainingsplan-Generator (Einheiten-Wizard, Recharts nicht noetig)
+- [x] Aufstellungsplaner (CSS-Grid, Formation-Selector, oeffentliche URL)
+- [x] Verletzungsprotokoll (Team-Widget + Mitglied-Detail, DSGVO Art.9)
+- [x] Spieler-Entwicklungsbogen (Radar-Chart mit Recharts, Sternebewertung)
+- [x] Affiliate-Programm (Einstellungen > Empfehlen, Registrierung mit Code)
 
 ### Offen:
 - [ ] Mobile App (Expo React Native) — kommt als letztes
