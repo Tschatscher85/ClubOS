@@ -15,6 +15,8 @@ export const ROUTEN = {
   ELTERN: '/eltern',
   WORKFLOWS: '/workflows',
   HALLEN: '/hallen',
+  SCHIEDSRICHTER: '/schiedsrichter',
+  BUCHHALTUNG: '/buchhaltung',
   SPONSOREN: '/sponsoren',
   FORMULARE: '/formulare',
   DOKUMENTE: '/dokumente',

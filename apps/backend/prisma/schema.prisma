@@ -533,6 +533,72 @@ model Mitfahrer {
   @@index([fahrgemeinschaftId])
 }
 
+// ==================== Schiedsrichter-Einteilung ====================
+
+model SchiedsrichterEinteilung {
+  id         String   @id @default(cuid())
+  tenantId   String
+  eventId    String
+  memberId   String   // Mitglied das als Schiedsrichter eingeteilt ist
+  status     SchiriStatus @default(EINGETEILT)
+  bestaetigt Boolean  @default(false)
+  notiz      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([eventId, memberId])
+  @@index([tenantId])
+  @@index([eventId])
+}
+
+enum SchiriStatus {
+  EINGETEILT
+  BESTAETIGT
+  ABGELEHNT
+  ERSATZ
+}
+
+// ==================== Buchhaltung / SEPA ====================
+
+model Rechnung {
+  id           String          @id @default(cuid())
+  tenantId     String
+  memberId     String
+  rechnungsNr  String
+  betrag       Float
+  beschreibung String
+  faelligAm    DateTime
+  bezahltAm    DateTime?
+  status       RechnungStatus  @default(OFFEN)
+  sepaMandat   String?         // SEPA-Mandatsreferenz
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([tenantId])
+  @@index([memberId])
+  @@index([status])
+}
+
+enum RechnungStatus {
+  OFFEN
+  BEZAHLT
+  UEBERFAELLIG
+  STORNIERT
+}
+
+model Beitrag {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String   // z.B. "Jahresbeitrag Erwachsene"
+  betrag      Float
+  intervall   String   // MONATLICH, QUARTALSWEISE, JAEHRLICH
+  sportart    String?  // Optional: nur fuer bestimmte Sportart
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
 // ==================== Workflows (Einladungs-Pakete) ====================
 
 model Workflow {

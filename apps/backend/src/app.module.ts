@@ -21,6 +21,9 @@ import { HealthModule } from './health/health.module';
 import { QueueModule } from './queue/queue.module';
 import { HalleModule } from './halle/halle.module';
 import { SponsorModule } from './sponsor/sponsor.module';
+import { RealtimeModule } from './realtime/realtime.module';
+import { SchiedsrichterModule } from './schiedsrichter/schiedsrichter.module';
+import { BuchhaltungModule } from './buchhaltung/buchhaltung.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -50,6 +53,9 @@ import configuration from './config/configuration';
     QueueModule,
     HalleModule,
     SponsorModule,
+    RealtimeModule,
+    SchiedsrichterModule,
+    BuchhaltungModule,
   ],
 })
 export class AppModule {}
