@@ -77,22 +77,26 @@ export default function TurniereInhalt() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Trophy className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold">Turniere & Spiele</h1>
-            <p className="text-muted-foreground">{turniere.length} Turniere</p>
-          </div>
+        <p className="text-sm text-muted-foreground">{turniere.length} Turniere & Veranstaltungen</p>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => {
+            // Zum Kalender-Tab wechseln um ein Event/Spiel zu erstellen
+            const kalenderTab = document.querySelector('[data-state="inactive"][value="kalender"]') as HTMLElement;
+            if (kalenderTab) kalenderTab.click();
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Neues Spiel / Training
+          </Button>
+          <Button onClick={() => setFormularOffen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Neues Turnier
+          </Button>
         </div>
-        <Button onClick={() => setFormularOffen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Neues Turnier
-        </Button>
       </div>
 
       {turniere.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
-          Noch keine Turniere. Erstellen Sie Ihr erstes Turnier.
+          Noch keine Turniere. Erstellen Sie ein Turnier oder wechseln Sie zum Kalender-Tab für Spiele und Trainings.
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
