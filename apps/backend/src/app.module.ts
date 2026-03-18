@@ -38,6 +38,9 @@ import { RollenVorlageModule } from './rollen-vorlage/rollen-vorlage.module';
 import { SpielberichtModule } from './spielbericht/spielbericht.module';
 import { TrikotModule } from './trikot/trikot.module';
 import { KasseModule } from './kasse/kasse.module';
+import { WetterModule } from './wetter/wetter.module';
+import { BuchungModule } from './buchung/buchung.module';
+import { TrainingsplanModule } from './trainingsplan/trainingsplan.module';
 import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
 import configuration from './config/configuration';
 
@@ -100,6 +103,9 @@ import configuration from './config/configuration';
     SpielberichtModule,
     TrikotModule,
     KasseModule,
+    WetterModule,
+    BuchungModule,
+    TrainingsplanModule,
   ],
   providers: [
     {

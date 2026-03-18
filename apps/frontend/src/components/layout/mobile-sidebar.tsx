@@ -19,6 +19,7 @@ import {
   FileText,
   FolderOpen,
   Settings,
+  ClipboardList,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,7 @@ const NAVIGATION: ReadonlyArray<{
   { href: ROUTEN.WORKFLOWS, label: 'Workflows', icon: Zap, rollen: ['SUPERADMIN', 'ADMIN'] },
   { href: ROUTEN.FORMULARE, label: 'Formulare', icon: FileText, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
   { href: ROUTEN.DOKUMENTE, label: 'Dokumente', icon: FolderOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
+  { href: ROUTEN.TRAININGSPLAENE, label: 'Trainingsplaene', icon: ClipboardList, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
   { href: ROUTEN.EINSTELLUNGEN, label: 'Einstellungen', icon: Settings, rollen: ['SUPERADMIN', 'ADMIN'] },
 ];
 

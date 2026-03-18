@@ -20,6 +20,8 @@ import {
   FolderOpen,
   Database,
   Settings,
+  MapPin,
+  ClipboardList,
 } from 'lucide-react';
 import { useTenant, useBenutzer } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -46,12 +48,14 @@ const NAVIGATION: ReadonlyArray<{
   { href: ROUTEN.FAHRGEMEINSCHAFTEN, label: 'Fahrtenboerse', icon: Car, rollen: null, berechtigung: 'FAHRGEMEINSCHAFTEN' },
   { href: ROUTEN.ELTERN, label: 'Eltern-Portal', icon: Heart, rollen: ['PARENT'] },
   { href: ROUTEN.HALLEN, label: 'Belegung', icon: Building, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'HALLENBELEGUNG' },
+  { href: ROUTEN.RESSOURCEN, label: 'Ressourcen', icon: MapPin, rollen: null, berechtigung: 'RESSOURCEN' },
   { href: ROUTEN.SCHIEDSRICHTER, label: 'Schiedsrichter', icon: UserCheck, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'SCHIEDSRICHTER' },
   { href: ROUTEN.BUCHHALTUNG, label: 'Buchhaltung', icon: Receipt, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'BUCHHALTUNG' },
   { href: ROUTEN.SPONSOREN, label: 'Sponsoren', icon: Heart, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'SPONSOREN' },
   { href: ROUTEN.WORKFLOWS, label: 'Workflows', icon: Zap, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'WORKFLOWS' },
   { href: ROUTEN.FORMULARE, label: 'Formulare', icon: FileText, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'FORMULARE' },
   { href: ROUTEN.DOKUMENTE, label: 'Dokumente', icon: FolderOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'DOKUMENTE' },
+  { href: ROUTEN.TRAININGSPLAENE, label: 'Trainingsplaene', icon: ClipboardList, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
   { href: ROUTEN.DFBNET, label: 'DFBnet', icon: Database, rollen: ['SUPERADMIN', 'ADMIN'] },
   { href: ROUTEN.EINSTELLUNGEN, label: 'Einstellungen', icon: Settings, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'EINSTELLUNGEN' },
 ];

@@ -19,6 +19,7 @@ export const ROUTEN = {
   ELTERN: '/eltern',
   WORKFLOWS: '/workflows',
   HALLEN: '/hallen',
+  RESSOURCEN: '/ressourcen',
   SCHIEDSRICHTER: '/schiedsrichter',
   BUCHHALTUNG: '/buchhaltung',
   SPONSOREN: '/sponsoren',
@@ -27,4 +28,5 @@ export const ROUTEN = {
   DFBNET: '/dfbnet',
   EINSTELLUNGEN: '/einstellungen',
   POSTEINGANG: '/posteingang',
+  TRAININGSPLAENE: '/trainingsplaene',
 } as const;

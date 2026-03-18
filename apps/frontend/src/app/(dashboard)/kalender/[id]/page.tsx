@@ -15,6 +15,7 @@ import {
   Download,
   Zap,
   FileText,
+  CloudSun,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -23,6 +24,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { apiClient } from '@/lib/api-client';
 import { API_BASE_URL } from '@/lib/constants';
 import { useBenutzer } from '@/hooks/use-auth';
+import WetterBadge from '@/components/wetter/wetter-badge';
 
 interface MitgliedKurz {
   id: string;
@@ -73,6 +75,8 @@ interface EventDetail {
   location: string;
   hallName: string | null;
   hallAddress: string | null;
+  lat: number | null;
+  lng: number | null;
   notes: string | null;
   team: TeamInfo;
   attendances: AnmeldungData[];
@@ -337,6 +341,23 @@ export default function EventDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Wetter-Anzeige (nur fuer zukuenftige Events mit Koordinaten) */}
+      {new Date(event.date) > new Date() && (
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2 mb-2">
+              <CloudSun className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Wettervorhersage</span>
+            </div>
+            {event.lat !== null && event.lng !== null ? (
+              <WetterBadge lat={event.lat} lng={event.lng} datum={event.date} />
+            ) : (
+              <WetterBadge eventId={event.id} />
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Anmeldestatus-Uebersicht */}
       {zusammenfassung && (

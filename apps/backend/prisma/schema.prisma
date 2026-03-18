@@ -95,6 +95,8 @@ model Tenant {
   pinboardItems      PinboardItem[]
   rollenVorlagen     RollenVorlage[]
   spielberichte      Spielbericht[]
+  ressourcen         Ressource[]
+  trainingsplaene    Trainingsplan[]
 
   @@index([slug])
 }
@@ -136,6 +138,7 @@ model User {
   notizen                String? // Admin-Notizen zum Benutzer
   profile                Member?
   emailEinstellungen     EmailEinstellungen?
+  buchungen              Buchung[]
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
 
@@ -286,6 +289,7 @@ model Team {
   kasse            TeamKasse?
   strafkatalog     Strafkatalog[]
   trikots          Trikot[]
+  trainingsplaene  Trainingsplan[]
 
   @@index([tenantId])
   @@index([abteilungId])
@@ -420,6 +424,8 @@ model Event {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  lat            Float?
+  lng            Float?
   attendances   Attendance[]
   reminders     Reminder[]
   comments      EventComment[]
@@ -1310,4 +1316,80 @@ model TrikotVergabe {
   notiz      String?
   trikot     Trikot    @relation(fields: [trikotId], references: [id], onDelete: Cascade)
   member     Member    @relation(fields: [memberId], references: [id])
+}
+
+// ==================== Wetter-Cache (Open-Meteo) ====================
+
+model WetterCache {
+  id           String   @id @default(cuid())
+  lat          Float
+  lng          Float
+  datum        DateTime
+  temperatur   Float?
+  regen        Float?
+  windkmh      Float?
+  wettercode   Int?
+  beschreibung String?
+  geladenAm    DateTime @default(now())
+
+  @@unique([lat, lng, datum])
+}
+
+// ==================== Ressourcen & Platzbuchung ====================
+
+model Ressource {
+  id           String    @id @default(cuid())
+  tenantId     String
+  name         String
+  typ          String
+  beschreibung String?
+  bildUrl      String?
+  maxPersonen  Int?
+  aktiv        Boolean   @default(true)
+  buchungen    Buchung[]
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model Buchung {
+  id          String        @id @default(cuid())
+  ressourceId String
+  tenantId    String
+  bucherId    String
+  titel       String
+  start       DateTime
+  ende        DateTime
+  notiz       String?
+  status      BuchungStatus @default(BESTAETIGT)
+  erstelltAm  DateTime      @default(now())
+  ressource   Ressource     @relation(fields: [ressourceId], references: [id], onDelete: Cascade)
+  bucher      User          @relation(fields: [bucherId], references: [id])
+
+  @@index([ressourceId])
+  @@index([tenantId])
+}
+
+enum BuchungStatus {
+  ANFRAGE
+  BESTAETIGT
+  ABGELEHNT
+  STORNIERT
+}
+
+// ==================== KI-Trainingsplaene ====================
+
+model Trainingsplan {
+  id         String   @id @default(cuid())
+  teamId     String
+  tenantId   String
+  titel      String
+  parameter  Json
+  inhalt     Json
+  erstelltAm DateTime @default(now())
+  team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+  @@index([tenantId])
 }
