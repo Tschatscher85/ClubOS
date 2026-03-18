@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -59,6 +60,22 @@ export class TeamController {
   @ApiOperation({ summary: 'Team-Statistik abrufen' })
   async statistik(@AktuellerBenutzer('tenantId') tenantId: string) {
     return this.teamService.statistik(tenantId);
+  }
+
+  @Get(':id/anwesenheit')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
+  @ApiOperation({ summary: 'Anwesenheitsstatistik eines Teams abrufen' })
+  async anwesenheitStatistik(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') teamId: string,
+    @Query('wochen') wochen?: string,
+  ) {
+    const anzahlWochen = wochen ? parseInt(wochen, 10) : 12;
+    return this.teamService.anwesenheitStatistik(
+      tenantId,
+      teamId,
+      isNaN(anzahlWochen) ? 12 : anzahlWochen,
+    );
   }
 
   @Get(':id')

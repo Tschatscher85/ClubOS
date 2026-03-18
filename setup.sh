@@ -95,7 +95,7 @@ cd "$SCRIPT_DIR"
 sudo -u "$REAL_USER" npm install
 sudo -u "$REAL_USER" npm run build --workspace=packages/shared
 sudo -u "$REAL_USER" npx prisma generate --schema=apps/backend/prisma/schema.prisma
-sudo -u "$REAL_USER" npx prisma db push --schema=apps/backend/prisma/schema.prisma
+sudo -u "$REAL_USER" npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma
 sudo -u "$REAL_USER" npx prisma db seed --schema=apps/backend/prisma/schema.prisma
 
 echo ""

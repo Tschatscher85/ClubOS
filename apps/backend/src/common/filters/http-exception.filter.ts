@@ -6,6 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
+import * as Sentry from '@sentry/nestjs';
 
 // Deutsche Fehlermeldungen fuer Standard-HTTP-Statuscodes
 const DEUTSCHE_FEHLERMELDUNGEN: Record<number, string> = {
@@ -63,7 +64,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const status = HttpStatus.INTERNAL_SERVER_ERROR;
 
-    // Keine internen Details in der Antwort loggen
+    // Fehler an Sentry melden und loggen
+    Sentry.captureException(exception);
     console.error('Unbehandelter Fehler:', exception);
 
     response.status(status).json({

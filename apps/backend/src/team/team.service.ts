@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { AttendanceStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ErstelleTeamDto, AktualisiereTeamDto } from './dto/erstelle-team.dto';
 import { MitgliedHinzufuegenDto } from './dto/team-mitglied.dto';
@@ -158,5 +159,129 @@ export class TeamService {
     return this.prisma.teamMember.delete({
       where: { id: eintrag.id },
     });
+  }
+
+  // ==================== Anwesenheitsstatistik ====================
+
+  async anwesenheitStatistik(tenantId: string, teamId: string, wochen: number) {
+    // Team pruefen
+    await this.nachIdAbrufen(tenantId, teamId);
+
+    const zeitraumStart = new Date(Date.now() - wochen * 7 * 24 * 3600000);
+    const jetzt = new Date();
+
+    // 1. Alle TRAINING-Events im Zeitraum laden
+    const trainings = await this.prisma.event.findMany({
+      where: {
+        teamId,
+        tenantId,
+        type: 'TRAINING',
+        date: {
+          gte: zeitraumStart,
+          lte: jetzt,
+        },
+      },
+      include: {
+        attendances: {
+          include: {
+            member: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    // 2. Alle Team-Mitglieder laden
+    const teamMitglieder = await this.prisma.teamMember.findMany({
+      where: { teamId },
+      include: {
+        member: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    const anzahlTrainings = trainings.length;
+
+    // 3. Fuer jedes Mitglied Statistik berechnen
+    const mitglieder = teamMitglieder.map((tm) => {
+      const memberId = tm.memberId;
+      let kommt = 0;
+      let fehlt = 0;
+      let offen = 0;
+
+      // Status pro Training (chronologisch neueste zuerst)
+      const letzteTrainings: { datum: string; status: AttendanceStatus }[] = [];
+
+      for (const training of trainings) {
+        const anmeldung = training.attendances.find(
+          (a) => a.memberId === memberId,
+        );
+        const status: AttendanceStatus = anmeldung?.status ?? 'PENDING';
+
+        if (status === 'YES') {
+          kommt++;
+        } else if (status === 'NO') {
+          fehlt++;
+        } else {
+          offen++;
+        }
+
+        letzteTrainings.push({
+          datum: training.date.toISOString(),
+          status,
+        });
+      }
+
+      // Anwesenheitsquote: YES / Gesamtanzahl Trainings
+      const anwesenheitsquote =
+        anzahlTrainings > 0 ? Math.round((kommt / anzahlTrainings) * 100) : 0;
+
+      // Fehlt in Folge: Aufeinanderfolgende NO/PENDING vom neuesten Training
+      let fehltInFolge = 0;
+      for (const eintrag of letzteTrainings) {
+        if (eintrag.status === 'NO' || eintrag.status === 'PENDING') {
+          fehltInFolge++;
+        } else {
+          break;
+        }
+      }
+
+      return {
+        id: memberId,
+        name: `${tm.member.firstName} ${tm.member.lastName}`,
+        anwesenheitsquote,
+        kommt,
+        fehlt,
+        offen,
+        letzteTrainings,
+        fehltInFolge,
+      };
+    });
+
+    // Team-Quote: Durchschnitt aller Mitglieder
+    const teamQuote =
+      mitglieder.length > 0
+        ? Math.round(
+            mitglieder.reduce((sum, m) => sum + m.anwesenheitsquote, 0) /
+              mitglieder.length,
+          )
+        : 0;
+
+    return {
+      mitglieder,
+      teamQuote,
+      anzahlTrainings,
+    };
   }
 }

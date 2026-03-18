@@ -12,6 +12,7 @@ import {
   MapPin,
   Users,
   Search,
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -197,26 +198,35 @@ export default function TeamDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.push('/teams')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex items-center gap-3">
-          <Shield className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold">{team.name}</h1>
-            <div className="flex gap-2 mt-1">
-              <Badge variant="secondary">
-                {SPORT_LABEL[team.sport] || team.sport}
-              </Badge>
-              <Badge variant="outline">{team.ageGroup}</Badge>
-              <Badge variant="outline">
-                <Users className="h-3 w-3 mr-1" />
-                {team._count.teamMembers} Spieler
-              </Badge>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => router.push('/teams')}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-3">
+            <Shield className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-2xl font-bold">{team.name}</h1>
+              <div className="flex gap-2 mt-1">
+                <Badge variant="secondary">
+                  {SPORT_LABEL[team.sport] || team.sport}
+                </Badge>
+                <Badge variant="outline">{team.ageGroup}</Badge>
+                <Badge variant="outline">
+                  <Users className="h-3 w-3 mr-1" />
+                  {team._count.teamMembers} Spieler
+                </Badge>
+              </div>
             </div>
           </div>
         </div>
+        <Button
+          variant="outline"
+          onClick={() => router.push(`/teams/${teamId}/anwesenheit`)}
+        >
+          <BarChart3 className="h-4 w-4 mr-2" />
+          Anwesenheit
+        </Button>
       </div>
 
       {/* Tabs */}

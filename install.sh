@@ -298,8 +298,7 @@ until docker compose -f docker-compose.prod.yml ps backend --format '{{.State}}'
   sleep 2
 done
 
-docker compose -f docker-compose.prod.yml exec -T backend npx prisma db push --schema=apps/backend/prisma/schema.prisma --accept-data-loss 2>/dev/null || \
-  docker compose -f docker-compose.prod.yml exec -T backend npx prisma db push --schema=apps/backend/prisma/schema.prisma
+docker compose -f docker-compose.prod.yml exec -T backend npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma
 
 erfolg "Datenbank-Schema wurde angewendet."
 echo ""

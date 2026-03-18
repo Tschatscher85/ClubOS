@@ -1,3 +1,4 @@
+import './instrument'; // Sentry MUSS als erster Import stehen
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
