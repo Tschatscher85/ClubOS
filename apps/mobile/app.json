@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "ClubOS",
+    "slug": "clubos",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#1a56db"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "de.clubos.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1a56db"
+      },
+      "package": "de.clubos.app"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "clubos"
+      }
+    },
+    "plugins": ["expo-secure-store"]
+  }
+}

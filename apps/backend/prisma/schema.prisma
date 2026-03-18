@@ -540,6 +540,7 @@ model FormSubmission {
   email          String           // E-Mail des Antragstellers
   daten          Json             // Ausgefuellte Felder als JSON
   signatureUrl   String?          // Digitale Unterschrift als Data-URL
+  signaturDatenUrl String?        // Base64-Signaturdaten (data:image/png;base64,...)
   status         SubmissionStatus @default(EINGEREICHT)
   kommentar      String?          // Interner Kommentar vom Admin
   archiviertePdf String?          // URL der archivierten PDF

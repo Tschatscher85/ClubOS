@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -34,6 +34,7 @@ import { ProfilbildModule } from './profilbild/profilbild.module';
 import { SportartModule } from './sportart/sportart.module';
 import { PosteingangModule } from './posteingang/posteingang.module';
 import { PinboardModule } from './pinboard/pinboard.module';
+import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
 import configuration from './config/configuration';
 
 @Module({
@@ -99,4 +100,8 @@ import configuration from './config/configuration';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(SubdomainMiddleware).forRoutes('*');
+  }
+}

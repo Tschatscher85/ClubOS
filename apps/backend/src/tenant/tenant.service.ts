@@ -59,6 +59,28 @@ export class TenantService {
     return tenant;
   }
 
+  /**
+   * Oeffentliches Branding eines Vereins anhand des Slugs abrufen.
+   * Wird vom Frontend genutzt, um Branding vor dem Login zu laden.
+   */
+  async brandingAbrufen(slug: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { slug },
+      select: {
+        name: true,
+        logo: true,
+        primaryColor: true,
+        slug: true,
+      },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Verein nicht gefunden.');
+    }
+
+    return tenant;
+  }
+
   async aktualisieren(id: string, dto: AktualisiereTenantDto) {
     await this.nachIdAbrufen(id); // Pruefen ob existiert
 

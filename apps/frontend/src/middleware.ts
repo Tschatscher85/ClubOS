@@ -9,6 +9,7 @@ const OEFFENTLICHE_ROUTEN = [
   '/passwort-zuruecksetzen',
   '/email-verifizieren',
   '/onboarding',
+  '/einladung',
 ];
 
 export function middleware(request: NextRequest) {
