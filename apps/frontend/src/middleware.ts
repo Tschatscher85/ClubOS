@@ -32,8 +32,9 @@ export function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   const mainDomain = process.env.NEXT_PUBLIC_DOMAIN || 'clubos.de';
 
-  // Subdomain-Erkennung (nicht fuer localhost)
-  if (!hostname.includes('localhost') && !hostname.startsWith('api.')) {
+  // Subdomain-Erkennung (nicht fuer localhost und nicht fuer IP-Adressen)
+  const istIP = /^\d+\.\d+\.\d+\.\d+/.test(hostname.split(':')[0]);
+  if (!hostname.includes('localhost') && !hostname.startsWith('api.') && !istIP) {
     const teile = hostname.split('.');
 
     // Subdomain vorhanden wenn mindestens 3 Teile (z.B. fckunchen.clubos.de)
