@@ -17,9 +17,61 @@ model Tenant {
   primaryColor String   @default("#1a56db")
   plan         Plan     @default(STARTER)
   domain       String?
-  kiProvider   String   @default("anthropic")  // "anthropic" oder "openai"
-  kiApiKey     String?                          // API-Key (verschluesselt gespeichert)
-  kiModell     String?                          // z.B. "claude-sonnet-4-20250514" oder "gpt-4o"
+  kiProvider   String   @default("anthropic")
+  kiApiKey     String?
+  kiModell     String?
+  // Vereinsdaten (Pflicht fuer Impressum/Rechtliches)
+  vereinsNr          String?  // Vereinsregisternummer (z.B. VR 12345)
+  amtsgericht        String?  // Zustaendiges Amtsgericht
+  gruendungsjahr     Int?
+  anschrift          String?  // Vereinsadresse
+  plz                String?
+  ort                String?
+  bundesland         String?
+  telefon            String?
+  email              String?  // Offizielle Vereins-E-Mail
+  webseite           String?
+  // Vorstand / Vertretungsberechtigte
+  vorstand1Name      String?  // 1. Vorsitzender
+  vorstand1Funktion  String?  // z.B. "1. Vorsitzender"
+  vorstand2Name      String?  // 2. Vorsitzender
+  vorstand2Funktion  String?
+  kassenwart         String?
+  schriftfuehrer     String?
+  jugendwart         String?
+  // Rechtliches
+  satzungUrl         String?  // Hochgeladene Satzung (PDF)
+  satzungDatum       DateTime? // Datum der aktuellen Satzung
+  impressum          String?  // Freitext Impressum (HTML)
+  datenschutzUrl     String?  // Datenschutzerklaerung (PDF oder URL)
+  datenschutzText    String?  // Freitext Datenschutz (HTML)
+  // Versicherungen
+  haftpflichtVersicherung    String?  // Vereinshaftpflicht Anbieter
+  haftpflichtPoliceNr        String?  // Policennummer
+  haftpflichtGueltigBis      DateTime?
+  unfallVersicherung         String?  // Sportlunfallversicherung
+  unfallPoliceNr             String?
+  unfallGueltigBis           DateTime?
+  gewaehrleistungsVersicherung String? // D&O / Vermoegens­schaden­haftpflicht
+  // Finanzen
+  steuernummer       String?  // Steuernummer
+  finanzamt          String?  // Zustaendiges Finanzamt
+  gemeinnuetzigBis   DateTime? // Gemeinnuetzigkeitsbescheid gueltig bis
+  gemeinnuetzigUrl   String?  // Freistellungsbescheid (PDF)
+  iban               String?  // Vereins-IBAN
+  bic                String?
+  bankName           String?
+  // SMTP (globaler Vereins-Mailserver)
+  smtpHost           String?
+  smtpPort           Int?     @default(587)
+  smtpUser           String?
+  smtpPass           String?  // Base64-kodiert
+  smtpAbsenderEmail  String?  // z.B. info@fckunchen.de
+  smtpAbsenderName   String?  // z.B. "FC Kunchen 1920 e.V."
+  // Sportverband-Mitgliedschaften
+  landessportbund    String?  // z.B. "WLSB - Wuerttembergischer LSB"
+  sportverband       String?  // z.B. "WFV - Wuerttembergischer FV"
+  verbandsMitgliedsNr String? // Mitgliedsnummer beim Verband
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -39,6 +91,7 @@ model Tenant {
   hallen             Halle[]
   sponsoren          Sponsor[]
   homepage           Homepage?
+  customSportarten   CustomSportart[]
 
   @@index([slug])
 }
@@ -109,6 +162,16 @@ model Member {
   qrCode       String?
   parentEmail  String?
   signatureUrl String?
+  // Beitrag & Ermaessigung
+  beitragsArt       String?            // z.B. "Jahresbeitrag Erwachsene", "Jugend", "Familie"
+  beitragBetrag     Float?             // Individueller Beitrag (ueberschreibt Standard)
+  beitragIntervall  String?            // MONATLICH, QUARTALSWEISE, HALBJAEHRLICH, JAEHRLICH
+  ermaessigung      Ermaessigung?      // Ermaessigungsgrund
+  ermaessigungProzent Float?           // z.B. 50 fuer 50% Ermaessigung
+  ermaessigungBis   DateTime?          // Gueltig bis (z.B. Ende Semester)
+  nachweisDokUrl    String?            // Hochgeladener Nachweis (Studentenausweis, etc.)
+  nachweisStatus    NachweisStatus     @default(NICHT_ERFORDERLICH)
+  nachweisErinnerungGesendet DateTime? // Wann letzte Erinnerung gesendet wurde
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
@@ -124,6 +187,28 @@ enum MemberStatus {
   ACTIVE
   INACTIVE
   CANCELLED
+}
+
+enum Ermaessigung {
+  KEINE
+  STUDENT           // Studentenausweis erforderlich
+  SCHUELER          // Schuelerausweis
+  AZUBI             // Ausbildungsnachweis
+  RENTNER           // Rentenausweis
+  SCHWERBEHINDERT   // Schwerbehindertenausweis
+  EHRENAMT          // Ehrenamtlich taetig
+  FAMILIE           // Familienermaessigung (ab 2. Mitglied)
+  SOZIAL            // Sozialpass / ALG-Bescheid
+  SONSTIGE          // Individuell vereinbart
+}
+
+enum NachweisStatus {
+  NICHT_ERFORDERLICH  // Kein Nachweis noetig
+  AUSSTEHEND          // Nachweis fehlt noch
+  EINGEREICHT         // Nachweis hochgeladen, wartet auf Pruefung
+  GENEHMIGT           // Nachweis geprueft und genehmigt
+  ABGELEHNT           // Nachweis abgelehnt
+  ABGELAUFEN          // Nachweis ist abgelaufen (z.B. Semester vorbei)
 }
 
 // ==================== Abteilung (z.B. Fussball, Handball) ====================
@@ -194,7 +279,85 @@ enum Sport {
   TURNEN
   SCHWIMMEN
   LEICHTATHLETIK
+  VOLLEYBALL
+  TISCHTENNIS
+  BADMINTON
+  HOCKEY
+  RUGBY
+  BASEBALL
+  SOFTBALL
+  EISHOCKEY
+  WASSERBALL
+  RINGEN
+  JUDO
+  KARATE
+  TAEKWONDO
+  BOXEN
+  FECHTEN
+  REITEN
+  GOLF
+  KLETTERN
+  SKIFAHREN
+  SNOWBOARD
+  RADSPORT
+  TRIATHLON
+  RUDERN
+  KANU
+  SEGELN
+  TANZEN
+  YOGA
+  FITNESS
+  CROSSFIT
+  WANDERN
+  LAUFEN
+  DART
+  BILLARD
+  SCHACH
+  ESPORT
+  CHEERLEADING
+  AKROBATIK
+  TRAMPOLINTURNEN
+  RHYTHMISCHE_SPORTGYMNASTIK
+  EISKUNSTLAUF
+  BOGENSCHIESSEN
+  SCHIESSEN
+  ANGELN
+  MOTORSPORT
+  FLOORBALL
+  LACROSSE
+  CRICKET
+  SQUASH
+  KICKBOXEN
+  MMA
+  CAPOEIRA
+  PARKOUR
+  SKATEBOARD
+  SURFEN
+  TAUCHEN
+  WASSERSKI
+  GEWICHTHEBEN
+  POWERLIFTING
+  ROLLSPORT
+  PETANQUE
+  CURLING
   SONSTIGES
+  CUSTOM        // Fuer vom Verein selbst definierte Sportarten
+}
+
+// ==================== Eigene Sportarten (pro Verein) ====================
+
+model CustomSportart {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name       String   // z.B. "Unterwasser-Rugby", "Quidditch"
+  beschreibung String?
+  icon       String?  // Optionales Icon/Emoji
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
 }
 
 // ==================== Veranstaltungen ====================
@@ -706,6 +869,56 @@ model EmailEinstellungen {
   updatedAt     DateTime @updatedAt
 
   @@index([userId])
+}
+
+// ==================== E-Mail Posteingang ====================
+
+model EmailPosteingang {
+  id            String   @id @default(cuid())
+  tenantId      String
+  empfaengerId  String?  // userId des Empfaengers (null = Vereins-Postfach)
+  von           String   // Absender E-Mail
+  vonName       String?  // Absender Name
+  an            String   // Empfaenger E-Mail
+  betreff       String
+  inhalt        String   // HTML oder Plain-Text
+  inhaltText    String?  // Plain-Text Version
+  gelesen       Boolean  @default(false)
+  istWichtig    Boolean  @default(false)
+  ordner        String      @default("POSTEINGANG")
+  anhaenge      String[] // URLs zu Anhaengen
+  messageId     String?  // Original Message-ID Header
+  inReplyTo     String?  // Referenz auf vorherige Nachricht
+  empfangenAm   DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([empfaengerId])
+  @@index([ordner])
+  @@index([empfangenAm])
+}
+
+enum EmailOrdner {
+  POSTEINGANG
+  GESENDET
+  ENTWUERFE
+  ARCHIV
+  PAPIERKORB
+}
+
+model EmailEntwurf {
+  id            String   @id @default(cuid())
+  tenantId      String
+  absenderId    String   // userId
+  an            String[] // Empfaenger-Adressen
+  betreff       String?
+  inhalt        String?
+  anhaenge      String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([absenderId])
 }
 
 // ==================== Profilbild ====================

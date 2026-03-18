@@ -6,9 +6,12 @@ import {
   IsArray,
   IsEmail,
   IsEnum,
+  IsNumber,
+  Min,
+  Max,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { MemberStatus } from '@prisma/client';
+import { MemberStatus, Ermaessigung, NachweisStatus } from '@prisma/client';
 
 export class ErstelleMitgliedDto {
   @ApiProperty({ example: 'Max', description: 'Vorname' })
@@ -78,6 +81,53 @@ export class BatchFreigebenDto {
   @IsArray({ message: 'ids muss ein Array sein.' })
   @IsString({ each: true, message: 'Jede ID muss ein Text sein.' })
   ids!: string[];
+}
+
+export class BeitragSetzenDto {
+  @ApiPropertyOptional({ example: 'Jahresbeitrag Erwachsene', description: 'Beitragsart' })
+  @IsOptional()
+  @IsString({ message: 'beitragsArt muss ein Text sein.' })
+  beitragsArt?: string;
+
+  @ApiPropertyOptional({ example: 120, description: 'Beitragsbetrag in Euro' })
+  @IsOptional()
+  @IsNumber({}, { message: 'beitragBetrag muss eine Zahl sein.' })
+  @Min(0, { message: 'beitragBetrag darf nicht negativ sein.' })
+  beitragBetrag?: number;
+
+  @ApiPropertyOptional({
+    example: 'JAEHRLICH',
+    description: 'Beitragsintervall (MONATLICH, QUARTALSWEISE, HALBJAEHRLICH, JAEHRLICH)',
+  })
+  @IsOptional()
+  @IsString({ message: 'beitragIntervall muss ein Text sein.' })
+  beitragIntervall?: string;
+
+  @ApiPropertyOptional({ enum: Ermaessigung, description: 'Ermaessigungsgrund' })
+  @IsOptional()
+  @IsEnum(Ermaessigung, { message: 'Ungueltiger Ermaessigungsgrund.' })
+  ermaessigung?: Ermaessigung;
+
+  @ApiPropertyOptional({ example: 50, description: 'Ermaessigung in Prozent' })
+  @IsOptional()
+  @IsNumber({}, { message: 'ermaessigungProzent muss eine Zahl sein.' })
+  @Min(0, { message: 'Ermaessigung darf nicht negativ sein.' })
+  @Max(100, { message: 'Ermaessigung darf nicht ueber 100% sein.' })
+  ermaessigungProzent?: number;
+
+  @ApiPropertyOptional({ example: '2026-09-30', description: 'Ermaessigung gueltig bis' })
+  @IsOptional()
+  @IsDateString({}, { message: 'Bitte ein gueltiges Datum angeben.' })
+  ermaessigungBis?: string;
+}
+
+export class NachweisStatusAendernDto {
+  @ApiProperty({
+    enum: [NachweisStatus.GENEHMIGT, NachweisStatus.ABGELEHNT],
+    description: 'Neuer Nachweisstatus (GENEHMIGT oder ABGELEHNT)',
+  })
+  @IsEnum(NachweisStatus, { message: 'Ungueltiger Nachweisstatus.' })
+  status!: NachweisStatus;
 }
 
 export class AktualisiereMitgliedDto {

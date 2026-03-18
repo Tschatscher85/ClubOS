@@ -4,7 +4,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { MemberStatus, Role } from '@prisma/client';
+import { MemberStatus, Role, Ermaessigung, NachweisStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -667,6 +667,186 @@ export class MemberService {
     }
     return wert;
   }
+
+  // ==================== Beitrag & Ermaessigung ====================
+
+  /** Ermaessigungen die einen Nachweis erfordern */
+  private readonly NACHWEIS_PFLICHT: Ermaessigung[] = [
+    Ermaessigung.STUDENT,
+    Ermaessigung.SCHUELER,
+    Ermaessigung.AZUBI,
+    Ermaessigung.RENTNER,
+    Ermaessigung.SCHWERBEHINDERT,
+    Ermaessigung.SOZIAL,
+  ];
+
+  /** Nachweis-Dokument hochladen und Status auf EINGEREICHT setzen */
+  async nachweisHochladen(tenantId: string, memberId: string, dokUrl: string) {
+    await this.nachIdAbrufen(tenantId, memberId);
+
+    return this.prisma.member.update({
+      where: { id: memberId },
+      data: {
+        nachweisDokUrl: dokUrl,
+        nachweisStatus: NachweisStatus.EINGEREICHT,
+      },
+    });
+  }
+
+  /** Admin genehmigt oder lehnt Nachweis ab */
+  async nachweisStatusAendern(
+    tenantId: string,
+    memberId: string,
+    status: NachweisStatus,
+  ) {
+    const mitglied = await this.nachIdAbrufen(tenantId, memberId);
+
+    // Nur GENEHMIGT oder ABGELEHNT erlaubt
+    if (
+      status !== NachweisStatus.GENEHMIGT &&
+      status !== NachweisStatus.ABGELEHNT
+    ) {
+      throw new BadRequestException(
+        'Nur GENEHMIGT oder ABGELEHNT ist erlaubt.',
+      );
+    }
+
+    const updateData: Record<string, unknown> = {
+      nachweisStatus: status,
+    };
+
+    // Wenn abgelehnt und Ermaessigung gesetzt aber kein gueltiger Nachweis:
+    // Status auf AUSSTEHEND setzen
+    if (
+      status === NachweisStatus.ABGELEHNT &&
+      mitglied.ermaessigung &&
+      this.NACHWEIS_PFLICHT.includes(mitglied.ermaessigung)
+    ) {
+      updateData.nachweisStatus = NachweisStatus.AUSSTEHEND;
+      updateData.nachweisDokUrl = null;
+    }
+
+    return this.prisma.member.update({
+      where: { id: memberId },
+      data: updateData,
+    });
+  }
+
+  /** Beitragsdaten fuer ein Mitglied setzen */
+  async beitragSetzen(
+    tenantId: string,
+    memberId: string,
+    daten: {
+      beitragsArt?: string;
+      beitragBetrag?: number;
+      beitragIntervall?: string;
+      ermaessigung?: Ermaessigung;
+      ermaessigungProzent?: number;
+      ermaessigungBis?: string;
+    },
+  ) {
+    await this.nachIdAbrufen(tenantId, memberId);
+
+    // Bestimmen ob Nachweis erforderlich ist
+    let nachweisStatus: NachweisStatus | undefined;
+    if (
+      daten.ermaessigung &&
+      daten.ermaessigung !== Ermaessigung.KEINE &&
+      this.NACHWEIS_PFLICHT.includes(daten.ermaessigung)
+    ) {
+      nachweisStatus = NachweisStatus.AUSSTEHEND;
+    } else if (
+      daten.ermaessigung === Ermaessigung.KEINE ||
+      daten.ermaessigung === Ermaessigung.EHRENAMT ||
+      daten.ermaessigung === Ermaessigung.FAMILIE ||
+      daten.ermaessigung === Ermaessigung.SONSTIGE
+    ) {
+      nachweisStatus = NachweisStatus.NICHT_ERFORDERLICH;
+    }
+
+    return this.prisma.member.update({
+      where: { id: memberId },
+      data: {
+        ...(daten.beitragsArt !== undefined && { beitragsArt: daten.beitragsArt }),
+        ...(daten.beitragBetrag !== undefined && { beitragBetrag: daten.beitragBetrag }),
+        ...(daten.beitragIntervall !== undefined && { beitragIntervall: daten.beitragIntervall }),
+        ...(daten.ermaessigung !== undefined && { ermaessigung: daten.ermaessigung }),
+        ...(daten.ermaessigungProzent !== undefined && {
+          ermaessigungProzent: daten.ermaessigungProzent,
+        }),
+        ...(daten.ermaessigungBis !== undefined && {
+          ermaessigungBis: new Date(daten.ermaessigungBis),
+        }),
+        ...(nachweisStatus !== undefined && { nachweisStatus }),
+      },
+    });
+  }
+
+  /** Erinnerungen an Mitglieder senden, deren Nachweis AUSSTEHEND ist */
+  async nachweisErinnerungenSenden(tenantId: string) {
+    const siebenTageZurueck = new Date();
+    siebenTageZurueck.setDate(siebenTageZurueck.getDate() - 7);
+
+    const mitglieder = await this.prisma.member.findMany({
+      where: {
+        tenantId,
+        nachweisStatus: NachweisStatus.AUSSTEHEND,
+        OR: [
+          { nachweisErinnerungGesendet: null },
+          { nachweisErinnerungGesendet: { lt: siebenTageZurueck } },
+        ],
+      },
+    });
+
+    const jetzt = new Date();
+    let gesendet = 0;
+
+    for (const mitglied of mitglieder) {
+      // Erinnerung loggen (spaeter durch echte E-Mail ersetzen)
+      console.log(
+        `[Nachweis-Erinnerung] Mitglied ${mitglied.firstName} ${mitglied.lastName} (${mitglied.id}): ` +
+          `Nachweis fuer Ermaessigung "${mitglied.ermaessigung}" fehlt noch.`,
+      );
+
+      await this.prisma.member.update({
+        where: { id: mitglied.id },
+        data: { nachweisErinnerungGesendet: jetzt },
+      });
+
+      gesendet++;
+    }
+
+    return { erinnerungenGesendet: gesendet };
+  }
+
+  /** Uebersicht aller Mitglieder mit aktiver Ermaessigung */
+  async ermaessigungUebersicht(tenantId: string) {
+    return this.prisma.member.findMany({
+      where: {
+        tenantId,
+        ermaessigung: { not: null },
+        NOT: { ermaessigung: Ermaessigung.KEINE },
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        memberNumber: true,
+        email: true,
+        ermaessigung: true,
+        ermaessigungProzent: true,
+        ermaessigungBis: true,
+        beitragsArt: true,
+        beitragBetrag: true,
+        beitragIntervall: true,
+        nachweisStatus: true,
+        nachweisDokUrl: true,
+      },
+      orderBy: { lastName: 'asc' },
+    });
+  }
+
+  // ==================== Statistik ====================
 
   async statistik(tenantId: string) {
     const [gesamt, aktiv, ausstehend, sportarten] = await Promise.all([

@@ -23,6 +23,9 @@ import {
   ApiConsumes,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { randomUUID } from 'crypto';
 import { Response } from 'express';
 import { Role } from '@prisma/client';
 import { MemberService } from './member.service';
@@ -32,6 +35,8 @@ import {
   VerknuepfeMitgliedDto,
   StatusAendernDto,
   BatchFreigebenDto,
+  BeitragSetzenDto,
+  NachweisStatusAendernDto,
 } from './dto/erstelle-mitglied.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RollenGuard } from '../common/guards/rollen.guard';
@@ -86,6 +91,26 @@ export class MemberController {
     @Body() dto: BatchFreigebenDto,
   ) {
     return this.memberService.batchFreigeben(tenantId, dto.ids);
+  }
+
+  // ==================== Beitrag & Ermaessigung ====================
+
+  @Get('ermaessigungen-uebersicht')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Uebersicht aller Mitglieder mit aktiver Ermaessigung' })
+  async ermaessigungUebersicht(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+  ) {
+    return this.memberService.ermaessigungUebersicht(tenantId);
+  }
+
+  @Post('nachweis-erinnerungen')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Nachweis-Erinnerungen an alle Mitglieder mit ausstehendem Nachweis senden' })
+  async nachweisErinnerungenSenden(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+  ) {
+    return this.memberService.nachweisErinnerungenSenden(tenantId);
   }
 
   // ==================== CSV Import/Export ====================
@@ -229,6 +254,73 @@ export class MemberController {
     @Body() dto: VerknuepfeMitgliedDto,
   ) {
     return this.memberService.mitBenutzerVerknuepfen(tenantId, id, dto.userId);
+  }
+
+  // ==================== Nachweis & Beitrag (pro Mitglied) ====================
+
+  @Post(':id/nachweis')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER, Role.MEMBER)
+  @ApiOperation({ summary: 'Nachweis-Dokument fuer Ermaessigung hochladen' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('datei', {
+      storage: diskStorage({
+        destination: './uploads/nachweise',
+        filename: (_req, file, cb) => {
+          const uniqueName = `${randomUUID()}${extname(file.originalname)}`;
+          cb(null, uniqueName);
+        },
+      }),
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    }),
+  )
+  async nachweisHochladen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 })],
+        fileIsRequired: true,
+      }),
+    )
+    datei: Express.Multer.File,
+  ) {
+    if (!datei) {
+      throw new BadRequestException('Keine Datei hochgeladen.');
+    }
+
+    const erlaubteEndungen = ['.pdf', '.jpg', '.jpeg', '.png'];
+    const endung = extname(datei.originalname).toLowerCase();
+    if (!erlaubteEndungen.includes(endung)) {
+      throw new BadRequestException(
+        'Nur PDF, JPG und PNG Dateien werden unterstuetzt.',
+      );
+    }
+
+    const dokUrl = `/uploads/nachweise/${datei.filename}`;
+    return this.memberService.nachweisHochladen(tenantId, id, dokUrl);
+  }
+
+  @Put(':id/nachweis-status')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Nachweis-Status aendern (genehmigen/ablehnen)' })
+  async nachweisStatusAendern(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: NachweisStatusAendernDto,
+  ) {
+    return this.memberService.nachweisStatusAendern(tenantId, id, dto.status);
+  }
+
+  @Put(':id/beitrag')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Beitrag und Ermaessigung fuer Mitglied setzen' })
+  async beitragSetzen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: BeitragSetzenDto,
+  ) {
+    return this.memberService.beitragSetzen(tenantId, id, dto);
   }
 
   @Delete(':id/verknuepfen')

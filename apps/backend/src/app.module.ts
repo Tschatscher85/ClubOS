@@ -31,6 +31,8 @@ import { EmailEinstellungenModule } from './email/email-einstellungen.module';
 import { DfbnetModule } from './dfbnet/dfbnet.module';
 import { HomepageModule } from './homepage/homepage.module';
 import { ProfilbildModule } from './profilbild/profilbild.module';
+import { SportartModule } from './sportart/sportart.module';
+import { PosteingangModule } from './posteingang/posteingang.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -85,6 +87,8 @@ import configuration from './config/configuration';
     DfbnetModule,
     HomepageModule,
     ProfilbildModule,
+    SportartModule,
+    PosteingangModule,
   ],
   providers: [
     {

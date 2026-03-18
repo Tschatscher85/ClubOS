@@ -153,4 +153,151 @@ export class TenantService {
       nachricht: 'KI-Einstellungen erfolgreich aktualisiert.',
     };
   }
+
+  // ==================== Vereinsdaten / Rechtliches ====================
+
+  async vereinsdatenAbrufen(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: {
+        vereinsNr: true,
+        amtsgericht: true,
+        gruendungsjahr: true,
+        anschrift: true,
+        plz: true,
+        ort: true,
+        bundesland: true,
+        telefon: true,
+        email: true,
+        webseite: true,
+        vorstand1Name: true,
+        vorstand1Funktion: true,
+        vorstand2Name: true,
+        vorstand2Funktion: true,
+        kassenwart: true,
+        schriftfuehrer: true,
+        jugendwart: true,
+        satzungUrl: true,
+        satzungDatum: true,
+        impressum: true,
+        datenschutzUrl: true,
+        datenschutzText: true,
+        haftpflichtVersicherung: true,
+        haftpflichtPoliceNr: true,
+        haftpflichtGueltigBis: true,
+        unfallVersicherung: true,
+        unfallPoliceNr: true,
+        unfallGueltigBis: true,
+        gewaehrleistungsVersicherung: true,
+        steuernummer: true,
+        finanzamt: true,
+        gemeinnuetzigBis: true,
+        gemeinnuetzigUrl: true,
+        iban: true,
+        bic: true,
+        bankName: true,
+        landessportbund: true,
+        sportverband: true,
+        verbandsMitgliedsNr: true,
+      },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Verein nicht gefunden.');
+    }
+
+    return tenant;
+  }
+
+  async vereinsdatenAktualisieren(
+    tenantId: string,
+    daten: Record<string, unknown>,
+  ) {
+    await this.nachIdAbrufen(tenantId);
+
+    // Nur erlaubte Felder durchlassen
+    const erlaubteFelder = [
+      'vereinsNr', 'amtsgericht', 'gruendungsjahr', 'anschrift', 'plz', 'ort',
+      'bundesland', 'telefon', 'email', 'webseite',
+      'vorstand1Name', 'vorstand1Funktion', 'vorstand2Name', 'vorstand2Funktion',
+      'kassenwart', 'schriftfuehrer', 'jugendwart',
+      'satzungUrl', 'satzungDatum', 'impressum', 'datenschutzUrl', 'datenschutzText',
+      'haftpflichtVersicherung', 'haftpflichtPoliceNr', 'haftpflichtGueltigBis',
+      'unfallVersicherung', 'unfallPoliceNr', 'unfallGueltigBis',
+      'gewaehrleistungsVersicherung',
+      'steuernummer', 'finanzamt', 'gemeinnuetzigBis', 'gemeinnuetzigUrl',
+      'iban', 'bic', 'bankName',
+      'landessportbund', 'sportverband', 'verbandsMitgliedsNr',
+    ];
+
+    const gefilterteDaten: Record<string, unknown> = {};
+    for (const feld of erlaubteFelder) {
+      if (daten[feld] !== undefined) {
+        gefilterteDaten[feld] = daten[feld];
+      }
+    }
+
+    return this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: gefilterteDaten,
+    });
+  }
+
+  // ==================== SMTP (Vereins-Mailserver) ====================
+
+  async smtpAbrufen(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: {
+        smtpHost: true,
+        smtpPort: true,
+        smtpUser: true,
+        smtpPass: true,
+        smtpAbsenderEmail: true,
+        smtpAbsenderName: true,
+      },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Verein nicht gefunden.');
+    }
+
+    return {
+      ...tenant,
+      smtpPass: tenant.smtpPass ? '********' : null, // Passwort maskieren
+    };
+  }
+
+  async smtpSpeichern(
+    tenantId: string,
+    daten: {
+      smtpHost: string;
+      smtpPort?: number;
+      smtpUser: string;
+      smtpPass?: string;
+      smtpAbsenderEmail: string;
+      smtpAbsenderName?: string;
+    },
+  ) {
+    await this.nachIdAbrufen(tenantId);
+
+    const updateData: Record<string, unknown> = {
+      smtpHost: daten.smtpHost,
+      smtpUser: daten.smtpUser,
+      smtpAbsenderEmail: daten.smtpAbsenderEmail,
+    };
+
+    if (daten.smtpPort) updateData.smtpPort = daten.smtpPort;
+    if (daten.smtpAbsenderName) updateData.smtpAbsenderName = daten.smtpAbsenderName;
+    if (daten.smtpPass) {
+      updateData.smtpPass = Buffer.from(daten.smtpPass).toString('base64');
+    }
+
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: updateData,
+    });
+
+    return { nachricht: 'SMTP-Einstellungen gespeichert.' };
+  }
 }

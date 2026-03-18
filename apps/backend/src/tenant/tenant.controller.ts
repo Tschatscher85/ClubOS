@@ -56,6 +56,138 @@ export class TenantController {
     return this.tenantService.alleAbrufen();
   }
 
+  // ==================== Vereinsdaten / Rechtliches ====================
+
+  @Get('vereinsdaten')
+  @Rollen(Role.ADMIN, Role.SUPERADMIN)
+  @ApiOperation({ summary: 'Vereinsdaten (Impressum, Versicherungen, Finanzen) abrufen' })
+  async vereinsdatenAbrufen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+  ) {
+    return this.tenantService.vereinsdatenAbrufen(tenantId);
+  }
+
+  @Put('vereinsdaten')
+  @Rollen(Role.ADMIN, Role.SUPERADMIN)
+  @ApiOperation({ summary: 'Vereinsdaten aktualisieren' })
+  async vereinsdatenAktualisieren(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Body() daten: Record<string, unknown>,
+  ) {
+    return this.tenantService.vereinsdatenAktualisieren(tenantId, daten);
+  }
+
+  // ==================== KI-Einstellungen ====================
+
+  @Get('ki-einstellungen')
+  @Rollen(Role.ADMIN, Role.SUPERADMIN)
+  @ApiOperation({ summary: 'KI-Einstellungen des Vereins abrufen (API-Key maskiert)' })
+  async kiEinstellungenAbrufen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+  ) {
+    return this.tenantService.kiEinstellungenAbrufen(tenantId);
+  }
+
+  @Put('ki-einstellungen')
+  @Rollen(Role.ADMIN, Role.SUPERADMIN)
+  @ApiOperation({ summary: 'KI-Einstellungen des Vereins aktualisieren' })
+  async kiEinstellungenAktualisieren(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Body() dto: AktualisiereKiEinstellungenDto,
+  ) {
+    return this.tenantService.kiEinstellungenAktualisieren(tenantId, dto);
+  }
+
+  // ==================== SMTP-Einstellungen (Vereins-Mailserver) ====================
+
+  @Get('smtp')
+  @Rollen(Role.ADMIN, Role.SUPERADMIN)
+  @ApiOperation({ summary: 'Vereins-SMTP-Einstellungen abrufen' })
+  async smtpAbrufen(@AktuellerBenutzer('tenantId') tenantId: string) {
+    return this.tenantService.smtpAbrufen(tenantId);
+  }
+
+  @Put('smtp')
+  @Rollen(Role.ADMIN, Role.SUPERADMIN)
+  @ApiOperation({ summary: 'Vereins-SMTP-Einstellungen speichern' })
+  async smtpSpeichern(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Body()
+    daten: {
+      smtpHost: string;
+      smtpPort?: number;
+      smtpUser: string;
+      smtpPass?: string;
+      smtpAbsenderEmail: string;
+      smtpAbsenderName?: string;
+    },
+  ) {
+    return this.tenantService.smtpSpeichern(tenantId, daten);
+  }
+
+  // ==================== Datei-Uploads ====================
+
+  @Post('satzung')
+  @Rollen(Role.ADMIN, Role.SUPERADMIN)
+  @UseInterceptors(
+    FileInterceptor('datei', {
+      storage: logoStorage,
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (file.mimetype === 'application/pdf') {
+          cb(null, true);
+        } else {
+          cb(new BadRequestException('Nur PDF-Dateien erlaubt.'), false);
+        }
+      },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Satzung hochladen (PDF, max 10MB)' })
+  async satzungHochladen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Bitte eine PDF-Datei hochladen.');
+    }
+    return this.tenantService.vereinsdatenAktualisieren(tenantId, {
+      satzungUrl: `/uploads/${file.filename}`,
+      satzungDatum: new Date(),
+    });
+  }
+
+  @Post('gemeinnuetzigkeit')
+  @Rollen(Role.ADMIN, Role.SUPERADMIN)
+  @UseInterceptors(
+    FileInterceptor('datei', {
+      storage: logoStorage,
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (file.mimetype === 'application/pdf') {
+          cb(null, true);
+        } else {
+          cb(new BadRequestException('Nur PDF-Dateien erlaubt.'), false);
+        }
+      },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Freistellungsbescheid hochladen (PDF, max 10MB)' })
+  async gemeinnuetzigkeitHochladen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Bitte eine PDF-Datei hochladen.');
+    }
+    return this.tenantService.vereinsdatenAktualisieren(tenantId, {
+      gemeinnuetzigUrl: `/uploads/${file.filename}`,
+    });
+  }
+
+  // ==================== Parametrisierte Routen (muessen NACH statischen kommen) ====================
+
   @Get(':id')
   @Rollen(Role.SUPERADMIN, Role.ADMIN)
   @ApiOperation({ summary: 'Verein nach ID abrufen' })
@@ -78,7 +210,7 @@ export class TenantController {
   @UseInterceptors(
     FileInterceptor('logo', {
       storage: logoStorage,
-      limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB
+      limits: { fileSize: 2 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
         if (ERLAUBTE_TYPEN.includes(file.mimetype)) {
           cb(null, true);
@@ -97,30 +229,8 @@ export class TenantController {
     if (!file) {
       throw new BadRequestException('Bitte eine Datei hochladen.');
     }
-
     const logoUrl = `/uploads/${file.filename}`;
     return this.tenantService.logoAktualisieren(id, logoUrl);
-  }
-
-  // ==================== KI-Einstellungen ====================
-
-  @Get('ki-einstellungen')
-  @Rollen(Role.ADMIN, Role.SUPERADMIN)
-  @ApiOperation({ summary: 'KI-Einstellungen des Vereins abrufen (API-Key maskiert)' })
-  async kiEinstellungenAbrufen(
-    @AktuellerBenutzer('tenantId') tenantId: string,
-  ) {
-    return this.tenantService.kiEinstellungenAbrufen(tenantId);
-  }
-
-  @Put('ki-einstellungen')
-  @Rollen(Role.ADMIN, Role.SUPERADMIN)
-  @ApiOperation({ summary: 'KI-Einstellungen des Vereins aktualisieren' })
-  async kiEinstellungenAktualisieren(
-    @AktuellerBenutzer('tenantId') tenantId: string,
-    @Body() dto: AktualisiereKiEinstellungenDto,
-  ) {
-    return this.tenantService.kiEinstellungenAktualisieren(tenantId, dto);
   }
 
   @Delete(':id')
