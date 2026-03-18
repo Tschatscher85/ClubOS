@@ -35,6 +35,7 @@ import {
   TabsContent,
 } from '@/components/ui/tabs';
 import { apiClient } from '@/lib/api-client';
+import { sportartLabel } from '@/lib/sportarten';
 
 interface Rechnung {
   id: string;
@@ -84,12 +85,6 @@ interface BeitragsUebersicht {
   nachSportart: SportartUebersicht[];
   nachKlasse: KlassenUebersicht[];
 }
-
-const SPORTARTEN_LABEL: Record<string, string> = {
-  FUSSBALL: 'Fussball', HANDBALL: 'Handball', BASKETBALL: 'Basketball',
-  FOOTBALL: 'Football', TENNIS: 'Tennis', TURNEN: 'Turnen',
-  SCHWIMMEN: 'Schwimmen', LEICHTATHLETIK: 'Leichtathletik', SONSTIGES: 'Sonstiges',
-};
 
 const formatBetrag = (betrag: number) => {
   return new Intl.NumberFormat('de-DE', {
@@ -513,7 +508,7 @@ export default function BuchhaltungPage() {
                             <tr key={s.sportart} className="border-b last:border-0">
                               <td className="p-3">
                                 <Badge variant="outline">
-                                  {SPORTARTEN_LABEL[s.sportart] || s.sportart}
+                                  {sportartLabel(s.sportart)}
                                 </Badge>
                               </td>
                               <td className="p-3 text-right">{s.mitglieder}</td>

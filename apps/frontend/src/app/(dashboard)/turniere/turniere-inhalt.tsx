@@ -10,6 +10,7 @@ import { TurnierFormular } from '@/components/turniere/turnier-formular';
 import { EventFormular } from '@/components/kalender/event-formular';
 import { apiClient } from '@/lib/api-client';
 import { getEventFarbe, EVENT_TYP_LABEL } from '@/lib/event-farben';
+import { sportartLabel } from '@/lib/sportarten';
 
 interface Turnier {
   id: string;
@@ -36,14 +37,6 @@ const FORMAT_LABEL: Record<string, string> = {
   KO: 'KO-System',
   SCHWEIZER: 'Schweizer System',
   KOMBINATION: 'Kombination',
-};
-
-const SPORT_LABEL: Record<string, string> = {
-  FUSSBALL: 'Fussball',
-  HANDBALL: 'Handball',
-  BASKETBALL: 'Basketball',
-  TURNEN: 'Turnen',
-  SONSTIGES: 'Sonstiges',
 };
 
 function formatDatum(iso: string): string {
@@ -180,7 +173,7 @@ export default function TurniereInhalt() {
                     <CardTitle className="text-lg">{turnier.name}</CardTitle>
                     <div className="flex gap-2 mt-2">
                       <Badge variant="secondary">
-                        {SPORT_LABEL[turnier.sport] || turnier.sport}
+                        {sportartLabel(turnier.sport)}
                       </Badge>
                       <Badge variant="outline">
                         {FORMAT_LABEL[turnier.format] || turnier.format}

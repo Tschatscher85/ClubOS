@@ -24,6 +24,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { apiClient } from '@/lib/api-client';
+import { sportartLabel, sportartenFallback } from '@/lib/sportarten';
 
 interface Vorlage {
   id: string;
@@ -48,20 +49,6 @@ interface WorkflowDaten {
   istAktiv: boolean;
   vorlagen: WorkflowVorlage[];
 }
-
-const SPORTARTEN_LABEL: Record<string, string> = {
-  FUSSBALL: 'Fussball',
-  HANDBALL: 'Handball',
-  BASKETBALL: 'Basketball',
-  FOOTBALL: 'Football',
-  TENNIS: 'Tennis',
-  TURNEN: 'Turnen',
-  SCHWIMMEN: 'Schwimmen',
-  LEICHTATHLETIK: 'Leichtathletik',
-  SONSTIGES: 'Sonstiges',
-};
-
-const SPORTARTEN = Object.keys(SPORTARTEN_LABEL);
 
 const FORMTYP_LABEL: Record<string, string> = {
   MITGLIEDSANTRAG: 'Mitgliedsantrag',
@@ -285,7 +272,7 @@ export default function WorkflowsPage() {
                     <div className="flex flex-wrap gap-1">
                       {wf.sportarten.map((s) => (
                         <Badge key={s} variant="secondary" className="text-xs">
-                          {SPORTARTEN_LABEL[s] || s}
+                          {sportartLabel(s)}
                         </Badge>
                       ))}
                     </div>
@@ -407,22 +394,22 @@ export default function WorkflowsPage() {
                 Diese Sportarten werden automatisch beim Mitglied gesetzt
               </p>
               <div className="flex flex-wrap gap-2">
-                {SPORTARTEN.map((s) => (
+                {sportartenFallback().map((s) => (
                   <label
-                    key={s}
+                    key={s.wert}
                     className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 cursor-pointer text-sm transition-colors ${
-                      gewaehlteSportarten.includes(s)
+                      gewaehlteSportarten.includes(s.wert)
                         ? 'border-primary bg-primary/5 text-primary'
                         : 'border-border hover:bg-muted/50'
                     }`}
                   >
                     <input
                       type="checkbox"
-                      checked={gewaehlteSportarten.includes(s)}
-                      onChange={() => handleSportartToggle(s)}
+                      checked={gewaehlteSportarten.includes(s.wert)}
+                      onChange={() => handleSportartToggle(s.wert)}
                       className="rounded border-gray-300"
                     />
-                    {SPORTARTEN_LABEL[s]}
+                    {s.label}
                   </label>
                 ))}
               </div>

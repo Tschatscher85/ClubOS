@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useBenutzer } from '@/hooks/use-auth';
 import { apiClient } from '@/lib/api-client';
+import { sportartLabel } from '@/lib/sportarten';
 
 interface Kind {
   id: string;
@@ -45,18 +46,6 @@ interface Veranstaltung {
   location: string;
   team: { name: string };
 }
-
-const SPORTARTEN_LABEL: Record<string, string> = {
-  FUSSBALL: 'Fussball',
-  HANDBALL: 'Handball',
-  BASKETBALL: 'Basketball',
-  FOOTBALL: 'Football',
-  TENNIS: 'Tennis',
-  TURNEN: 'Turnen',
-  SCHWIMMEN: 'Schwimmen',
-  LEICHTATHLETIK: 'Leichtathletik',
-  SONSTIGES: 'Sonstiges',
-};
 
 const VERANSTALTUNGSTYP_LABEL: Record<string, { text: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   TRAINING: { text: 'Training', variant: 'default' },
@@ -168,7 +157,7 @@ export default function ElternPortalPage() {
                     <div className="flex flex-wrap gap-1">
                       {kind.sport.map((s) => (
                         <Badge key={s} variant="secondary" className="text-xs">
-                          {SPORTARTEN_LABEL[s] || s}
+                          {sportartLabel(s)}
                         </Badge>
                       ))}
                     </div>
@@ -205,7 +194,7 @@ export default function ElternPortalPage() {
                     <Building2 className="h-5 w-5 text-primary" />
                     <CardTitle className="text-base">{abt.name}</CardTitle>
                     <Badge variant="secondary" className="ml-auto">
-                      {SPORTARTEN_LABEL[abt.sport] || abt.sport}
+                      {sportartLabel(abt.sport)}
                     </Badge>
                   </div>
                 </CardHeader>

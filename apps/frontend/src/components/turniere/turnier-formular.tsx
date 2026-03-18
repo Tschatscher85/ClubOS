@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { apiClient } from '@/lib/api-client';
+import { sportartenLaden, sportartenFallback } from '@/lib/sportarten';
 
 interface TurnierFormularProps {
   offen: boolean;
@@ -30,6 +31,18 @@ export function TurnierFormular({
   const [format, setFormat] = useState('GRUPPE');
   const [ladend, setLadend] = useState(false);
   const [fehler, setFehler] = useState('');
+  const [sportartenOptionen, setSportartenOptionen] = useState(sportartenFallback());
+
+  useEffect(() => {
+    sportartenLaden().then((daten) => {
+      setSportartenOptionen(
+        daten.map((s) => ({
+          wert: s.istVordefiniert ? s.name.toUpperCase().replace(/[^A-Z]/g, '') || s.name : s.name,
+          label: s.name,
+        })),
+      );
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,11 +87,11 @@ export function TurnierFormular({
             <div className="space-y-2">
               <Label>Sportart</Label>
               <Select value={sportart} onChange={(e) => setSportart(e.target.value)}>
-                <option value="FUSSBALL">Fussball</option>
-                <option value="HANDBALL">Handball</option>
-                <option value="BASKETBALL">Basketball</option>
-                <option value="TURNEN">Turnen</option>
-                <option value="SONSTIGES">Sonstiges</option>
+                {sportartenOptionen.map((opt) => (
+                  <option key={opt.wert} value={opt.wert}>
+                    {opt.label}
+                  </option>
+                ))}
               </Select>
             </div>
             <div className="space-y-2">
