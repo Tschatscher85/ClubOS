@@ -104,6 +104,11 @@ export default function MitgliederInhalt() {
   const [suchbegriff, setSuchbegriff] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sportFilter, setSportFilter] = useState('');
+  const [rollenFilter, setRollenFilter] = useState('');
+
+  // Rollen-Daten
+  const [rollenMap, setRollenMap] = useState<Record<string, { vereinsRollen: string[]; farben: Record<string, string> }>>({});
+  const [verfuegbareRollen, setVerfuegbareRollen] = useState<string[]>([]);
 
   // Einladung Dialog
   const [einladungOffen, setEinladungOffen] = useState(false);
@@ -130,12 +135,28 @@ export default function MitgliederInhalt() {
 
   const datenLaden = useCallback(async () => {
     try {
-      const [mitgliederDaten, statistikDaten] = await Promise.all([
+      const [mitgliederDaten, statistikDaten, benutzerDaten, vorlagenDaten] = await Promise.all([
         apiClient.get<Mitglied[]>('/mitglieder'),
         apiClient.get<Statistik>('/mitglieder/statistik'),
+        apiClient.get<{ id: string; vereinsRollen: string[] }[]>('/benutzer/verwaltung/liste').catch(() => []),
+        apiClient.get<{ name: string; farbe: string | null }[]>('/rollen-vorlagen').catch(() => []),
       ]);
       setMitglieder(mitgliederDaten);
       setStatistik(statistikDaten);
+
+      // Rollen-Map aufbauen: userId → { vereinsRollen, farben }
+      const farbenMap: Record<string, string> = {};
+      for (const v of vorlagenDaten) {
+        farbenMap[v.name] = v.farbe || '#64748b';
+      }
+      const map: Record<string, { vereinsRollen: string[]; farben: Record<string, string> }> = {};
+      const alleRollen = new Set<string>();
+      for (const b of benutzerDaten) {
+        map[b.id] = { vereinsRollen: b.vereinsRollen || [], farben: farbenMap };
+        for (const r of b.vereinsRollen || []) alleRollen.add(r);
+      }
+      setRollenMap(map);
+      setVerfuegbareRollen(Array.from(alleRollen).sort());
     } catch (error) {
       console.error('Fehler beim Laden:', error);
     } finally {
@@ -161,10 +182,16 @@ export default function MitgliederInhalt() {
 
       if (statusFilter && m.status !== statusFilter) return false;
       if (sportFilter && !m.sport.includes(sportFilter)) return false;
+      if (rollenFilter && m.userId) {
+        const rollen = rollenMap[m.userId]?.vereinsRollen || [];
+        if (!rollen.includes(rollenFilter)) return false;
+      } else if (rollenFilter && !m.userId) {
+        return false;
+      }
 
       return true;
     });
-  }, [mitglieder, suchbegriff, statusFilter, sportFilter]);
+  }, [mitglieder, suchbegriff, statusFilter, sportFilter, rollenFilter, rollenMap]);
 
   const ausstehendeMitglieder = useMemo(
     () => mitglieder.filter((m) => m.status === 'PENDING'),
@@ -400,6 +427,18 @@ export default function MitgliederInhalt() {
             </option>
           ))}
         </Select>
+        {verfuegbareRollen.length > 0 && (
+          <Select
+            value={rollenFilter}
+            onChange={(e) => setRollenFilter(e.target.value)}
+            className="w-full sm:w-44"
+          >
+            <option value="">Alle Rollen</option>
+            {verfuegbareRollen.map((rolle) => (
+              <option key={rolle} value={rolle}>{rolle}</option>
+            ))}
+          </Select>
+        )}
         {ausstehendeMitglieder.length > 0 && (
           <Button
             variant="outline"
@@ -415,6 +454,7 @@ export default function MitgliederInhalt() {
       {/* Tabelle */}
       <MitgliederTabelle
         mitglieder={gefilterteMitglieder}
+        rollenMap={rollenMap}
         onBearbeiten={handleBearbeiten}
         onLoeschen={handleLoeschen}
         onKlick={(id) => router.push(`/mitglieder/${id}`)}

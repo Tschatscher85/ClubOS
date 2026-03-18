@@ -430,12 +430,31 @@ export default function MitgliedDetailPage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2">
+            {mitglied.email && (
+              <div className="flex items-center gap-3">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">E-Mail</p>
+                  <div className="flex items-center gap-2">
+                    <a href={`mailto:${mitglied.email}`} className="text-sm text-primary hover:underline">{mitglied.email}</a>
+                    <button onClick={() => navigator.clipboard.writeText(mitglied.email!)} className="text-muted-foreground hover:text-foreground" title="Kopieren">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             {mitglied.phone && (
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-xs text-muted-foreground">Telefon</p>
-                  <p className="text-sm">{mitglied.phone}</p>
+                  <div className="flex items-center gap-2">
+                    <a href={`tel:${mitglied.phone}`} className="text-sm text-primary hover:underline">{mitglied.phone}</a>
+                    <button onClick={() => navigator.clipboard.writeText(mitglied.phone!)} className="text-muted-foreground hover:text-foreground" title="Kopieren">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -444,7 +463,12 @@ export default function MitgliedDetailPage() {
                 <MapPin className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-xs text-muted-foreground">Adresse</p>
-                  <p className="text-sm">{mitglied.address}</p>
+                  <div className="flex items-center gap-2">
+                    <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mitglied.address)}`} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">{mitglied.address}</a>
+                    <button onClick={() => navigator.clipboard.writeText(mitglied.address!)} className="text-muted-foreground hover:text-foreground" title="Kopieren">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

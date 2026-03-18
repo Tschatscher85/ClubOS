@@ -20,6 +20,11 @@ interface Mitglied {
   userId?: string | null;
 }
 
+interface RollenInfo {
+  vereinsRollen: string[];
+  farben: Record<string, string>;
+}
+
 const STATUS_LABEL: Record<string, { text: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   PENDING: { text: 'Ausstehend', variant: 'outline' },
   ACTIVE: { text: 'Aktiv', variant: 'default' },
@@ -28,19 +33,14 @@ const STATUS_LABEL: Record<string, { text: string; variant: 'default' | 'seconda
 };
 
 const SPORTARTEN_LABEL: Record<string, string> = {
-  FUSSBALL: 'Fussball',
-  HANDBALL: 'Handball',
-  BASKETBALL: 'Basketball',
-  FOOTBALL: 'Football',
-  TENNIS: 'Tennis',
-  TURNEN: 'Turnen',
-  SCHWIMMEN: 'Schwimmen',
-  LEICHTATHLETIK: 'Leichtathletik',
-  SONSTIGES: 'Sonstiges',
+  FUSSBALL: 'Fußball', HANDBALL: 'Handball', BASKETBALL: 'Basketball',
+  FOOTBALL: 'Football', TENNIS: 'Tennis', TURNEN: 'Turnen',
+  SCHWIMMEN: 'Schwimmen', LEICHTATHLETIK: 'Leichtathletik', SONSTIGES: 'Sonstiges',
 };
 
 interface MitgliederTabelleProps {
   mitglieder: Mitglied[];
+  rollenMap?: Record<string, RollenInfo>; // userId → { vereinsRollen, farben }
   onBearbeiten: (mitglied: Mitglied) => void;
   onLoeschen: (id: string) => void;
   onKlick?: (id: string) => void;
@@ -48,6 +48,7 @@ interface MitgliederTabelleProps {
 
 export function MitgliederTabelle({
   mitglieder,
+  rollenMap,
   onBearbeiten,
   onLoeschen,
   onKlick,
@@ -65,14 +66,12 @@ export function MitgliederTabelle({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-muted/50">
-            <th className="h-12 px-4 text-left font-medium">Nr.</th>
             <th className="h-12 px-4 text-left font-medium">Name</th>
-            <th className="h-12 px-4 text-left font-medium hidden md:table-cell">E-Mail</th>
-            <th className="h-12 px-4 text-left font-medium hidden lg:table-cell">Geburtsdatum</th>
+            <th className="h-12 px-4 text-left font-medium hidden md:table-cell">Rolle</th>
             <th className="h-12 px-4 text-left font-medium hidden lg:table-cell">Sportarten</th>
+            <th className="h-12 px-4 text-left font-medium hidden lg:table-cell">Geburtsdatum</th>
             <th className="h-12 px-4 text-left font-medium hidden xl:table-cell">Eintritt</th>
             <th className="h-12 px-4 text-left font-medium">Status</th>
-            <th className="h-12 px-4 text-left font-medium hidden md:table-cell">Login</th>
             <th className="h-12 px-4 text-right font-medium">Aktionen</th>
           </tr>
         </thead>
@@ -82,30 +81,34 @@ export function MitgliederTabelle({
               text: m.status,
               variant: 'outline' as const,
             };
+            const rollen = m.userId && rollenMap ? rollenMap[m.userId] : null;
+
             return (
               <tr
                 key={m.id}
                 className={`border-b hover:bg-muted/30 ${onKlick ? 'cursor-pointer' : ''}`}
                 onClick={() => onKlick?.(m.id)}
               >
-                <td className="px-4 py-3 text-muted-foreground">
-                  {m.memberNumber}
-                </td>
                 <td className="px-4 py-3">
                   <div className="font-medium">{m.firstName} {m.lastName}</div>
-                  {m.parentEmail && (
-                    <div className="text-xs text-muted-foreground">
-                      Eltern: {m.parentEmail}
-                    </div>
-                  )}
+                  <div className="text-xs text-muted-foreground">{m.email || m.memberNumber}</div>
                 </td>
-                <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">
-                  {m.email || '—'}
-                </td>
-                <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground">
-                  {m.birthDate
-                    ? new Date(m.birthDate).toLocaleDateString('de-DE')
-                    : '—'}
+                <td className="px-4 py-3 hidden md:table-cell">
+                  <div className="flex flex-wrap gap-1">
+                    {rollen && rollen.vereinsRollen.length > 0 ? (
+                      rollen.vereinsRollen.map((rolle) => (
+                        <Badge
+                          key={rolle}
+                          className="text-xs text-white"
+                          style={{ backgroundColor: rollen.farben[rolle] || '#64748b' }}
+                        >
+                          {rolle}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 hidden lg:table-cell">
                   <div className="flex flex-wrap gap-1">
@@ -117,6 +120,11 @@ export function MitgliederTabelle({
                     {m.sport.length === 0 && <span className="text-muted-foreground">—</span>}
                   </div>
                 </td>
+                <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground">
+                  {m.birthDate
+                    ? new Date(m.birthDate).toLocaleDateString('de-DE')
+                    : '—'}
+                </td>
                 <td className="px-4 py-3 hidden xl:table-cell text-muted-foreground">
                   {m.joinDate
                     ? new Date(m.joinDate).toLocaleDateString('de-DE')
@@ -125,27 +133,12 @@ export function MitgliederTabelle({
                 <td className="px-4 py-3">
                   <Badge variant={statusInfo.variant}>{statusInfo.text}</Badge>
                 </td>
-                <td className="px-4 py-3 hidden md:table-cell">
-                  {m.userId ? (
-                    <UserCheck className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <UserX className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onBearbeiten(m)}
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => onBearbeiten(m)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onLoeschen(m.id)}
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => onLoeschen(m.id)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
