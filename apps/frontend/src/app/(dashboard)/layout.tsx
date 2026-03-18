@@ -28,6 +28,13 @@ export default function DashboardLayout({
     profilLaden().finally(() => setBereit(true));
   }, [accessToken, router, profilLaden, themeAnwenden]);
 
+  // Nach Profil-Check: nicht angemeldet → zur Anmeldeseite
+  useEffect(() => {
+    if (bereit && !istAngemeldet) {
+      router.replace('/anmelden');
+    }
+  }, [bereit, istAngemeldet, router]);
+
   // Waehrend Auth-Check nichts anzeigen
   if (!bereit || !istAngemeldet) {
     return (
