@@ -33,6 +33,7 @@ import { HomepageModule } from './homepage/homepage.module';
 import { ProfilbildModule } from './profilbild/profilbild.module';
 import { SportartModule } from './sportart/sportart.module';
 import { PosteingangModule } from './posteingang/posteingang.module';
+import { PinboardModule } from './pinboard/pinboard.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -89,6 +90,7 @@ import configuration from './config/configuration';
     ProfilbildModule,
     SportartModule,
     PosteingangModule,
+    PinboardModule,
   ],
   providers: [
     {

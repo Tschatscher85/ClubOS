@@ -92,6 +92,7 @@ model Tenant {
   sponsoren          Sponsor[]
   homepage           Homepage?
   customSportarten   CustomSportart[]
+  pinboardItems      PinboardItem[]
 
   @@index([slug])
 }
@@ -255,6 +256,7 @@ model Team {
   messages         Message[]
   teamMembers      TeamMember[]
   hallenbelegungen Hallenbelegung[]
+  pinboardItems    PinboardItem[]
 
   @@index([tenantId])
   @@index([abteilungId])
@@ -622,13 +624,15 @@ model Message {
   team       Team?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
   senderId   String
   content    String
-  type       MessageType
-  silentFrom String?
-  silentTo   String?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  type        MessageType
+  isEmergency Boolean     @default(false)
+  silentFrom  String?
+  silentTo    String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
-  reads MessageRead[]
+  reads     MessageRead[]
+  reactions MessageReaction[]
 
   @@index([tenantId])
   @@index([teamId])
@@ -653,20 +657,83 @@ model MessageRead {
   @@index([messageId])
 }
 
+// ==================== Nachricht-Reaktionen ====================
+
+model MessageReaction {
+  id        String      @id @default(cuid())
+  messageId String
+  message   Message     @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  reaktion  ReaktionTyp
+  createdAt DateTime    @default(now())
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+}
+
+enum ReaktionTyp {
+  GESEHEN
+  JA
+  NEIN
+  VIELLEICHT
+}
+
+// ==================== Benachrichtigungs-Einstellungen ====================
+
+model BenachrichtigungsEinstellung {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  pushAktiv              Boolean  @default(true)
+  emailAktiv             Boolean  @default(true)
+  stilleStundenVon       Int      @default(22)
+  stilleStundenBis       Int      @default(7)
+  notfallUeberschreiben  Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@index([userId])
+}
+
 // ==================== FAQ ====================
 
 model FAQ {
-  id       String @id @default(cuid())
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  teamId   String?
-  question String
-  answer   String
-  useCount Int    @default(0)
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teamId    String?
+  question  String
+  answer    String
+  useCount  Int      @default(0)
+  embedding Json?    // Float-Array fuer Similarity-Suche
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([tenantId])
+}
+
+// ==================== Eltern-Fragen ====================
+
+enum FrageStatus {
+  OFFEN
+  AUTOMATISCH_BEANTWORTET
+  BEANTWORTET
+}
+
+model ElternFrage {
+  id            String       @id @default(cuid())
+  tenantId      String
+  teamId        String?
+  fragenderId   String       // userId des Elternteils
+  frage         String
+  antwort       String?
+  automatisch   Boolean      @default(false)
+  status        FrageStatus  @default(OFFEN)
+  createdAt     DateTime     @default(now())
+  beantwortetAm DateTime?
+
+  @@index([tenantId])
+  @@index([teamId])
+  @@index([status])
 }
 
 // ==================== Schnell-Anmeldung per E-Mail-Link ====================
@@ -810,11 +877,16 @@ model Halle {
   id          String   @id @default(cuid())
   tenantId    String
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name        String
-  adresse     String?
-  kapazitaet  Int?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  name          String
+  adresse       String?
+  kapazitaet    Int?
+  lat           Float?
+  lng           Float?
+  mapsUrl       String?
+  parkplatzInfo String?
+  zugangscode   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   belegungen  Hallenbelegung[]
 
@@ -1095,4 +1167,24 @@ enum EinladungStatus {
   GEOEFFNET     // Link wurde geklickt
   AUSGEFUELLT   // Formular wurde ausgefuellt
   ABGELAUFEN    // Token abgelaufen (30 Tage)
+}
+
+// ==================== Pinboard (Team-Pinnwand) ====================
+
+model PinboardItem {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teamId       String
+  team         Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  titel        String
+  inhalt       String
+  icon         String   @default("info")
+  istAngepinnt Boolean  @default(false)
+  erstelltVon  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([teamId])
+  @@index([tenantId])
 }

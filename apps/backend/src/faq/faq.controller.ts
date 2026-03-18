@@ -12,7 +12,13 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { FaqService } from './faq.service';
-import { ErstelleFaqDto, AktualisiereFaqDto, FrageDto } from './dto/erstelle-faq.dto';
+import {
+  ErstelleFaqDto,
+  AktualisiereFaqDto,
+  FrageDto,
+  ElternFrageDto,
+  BeantworteFrageDto,
+} from './dto/erstelle-faq.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RollenGuard } from '../common/guards/rollen.guard';
 import { TenantGuard } from '../common/guards/tenant.guard';
@@ -75,5 +81,44 @@ export class FaqController {
     @Body() dto: FrageDto,
   ) {
     return this.faqService.automatischAntworten(tenantId, dto.frage, dto.teamId);
+  }
+
+  // ==================== Eltern-Fragen Endpoints ====================
+
+  @Post('frage')
+  @Rollen(Role.PARENT, Role.MEMBER)
+  @ApiOperation({ summary: 'Eltern-Frage stellen (mit KI-Embedding Auto-Antwort)' })
+  async elternFrageStellen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @AktuellerBenutzer('id') userId: string,
+    @Body() dto: ElternFrageDto,
+  ) {
+    return this.faqService.elternFrageStellen(tenantId, userId, dto.frage, dto.teamId);
+  }
+
+  @Get('offene-fragen')
+  @Rollen(Role.TRAINER, Role.ADMIN, Role.SUPERADMIN)
+  @ApiOperation({ summary: 'Offene Eltern-Fragen abrufen (fuer Trainer)' })
+  async offeneFragenAbrufen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Query('teamId') teamId?: string,
+  ) {
+    return this.faqService.offeneFragenAbrufen(tenantId, teamId);
+  }
+
+  @Put('frage/:id/beantworten')
+  @Rollen(Role.TRAINER, Role.ADMIN, Role.SUPERADMIN)
+  @ApiOperation({ summary: 'Eltern-Frage beantworten (optional als FAQ hinzufuegen)' })
+  async frageBeantworten(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: BeantworteFrageDto,
+  ) {
+    return this.faqService.frageBeantworten(
+      tenantId,
+      id,
+      dto.antwort,
+      dto.alsFaqHinzufuegen ?? false,
+    );
   }
 }

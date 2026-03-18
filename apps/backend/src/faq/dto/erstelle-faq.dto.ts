@@ -1,4 +1,4 @@
-import { IsString, MinLength, IsOptional } from 'class-validator';
+import { IsString, MinLength, IsOptional, IsBoolean } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ErstelleFaqDto {
@@ -47,4 +47,28 @@ export class FrageDto {
   @IsOptional()
   @IsString()
   teamId?: string;
+}
+
+export class ElternFrageDto {
+  @ApiProperty({ example: 'Wann muss mein Kind beim Training sein?', description: 'Die Frage des Elternteils' })
+  @IsString()
+  @MinLength(3, { message: 'Frage muss mindestens 3 Zeichen lang sein.' })
+  frage!: string;
+
+  @ApiPropertyOptional({ description: 'Team-ID (optional, fuer teamspezifische Fragen)' })
+  @IsOptional()
+  @IsString()
+  teamId?: string;
+}
+
+export class BeantworteFrageDto {
+  @ApiProperty({ example: 'Training ist jeden Dienstag um 17:00 Uhr.', description: 'Die Antwort auf die Frage' })
+  @IsString()
+  @MinLength(3, { message: 'Antwort muss mindestens 3 Zeichen lang sein.' })
+  antwort!: string;
+
+  @ApiPropertyOptional({ description: 'Ob die Antwort als neue FAQ hinzugefuegt werden soll', default: false })
+  @IsOptional()
+  @IsBoolean()
+  alsFaqHinzufuegen?: boolean;
 }

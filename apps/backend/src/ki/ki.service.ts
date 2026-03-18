@@ -249,4 +249,88 @@ export class KiService {
 
     return { text, provider: 'openai', modell };
   }
+
+  // ==================== Embeddings ====================
+
+  /**
+   * Generiert ein Embedding fuer einen Text.
+   * Verwendet OpenAI text-embedding-3-small falls verfuegbar,
+   * ansonsten Fallback auf einfaches Keyword-Matching.
+   */
+  async embeddingGenerieren(tenantId: string, text: string): Promise<number[]> {
+    const openaiKey = await this.openaiKeyLaden(tenantId);
+
+    if (openaiKey) {
+      return this.openaiEmbeddingGenerieren(openaiKey, text);
+    }
+
+    // Fallback: Einfaches Keyword-basiertes Pseudo-Embedding
+    return this.keywordEmbedding(text);
+  }
+
+  /**
+   * Laedt den OpenAI API-Key fuer Embeddings.
+   * Prueft zuerst Tenant-Konfiguration, dann .env.
+   */
+  private async openaiKeyLaden(tenantId: string): Promise<string | null> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { kiProvider: true, kiApiKey: true },
+    });
+
+    // Wenn Tenant OpenAI konfiguriert hat
+    if (tenant?.kiApiKey && tenant?.kiProvider === 'openai') {
+      return tenant.kiApiKey;
+    }
+
+    // Fallback auf .env
+    return this.configService.get<string>('OPENAI_API_KEY') || null;
+  }
+
+  /**
+   * Generiert ein Embedding ueber OpenAI text-embedding-3-small.
+   */
+  private async openaiEmbeddingGenerieren(apiKey: string, text: string): Promise<number[]> {
+    const client = new OpenAI({ apiKey });
+
+    const response = await client.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: text,
+    });
+
+    return response.data[0].embedding;
+  }
+
+  /**
+   * Fallback: Einfaches Keyword-basiertes Pseudo-Embedding.
+   * Erzeugt einen Vektor basierend auf haeufigen Woertern.
+   */
+  private keywordEmbedding(text: string): number[] {
+    const woerter = text.toLowerCase()
+      .replace(/[^a-zaeoeue0-9\s]/g, '')
+      .split(/\s+/)
+      .filter((w) => w.length > 2);
+
+    // Einfacher Hash-basierter Vektor mit fester Laenge
+    const vektorLaenge = 128;
+    const vektor = new Array(vektorLaenge).fill(0);
+
+    for (const wort of woerter) {
+      let hash = 0;
+      for (let i = 0; i < wort.length; i++) {
+        hash = (hash * 31 + wort.charCodeAt(i)) % vektorLaenge;
+      }
+      vektor[hash] += 1;
+    }
+
+    // Normalisieren
+    const magnitude = Math.sqrt(vektor.reduce((sum: number, v: number) => sum + v * v, 0));
+    if (magnitude > 0) {
+      for (let i = 0; i < vektor.length; i++) {
+        vektor[i] /= magnitude;
+      }
+    }
+
+    return vektor;
+  }
 }

@@ -1,4 +1,4 @@
-import { IsString, MinLength, IsOptional, IsInt, Min, IsIn } from 'class-validator';
+import { IsString, MinLength, IsOptional, IsInt, Min, IsIn, IsNumber } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ErstelleHalleDto {
@@ -17,6 +17,31 @@ export class ErstelleHalleDto {
   @IsInt({ message: 'Kapazitaet muss eine ganze Zahl sein.' })
   @Min(1, { message: 'Kapazitaet muss mindestens 1 sein.' })
   kapazitaet?: number;
+
+  @ApiPropertyOptional({ example: 48.7116, description: 'Breitengrad (Latitude)' })
+  @IsOptional()
+  @IsNumber({}, { message: 'Breitengrad muss eine Zahl sein.' })
+  lat?: number;
+
+  @ApiPropertyOptional({ example: 9.6245, description: 'Laengengrad (Longitude)' })
+  @IsOptional()
+  @IsNumber({}, { message: 'Laengengrad muss eine Zahl sein.' })
+  lng?: number;
+
+  @ApiPropertyOptional({ example: 'https://maps.google.com/?q=48.7116,9.6245', description: 'Google Maps URL' })
+  @IsOptional()
+  @IsString()
+  mapsUrl?: string;
+
+  @ApiPropertyOptional({ example: 'Parkplaetze hinter der Halle, Einfahrt ueber Schulstrasse', description: 'Parkplatz-Informationen' })
+  @IsOptional()
+  @IsString()
+  parkplatzInfo?: string;
+
+  @ApiPropertyOptional({ example: '4711#', description: 'Zugangscode fuer die Halle' })
+  @IsOptional()
+  @IsString()
+  zugangscode?: string;
 }
 
 export class AktualisiereHalleDto {
@@ -36,6 +61,31 @@ export class AktualisiereHalleDto {
   @IsInt({ message: 'Kapazitaet muss eine ganze Zahl sein.' })
   @Min(1, { message: 'Kapazitaet muss mindestens 1 sein.' })
   kapazitaet?: number;
+
+  @ApiPropertyOptional({ example: 48.7116, description: 'Breitengrad (Latitude)' })
+  @IsOptional()
+  @IsNumber({}, { message: 'Breitengrad muss eine Zahl sein.' })
+  lat?: number;
+
+  @ApiPropertyOptional({ example: 9.6245, description: 'Laengengrad (Longitude)' })
+  @IsOptional()
+  @IsNumber({}, { message: 'Laengengrad muss eine Zahl sein.' })
+  lng?: number;
+
+  @ApiPropertyOptional({ example: 'https://maps.google.com/?q=48.7116,9.6245', description: 'Google Maps URL' })
+  @IsOptional()
+  @IsString()
+  mapsUrl?: string;
+
+  @ApiPropertyOptional({ example: 'Parkplaetze hinter der Halle, Einfahrt ueber Schulstrasse', description: 'Parkplatz-Informationen' })
+  @IsOptional()
+  @IsString()
+  parkplatzInfo?: string;
+
+  @ApiPropertyOptional({ example: '4711#', description: 'Zugangscode fuer die Halle' })
+  @IsOptional()
+  @IsString()
+  zugangscode?: string;
 }
 
 const WOCHENTAGE = ['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'] as const;

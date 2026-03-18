@@ -21,6 +21,11 @@ export class HalleService {
         name: dto.name,
         adresse: dto.adresse,
         kapazitaet: dto.kapazitaet,
+        lat: dto.lat,
+        lng: dto.lng,
+        mapsUrl: dto.mapsUrl,
+        parkplatzInfo: dto.parkplatzInfo,
+        zugangscode: dto.zugangscode,
       },
     });
   }
@@ -74,6 +79,11 @@ export class HalleService {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.adresse !== undefined && { adresse: dto.adresse }),
         ...(dto.kapazitaet !== undefined && { kapazitaet: dto.kapazitaet }),
+        ...(dto.lat !== undefined && { lat: dto.lat }),
+        ...(dto.lng !== undefined && { lng: dto.lng }),
+        ...(dto.mapsUrl !== undefined && { mapsUrl: dto.mapsUrl }),
+        ...(dto.parkplatzInfo !== undefined && { parkplatzInfo: dto.parkplatzInfo }),
+        ...(dto.zugangscode !== undefined && { zugangscode: dto.zugangscode }),
       },
     });
   }

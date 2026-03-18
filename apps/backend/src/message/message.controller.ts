@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Delete,
   Body,
   Param,
@@ -13,6 +14,8 @@ import { Role } from '@prisma/client';
 import { MessageService } from './message.service';
 import { ErstelleNachrichtDto } from './dto/erstelle-nachricht.dto';
 import { NotfallBroadcastDto } from './dto/notfall-broadcast.dto';
+import { ReaktionDto } from './dto/reaktion.dto';
+import { AktualisiereBenachrichtigungsEinstellungDto } from './dto/benachrichtigungs-einstellung.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RollenGuard } from '../common/guards/rollen.guard';
 import { TenantGuard } from '../common/guards/tenant.guard';
@@ -66,6 +69,47 @@ export class MessageController {
   ) {
     return this.messageService.notfallBroadcastSenden(tenantId, senderId, dto);
   }
+
+  // ==================== Benachrichtigungs-Einstellungen ====================
+
+  @Get('benachrichtigungen')
+  @ApiOperation({ summary: 'Eigene Benachrichtigungs-Einstellungen abrufen' })
+  async benachrichtigungenAbrufen(
+    @AktuellerBenutzer('id') userId: string,
+  ) {
+    return this.messageService.benachrichtigungenAbrufen(userId);
+  }
+
+  @Put('benachrichtigungen')
+  @ApiOperation({ summary: 'Benachrichtigungs-Einstellungen aktualisieren (Stille Stunden, Push, E-Mail)' })
+  async benachrichtigungenAktualisieren(
+    @AktuellerBenutzer('id') userId: string,
+    @Body() dto: AktualisiereBenachrichtigungsEinstellungDto,
+  ) {
+    return this.messageService.benachrichtigungenAktualisieren(userId, dto);
+  }
+
+  // ==================== Reaktionen ====================
+
+  @Post(':id/reaktion')
+  @ApiOperation({ summary: 'Reaktion auf Nachricht setzen (JA, NEIN, VIELLEICHT, GESEHEN)' })
+  async reaktionSetzen(
+    @Param('id') nachrichtId: string,
+    @AktuellerBenutzer('id') userId: string,
+    @Body() dto: ReaktionDto,
+  ) {
+    return this.messageService.reaktionSetzen(nachrichtId, userId, dto);
+  }
+
+  @Get(':id/reaktionen')
+  @ApiOperation({ summary: 'Reaktionen-Zusammenfassung einer Nachricht abrufen' })
+  async reaktionenAbrufen(
+    @Param('id') nachrichtId: string,
+  ) {
+    return this.messageService.reaktionenAbrufen(nachrichtId);
+  }
+
+  // ==================== Gelesen / Loeschen ====================
 
   @Post(':id/gelesen')
   @ApiOperation({ summary: 'Nachricht als gelesen markieren' })
