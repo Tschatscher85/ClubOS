@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TeamFormular } from '@/components/teams/team-formular';
 import { apiClient } from '@/lib/api-client';
+import { sportartLabel, sportartenLaden } from '@/lib/sportarten';
 
 interface Team {
   id: string;
@@ -18,18 +19,6 @@ interface Team {
   _count: { events: number; teamMembers: number };
 }
 
-const SPORT_LABEL: Record<string, string> = {
-  FUSSBALL: 'Fussball',
-  HANDBALL: 'Handball',
-  BASKETBALL: 'Basketball',
-  FOOTBALL: 'Football',
-  TENNIS: 'Tennis',
-  TURNEN: 'Turnen',
-  SCHWIMMEN: 'Schwimmen',
-  LEICHTATHLETIK: 'Leichtathletik',
-  SONSTIGES: 'Sonstiges',
-};
-
 export default function TeamsInhalt() {
   const router = useRouter();
   const [teams, setTeams] = useState<Team[]>([]);
@@ -39,7 +28,10 @@ export default function TeamsInhalt() {
 
   const datenLaden = useCallback(async () => {
     try {
-      const daten = await apiClient.get<Team[]>('/teams');
+      const [daten] = await Promise.all([
+        apiClient.get<Team[]>('/teams'),
+        sportartenLaden(), // Sportarten-Cache fuellen
+      ]);
       setTeams(daten);
     } catch (error) {
       console.error('Fehler beim Laden:', error);
@@ -105,7 +97,7 @@ export default function TeamsInhalt() {
                   <CardTitle className="text-lg">{team.name}</CardTitle>
                   <div className="flex gap-2 mt-2">
                     <Badge variant="secondary">
-                      {SPORT_LABEL[team.sport] || team.sport}
+                      {sportartLabel(team.sport)}
                     </Badge>
                     <Badge variant="outline">{team.ageGroup}</Badge>
                   </div>

@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Building2,
   Plus,
+  Pencil,
+  Trash2,
   Users,
   Calendar,
   ChevronRight,
@@ -23,6 +25,8 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { apiClient } from '@/lib/api-client';
+import { sportartenLaden, sportartLabel } from '@/lib/sportarten';
+import type { Sportart } from '@/lib/sportarten';
 
 interface Team {
   id: string;
@@ -63,28 +67,25 @@ interface AbteilungBericht {
   }>;
 }
 
-const SPORTARTEN_LABEL: Record<string, string> = {
-  FUSSBALL: 'Fussball',
-  HANDBALL: 'Handball',
-  BASKETBALL: 'Basketball',
-  FOOTBALL: 'Football',
-  TENNIS: 'Tennis',
-  TURNEN: 'Turnen',
-  SCHWIMMEN: 'Schwimmen',
-  LEICHTATHLETIK: 'Leichtathletik',
-  SONSTIGES: 'Sonstiges',
-};
-
-const SPORTARTEN = Object.keys(SPORTARTEN_LABEL);
-
 export default function AbteilungenInhalt() {
   const [abteilungen, setAbteilungen] = useState<Abteilung[]>([]);
+  const [sportarten, setSportarten] = useState<Sportart[]>([]);
   const [ladend, setLadend] = useState(true);
+
+  // Erstellen
   const [dialogOffen, setDialogOffen] = useState(false);
   const [neuerName, setNeuerName] = useState('');
-  const [neueSportart, setNeueSportart] = useState('FUSSBALL');
+  const [neueSportart, setNeueSportart] = useState('');
   const [neueBeschreibung, setNeueBeschreibung] = useState('');
   const [erstellend, setErstellend] = useState(false);
+
+  // Bearbeiten
+  const [bearbeitenAbt, setBearbeitenAbt] = useState<Abteilung | null>(null);
+  const [bearbeitenName, setBearbeitenName] = useState('');
+  const [bearbeitenSportart, setBearbeitenSportart] = useState('');
+  const [bearbeitenBeschreibung, setBearbeitenBeschreibung] = useState('');
+  const [bearbeitenOffen, setBearbeitenOffen] = useState(false);
+  const [speichernd, setSpeichernd] = useState(false);
 
   // Bericht
   const [berichtOffen, setBerichtOffen] = useState(false);
@@ -93,8 +94,15 @@ export default function AbteilungenInhalt() {
 
   const datenLaden = useCallback(async () => {
     try {
-      const daten = await apiClient.get<Abteilung[]>('/abteilungen');
-      setAbteilungen(daten);
+      const [abtDaten, sportDaten] = await Promise.all([
+        apiClient.get<Abteilung[]>('/abteilungen'),
+        sportartenLaden(),
+      ]);
+      setAbteilungen(abtDaten);
+      setSportarten(sportDaten);
+      if (sportDaten.length > 0 && !neueSportart) {
+        setNeueSportart(sportDaten[0].name.toUpperCase().replace(/[^A-Z]/g, '') || sportDaten[0].name);
+      }
     } catch (error) {
       console.error('Fehler beim Laden der Abteilungen:', error);
     } finally {
@@ -126,6 +134,43 @@ export default function AbteilungenInhalt() {
     }
   };
 
+  const handleBearbeitenStarten = (abt: Abteilung) => {
+    setBearbeitenAbt(abt);
+    setBearbeitenName(abt.name);
+    setBearbeitenSportart(abt.sport);
+    setBearbeitenBeschreibung(abt.beschreibung || '');
+    setBearbeitenOffen(true);
+  };
+
+  const handleBearbeitenSpeichern = async () => {
+    if (!bearbeitenAbt || !bearbeitenName) return;
+    setSpeichernd(true);
+    try {
+      await apiClient.put(`/abteilungen/${bearbeitenAbt.id}`, {
+        name: bearbeitenName,
+        sport: bearbeitenSportart,
+        beschreibung: bearbeitenBeschreibung || undefined,
+      });
+      setBearbeitenOffen(false);
+      setBearbeitenAbt(null);
+      datenLaden();
+    } catch (error) {
+      console.error('Fehler beim Speichern:', error);
+    } finally {
+      setSpeichernd(false);
+    }
+  };
+
+  const handleLoeschen = async (id: string, name: string) => {
+    if (!confirm(`Abteilung "${name}" wirklich loeschen? Zugeordnete Teams verlieren ihre Abteilungszuordnung.`)) return;
+    try {
+      await apiClient.delete(`/abteilungen/${id}`);
+      datenLaden();
+    } catch (error) {
+      console.error('Fehler beim Loeschen:', error);
+    }
+  };
+
   const handleBerichtLaden = async (abteilungId: string) => {
     setBerichtOffen(true);
     setBerichtLadend(true);
@@ -141,6 +186,14 @@ export default function AbteilungenInhalt() {
       setBerichtLadend(false);
     }
   };
+
+  // Sportarten als Dropdown-Optionen
+  const sportOptionen = sportarten.map((s) => ({
+    wert: s.istVordefiniert
+      ? s.name.toUpperCase().replace(/[^A-Z]/g, '') || s.name
+      : s.name,
+    label: s.name,
+  }));
 
   if (ladend) {
     return (
@@ -184,9 +237,27 @@ export default function AbteilungenInhalt() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">{abt.name}</CardTitle>
-                  <Badge variant="secondary">
-                    {SPORTARTEN_LABEL[abt.sport] || abt.sport}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">
+                      {sportartLabel(abt.sport)}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => handleBearbeitenStarten(abt)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => handleLoeschen(abt.id, abt.name)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
                 {abt.beschreibung && (
                   <p className="text-sm text-muted-foreground">
@@ -266,9 +337,9 @@ export default function AbteilungenInhalt() {
                 value={neueSportart}
                 onChange={(e) => setNeueSportart(e.target.value)}
               >
-                {SPORTARTEN.map((s) => (
-                  <option key={s} value={s}>
-                    {SPORTARTEN_LABEL[s]}
+                {sportOptionen.map((s) => (
+                  <option key={s.wert} value={s.wert}>
+                    {s.label}
                   </option>
                 ))}
               </Select>
@@ -296,6 +367,58 @@ export default function AbteilungenInhalt() {
         </DialogContent>
       </Dialog>
 
+      {/* Bearbeiten Dialog */}
+      <Dialog open={bearbeitenOffen} onOpenChange={setBearbeitenOffen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Abteilung bearbeiten</DialogTitle>
+            <DialogDescription>
+              Name, Sportart und Beschreibung der Abteilung aendern
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Name *</Label>
+              <Input
+                value={bearbeitenName}
+                onChange={(e) => setBearbeitenName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Sportart *</Label>
+              <Select
+                value={bearbeitenSportart}
+                onChange={(e) => setBearbeitenSportart(e.target.value)}
+              >
+                {sportOptionen.map((s) => (
+                  <option key={s.wert} value={s.wert}>
+                    {s.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Beschreibung</Label>
+              <Input
+                value={bearbeitenBeschreibung}
+                onChange={(e) => setBearbeitenBeschreibung(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setBearbeitenOffen(false)}>
+                Abbrechen
+              </Button>
+              <Button
+                onClick={handleBearbeitenSpeichern}
+                disabled={!bearbeitenName || speichernd}
+              >
+                {speichernd ? 'Wird gespeichert...' : 'Speichern'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Bericht Dialog */}
       <Dialog open={berichtOffen} onOpenChange={setBerichtOffen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
@@ -316,7 +439,6 @@ export default function AbteilungenInhalt() {
             </div>
           ) : bericht ? (
             <div className="space-y-6">
-              {/* Zusammenfassung */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="rounded-lg border p-4 text-center">
                   <div className="text-2xl font-bold">
@@ -342,7 +464,6 @@ export default function AbteilungenInhalt() {
                 </div>
               </div>
 
-              {/* Team-Details */}
               {bericht.teams.map((team) => (
                 <div key={team.id} className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -368,32 +489,18 @@ export default function AbteilungenInhalt() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b bg-muted/50">
-                            <th className="h-8 px-3 text-left font-medium">
-                              Name
-                            </th>
-                            <th className="h-8 px-3 text-left font-medium">
-                              Rolle
-                            </th>
-                            <th className="h-8 px-3 text-left font-medium">
-                              Status
-                            </th>
+                            <th className="h-8 px-3 text-left font-medium">Name</th>
+                            <th className="h-8 px-3 text-left font-medium">Rolle</th>
+                            <th className="h-8 px-3 text-left font-medium">Status</th>
                           </tr>
                         </thead>
                         <tbody>
                           {team.mitglieder.map((m) => (
                             <tr key={m.id} className="border-b last:border-0">
                               <td className="px-3 py-2">{m.name}</td>
-                              <td className="px-3 py-2 text-muted-foreground">
-                                {m.rolle}
-                              </td>
+                              <td className="px-3 py-2 text-muted-foreground">{m.rolle}</td>
                               <td className="px-3 py-2">
-                                <Badge
-                                  variant={
-                                    m.status === 'ACTIVE'
-                                      ? 'default'
-                                      : 'outline'
-                                  }
-                                >
+                                <Badge variant={m.status === 'ACTIVE' ? 'default' : 'outline'}>
                                   {m.status === 'ACTIVE' ? 'Aktiv' : m.status}
                                 </Badge>
                               </td>

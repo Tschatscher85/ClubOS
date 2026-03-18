@@ -13,6 +13,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { apiClient } from '@/lib/api-client';
+import { sportartenLaden, sportartenFallback } from '@/lib/sportarten';
 
 interface Team {
   id: string;
@@ -50,17 +51,7 @@ interface TeamFormularProps {
   team?: Team | null;
 }
 
-const SPORTARTEN = [
-  { wert: 'FUSSBALL', label: 'Fußball' },
-  { wert: 'HANDBALL', label: 'Handball' },
-  { wert: 'BASKETBALL', label: 'Basketball' },
-  { wert: 'FOOTBALL', label: 'Football' },
-  { wert: 'TENNIS', label: 'Tennis' },
-  { wert: 'TURNEN', label: 'Turnen' },
-  { wert: 'SCHWIMMEN', label: 'Schwimmen' },
-  { wert: 'LEICHTATHLETIK', label: 'Leichtathletik' },
-  { wert: 'SONSTIGES', label: 'Sonstiges' },
-];
+// Wird dynamisch geladen
 
 const ALTERSKLASSEN = [
   'Bambini', 'U6', 'U7', 'U8', 'U9', 'U10', 'U11', 'U12',
@@ -82,6 +73,7 @@ export function TeamFormular({
   const [abteilungId, setAbteilungId] = useState('');
   const [trainerListe, setTrainerListe] = useState<{ id: string; name: string }[]>([]);
   const [abteilungen, setAbteilungen] = useState<Abteilung[]>([]);
+  const [sportartenListe, setSportartenListe] = useState<{ wert: string; label: string }[]>(sportartenFallback());
   const [ladend, setLadend] = useState(false);
   const [fehler, setFehler] = useState('');
 
@@ -89,10 +81,19 @@ export function TeamFormular({
   useEffect(() => {
     if (!offen) return;
 
-    // Abteilungen laden
+    // Abteilungen + Sportarten laden
     apiClient.get<Abteilung[]>('/abteilungen')
       .then(setAbteilungen)
       .catch(() => {});
+
+    sportartenLaden().then((daten) => {
+      setSportartenListe(daten.map((s) => ({
+        wert: s.istVordefiniert
+          ? s.name.toUpperCase().replace(/[^A-Z]/g, '') || s.name
+          : s.name,
+        label: s.name,
+      })));
+    }).catch(() => {});
 
     // Trainer laden: Versuche Verwaltungs-API, Fallback auf /benutzer
     Promise.all([
@@ -225,7 +226,7 @@ export function TeamFormular({
                 value={sportart}
                 onChange={(e) => setSportart(e.target.value)}
               >
-                {SPORTARTEN.map((s) => (
+                {sportartenListe.map((s) => (
                   <option key={s.wert} value={s.wert}>{s.label}</option>
                 ))}
               </Select>
