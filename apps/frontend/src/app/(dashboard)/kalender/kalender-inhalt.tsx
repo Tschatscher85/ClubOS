@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, Plus, Trash2, MapPin, Clock, Users } from 'lucide-react';
+import { Plus, Trash2, MapPin, Clock, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { EventFormular } from '@/components/kalender/event-formular';
 import { apiClient } from '@/lib/api-client';
@@ -25,27 +24,30 @@ interface EventData {
   _count: { attendances: number };
 }
 
-const TYP_LABEL: Record<string, { text: string; variant: 'default' | 'secondary' | 'outline' }> = {
-  TRAINING: { text: 'Training', variant: 'secondary' },
-  MATCH: { text: 'Spiel', variant: 'default' },
-  TOURNAMENT: { text: 'Turnier', variant: 'default' },
-  TRIP: { text: 'Ausflug', variant: 'outline' },
-  MEETING: { text: 'Besprechung', variant: 'outline' },
+const TYP_FARBE: Record<string, string> = {
+  TRAINING: 'bg-green-500',
+  MATCH: 'bg-blue-600',
+  TOURNAMENT: 'bg-purple-600',
+  TRIP: 'bg-orange-500',
+  MEETING: 'bg-gray-500',
 };
 
-function formatDatum(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString('de-DE', {
-    weekday: 'short',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-}
+const TYP_LABEL: Record<string, string> = {
+  TRAINING: 'Training',
+  MATCH: 'Spiel',
+  TOURNAMENT: 'Turnier',
+  TRIP: 'Ausflug',
+  MEETING: 'Besprechung',
+};
+
+const WOCHENTAGE = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const MONATSNAMEN = [
+  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+];
 
 function formatUhrzeit(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 }
 
 export default function KalenderInhalt() {
@@ -53,6 +55,8 @@ export default function KalenderInhalt() {
   const [events, setEvents] = useState<EventData[]>([]);
   const [ladend, setLadend] = useState(true);
   const [formularOffen, setFormularOffen] = useState(false);
+  const [aktuellerMonat, setAktuellerMonat] = useState(new Date());
+  const [ansicht, setAnsicht] = useState<'monat' | 'liste'>('monat');
 
   const datenLaden = useCallback(async () => {
     try {
@@ -69,8 +73,9 @@ export default function KalenderInhalt() {
     datenLaden();
   }, [datenLaden]);
 
-  const handleLoeschen = async (id: string) => {
-    if (!confirm('Veranstaltung wirklich loeschen?')) return;
+  const handleLoeschen = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Veranstaltung wirklich löschen?')) return;
     try {
       await apiClient.delete(`/veranstaltungen/${id}`);
       datenLaden();
@@ -79,97 +84,261 @@ export default function KalenderInhalt() {
     }
   };
 
+  // Kalendertage berechnen
+  const kalenderTage = useMemo(() => {
+    const jahr = aktuellerMonat.getFullYear();
+    const monat = aktuellerMonat.getMonth();
+    const ersterTag = new Date(jahr, monat, 1);
+    const letzterTag = new Date(jahr, monat + 1, 0);
+
+    // Montag als erster Wochentag (0=Mo, 6=So)
+    let startTag = ersterTag.getDay() - 1;
+    if (startTag < 0) startTag = 6;
+
+    const tage: { datum: Date; istAktuellerMonat: boolean }[] = [];
+
+    // Tage vor dem Monat
+    for (let i = startTag - 1; i >= 0; i--) {
+      const d = new Date(jahr, monat, -i);
+      tage.push({ datum: d, istAktuellerMonat: false });
+    }
+
+    // Tage im Monat
+    for (let i = 1; i <= letzterTag.getDate(); i++) {
+      tage.push({ datum: new Date(jahr, monat, i), istAktuellerMonat: true });
+    }
+
+    // Tage nach dem Monat (bis 42 Tage = 6 Wochen)
+    while (tage.length < 42) {
+      const naechsterTag = tage.length - startTag - letzterTag.getDate() + 1;
+      tage.push({ datum: new Date(jahr, monat + 1, naechsterTag), istAktuellerMonat: false });
+    }
+
+    return tage;
+  }, [aktuellerMonat]);
+
+  // Events pro Tag
+  const eventsProTag = useMemo(() => {
+    const map = new Map<string, EventData[]>();
+    for (const event of events) {
+      const key = new Date(event.date).toISOString().split('T')[0];
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(event);
+    }
+    return map;
+  }, [events]);
+
+  const heute = new Date().toISOString().split('T')[0];
+
+  // Kommende Events (sortiert)
+  const kommendeEvents = useMemo(() => {
+    return events
+      .filter((e) => new Date(e.date) >= new Date())
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(0, 20);
+  }, [events]);
+
   if (ladend) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="animate-pulse text-muted-foreground">
-          Veranstaltungen werden geladen...
-        </div>
+      <div className="flex items-center justify-center h-[40vh]">
+        <div className="animate-pulse text-muted-foreground">Kalender wird geladen...</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Toolbar */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{events.length} Veranstaltungen</p>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-md border">
+            <button
+              onClick={() => setAnsicht('monat')}
+              className={`px-3 py-1.5 text-sm ${ansicht === 'monat' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+            >
+              Monat
+            </button>
+            <button
+              onClick={() => setAnsicht('liste')}
+              className={`px-3 py-1.5 text-sm border-l ${ansicht === 'liste' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+            >
+              Liste
+            </button>
+          </div>
+          {ansicht === 'monat' && (
+            <div className="flex items-center gap-1 ml-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setAktuellerMonat(new Date(aktuellerMonat.getFullYear(), aktuellerMonat.getMonth() - 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="font-semibold min-w-[160px] text-center">
+                {MONATSNAMEN[aktuellerMonat.getMonth()]} {aktuellerMonat.getFullYear()}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setAktuellerMonat(new Date(aktuellerMonat.getFullYear(), aktuellerMonat.getMonth() + 1))}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-2"
+                onClick={() => setAktuellerMonat(new Date())}
+              >
+                Heute
+              </Button>
+            </div>
+          )}
+        </div>
         <Button onClick={() => setFormularOffen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Neue Veranstaltung
         </Button>
       </div>
 
-      {events.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          Noch keine Veranstaltungen. Erstellen Sie zuerst ein Team, dann eine Veranstaltung.
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {events.map((event) => {
-            const typInfo = TYP_LABEL[event.type] || { text: event.type, variant: 'outline' as const };
-            return (
-              <Card
-                key={event.id}
-                className="cursor-pointer hover:bg-accent/50 transition-colors"
-                onClick={() => router.push(`/kalender/${event.id}`)}
-              >
-                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                  <div>
-                    <CardTitle className="text-base">{event.title}</CardTitle>
-                    <div className="flex gap-2 mt-1">
-                      <Badge variant={typInfo.variant}>{typInfo.text}</Badge>
-                      <Badge variant="outline">{event.team.name}</Badge>
-                    </div>
+      {/* Monatsansicht */}
+      {ansicht === 'monat' && (
+        <div className="border rounded-lg overflow-hidden">
+          {/* Wochentag-Header */}
+          <div className="grid grid-cols-7 bg-muted">
+            {WOCHENTAGE.map((tag) => (
+              <div key={tag} className="py-2 text-center text-xs font-medium text-muted-foreground border-r last:border-r-0">
+                {tag}
+              </div>
+            ))}
+          </div>
+          {/* Kalender-Grid */}
+          <div className="grid grid-cols-7">
+            {kalenderTage.map(({ datum, istAktuellerMonat }, idx) => {
+              const key = datum.toISOString().split('T')[0];
+              const tagesEvents = eventsProTag.get(key) || [];
+              const istHeute = key === heute;
+
+              return (
+                <div
+                  key={idx}
+                  className={`min-h-[90px] border-r border-b last:border-r-0 p-1 ${
+                    !istAktuellerMonat ? 'bg-muted/30' : ''
+                  }`}
+                >
+                  <div className={`text-xs font-medium mb-0.5 ${
+                    istHeute
+                      ? 'bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center'
+                      : istAktuellerMonat ? 'text-foreground' : 'text-muted-foreground'
+                  }`}>
+                    {datum.getDate()}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleLoeschen(event.id);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      {formatDatum(event.date)}, {formatUhrzeit(event.date)}
-                      {event.endDate && ` — ${formatUhrzeit(event.endDate)}`}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {event.location}
-                      {event.hallName && ` (${event.hallName})`}
-                    </span>
-                    {event.attendances && event.attendances.length > 0 && (() => {
-                      const gesamt = event.attendances.length;
-                      const zugesagt = event.attendances.filter((a) => a.status === 'YES').length;
-                      const abgesagt = event.attendances.filter((a) => a.status === 'NO').length;
-                      const farbe = zugesagt > gesamt / 2
-                        ? 'text-green-600'
-                        : abgesagt > gesamt / 2
-                          ? 'text-red-600'
-                          : 'text-muted-foreground';
-                      return (
-                        <span className={`flex items-center gap-1 ${farbe}`}>
-                          <Users className="h-3.5 w-3.5" />
-                          {zugesagt}/{gesamt} zugesagt
-                        </span>
-                      );
-                    })()}
+                  <div className="space-y-0.5">
+                    {tagesEvents.slice(0, 3).map((event) => (
+                      <button
+                        key={event.id}
+                        onClick={() => router.push(`/kalender/${event.id}`)}
+                        className={`w-full text-left text-[10px] leading-tight px-1 py-0.5 rounded text-white truncate ${TYP_FARBE[event.type] || 'bg-gray-500'}`}
+                        title={`${formatUhrzeit(event.date)} ${event.title} (${event.team.name})`}
+                      >
+                        {formatUhrzeit(event.date)} {event.title}
+                      </button>
+                    ))}
+                    {tagesEvents.length > 3 && (
+                      <div className="text-[10px] text-muted-foreground px-1">
+                        +{tagesEvents.length - 3} weitere
+                      </div>
+                    )}
                   </div>
-                  {event.notes && (
-                    <p className="mt-2 text-sm">{event.notes}</p>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
+
+      {/* Listenansicht */}
+      {ansicht === 'liste' && (
+        <div className="space-y-2">
+          {kommendeEvents.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              Keine kommenden Veranstaltungen.
+            </div>
+          ) : (
+            kommendeEvents.map((event) => (
+              <div
+                key={event.id}
+                onClick={() => router.push(`/kalender/${event.id}`)}
+                className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-accent/50 transition-colors"
+              >
+                {/* Datum-Box */}
+                <div className="flex flex-col items-center justify-center min-w-[50px] rounded-md bg-muted px-2 py-1">
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(event.date).toLocaleDateString('de-DE', { weekday: 'short' })}
+                  </span>
+                  <span className="text-lg font-bold">
+                    {new Date(event.date).getDate()}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(event.date).toLocaleDateString('de-DE', { month: 'short' })}
+                  </span>
+                </div>
+
+                {/* Event-Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${TYP_FARBE[event.type] || 'bg-gray-500'}`} />
+                    <span className="font-medium truncate">{event.title}</span>
+                    <Badge variant="outline" className="text-xs shrink-0">
+                      {event.team.name}
+                    </Badge>
+                  </div>
+                  <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {formatUhrzeit(event.date)}
+                      {event.endDate && ` – ${formatUhrzeit(event.endDate)}`}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {event.location}
+                    </span>
+                    {event.attendances?.length > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {event.attendances.filter((a) => a.status === 'YES').length}/{event.attendances.length}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Typ-Badge + Löschen */}
+                <Badge className={`text-white ${TYP_FARBE[event.type] || 'bg-gray-500'} shrink-0`}>
+                  {TYP_LABEL[event.type] || event.type}
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                  onClick={(e) => handleLoeschen(event.id, e)}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Legende */}
+      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+        {Object.entries(TYP_LABEL).map(([key, label]) => (
+          <span key={key} className="flex items-center gap-1">
+            <span className={`w-2.5 h-2.5 rounded-full ${TYP_FARBE[key]}`} />
+            {label}
+          </span>
+        ))}
+      </div>
 
       <EventFormular
         offen={formularOffen}
