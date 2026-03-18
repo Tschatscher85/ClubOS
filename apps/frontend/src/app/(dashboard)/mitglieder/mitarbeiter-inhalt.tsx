@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { Search, Phone, Mail, Shield } from 'lucide-react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Search, Phone, Mail, Shield, Download, Printer } from 'lucide-react';
 import { Card, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,7 @@ export default function MitarbeiterInhalt() {
   const [vorlagen, setVorlagen] = useState<RollenVorlage[]>([]);
   const [ladend, setLadend] = useState(true);
   const [suchbegriff, setSuchbegriff] = useState('');
+  const [rollenFilter, setRollenFilter] = useState('');
 
   const datenLaden = useCallback(async () => {
     try {
@@ -85,15 +87,53 @@ export default function MitarbeiterInhalt() {
       ['SUPERADMIN', 'ADMIN', 'TRAINER'].includes(user.role);
   });
 
+  // Alle verfuegbaren Rollen sammeln
+  const verfuegbareRollen = useMemo(() => {
+    const rollen = new Set<string>();
+    for (const m of mitarbeiterMitglieder) {
+      const user = benutzerZuMitglied(m.userId);
+      if (user) {
+        for (const r of user.vereinsRollen) rollen.add(r);
+      }
+    }
+    return Array.from(rollen).sort();
+  }, [mitarbeiterMitglieder, benutzer]);
+
   // Filtern
   const gefilterteMitarbeiter = mitarbeiterMitglieder.filter((m) => {
-    if (!suchbegriff) return true;
-    const suche = suchbegriff.toLowerCase();
     const user = benutzerZuMitglied(m.userId);
-    const name = `${m.firstName} ${m.lastName}`.toLowerCase();
-    const rollen = user?.vereinsRollen.join(' ').toLowerCase() || '';
-    return name.includes(suche) || rollen.includes(suche) || (m.email || '').toLowerCase().includes(suche);
+    if (suchbegriff) {
+      const suche = suchbegriff.toLowerCase();
+      const name = `${m.firstName} ${m.lastName}`.toLowerCase();
+      const rollen = user?.vereinsRollen.join(' ').toLowerCase() || '';
+      if (!name.includes(suche) && !rollen.includes(suche) && !(m.email || '').toLowerCase().includes(suche)) {
+        return false;
+      }
+    }
+    if (rollenFilter && user) {
+      if (!user.vereinsRollen.includes(rollenFilter)) return false;
+    } else if (rollenFilter && !user) {
+      return false;
+    }
+    return true;
   });
+
+  const handleExport = () => {
+    const header = 'Name;E-Mail;Telefon;Rollen;Sportarten;Status\n';
+    const rows = gefilterteMitarbeiter.map(m => {
+      const user = benutzerZuMitglied(m.userId);
+      return `${m.firstName} ${m.lastName};${m.email || ''};${m.phone || ''};${user?.vereinsRollen.join(',') || ''};${m.sport.join(',')};${user?.istAktiv ? 'Aktiv' : 'Deaktiviert'}`;
+    }).join('\n');
+    const blob = new Blob(['\ufeff' + header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mitarbeiter_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDrucken = () => window.print();
 
   if (ladend) {
     return (
@@ -106,7 +146,7 @@ export default function MitarbeiterInhalt() {
   return (
     <div className="space-y-6">
       {/* Aktionen */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
         <div className="relative max-w-sm flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -116,12 +156,32 @@ export default function MitarbeiterInhalt() {
             className="pl-9"
           />
         </div>
-        <Link href="/einstellungen/rollen">
-          <Button variant="outline" size="sm">
-            <Shield className="h-4 w-4 mr-2" />
-            Rollen verwalten
+        <Select
+          value={rollenFilter}
+          onChange={(e) => setRollenFilter(e.target.value)}
+          className="w-full sm:w-48"
+        >
+          <option value="">Alle Rollen</option>
+          {verfuegbareRollen.map((rolle) => (
+            <option key={rolle} value={rolle}>{rolle}</option>
+          ))}
+        </Select>
+        <div className="flex gap-2 ml-auto">
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            CSV Export
           </Button>
-        </Link>
+          <Button variant="outline" size="sm" onClick={handleDrucken}>
+            <Printer className="h-4 w-4 mr-2" />
+            Drucken
+          </Button>
+          <Link href="/einstellungen/rollen">
+            <Button variant="outline" size="sm">
+              <Shield className="h-4 w-4 mr-2" />
+              Rollen verwalten
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Statistik */}
@@ -132,6 +192,7 @@ export default function MitarbeiterInhalt() {
       </div>
 
       {/* Mitarbeiter-Karten */}
+      <div data-print-bereich>
       {gefilterteMitarbeiter.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           {suchbegriff
@@ -196,6 +257,8 @@ export default function MitarbeiterInhalt() {
           })}
         </div>
       )}
+
+      </div>
 
       <Card>
         <CardContent className="pt-6">

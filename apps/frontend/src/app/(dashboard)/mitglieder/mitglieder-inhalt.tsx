@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Users, Plus, Search, CheckCheck, Mail, Copy, Check, Workflow, Zap } from 'lucide-react';
+import { Users, Plus, Search, CheckCheck, Mail, Copy, Check, Workflow, Zap, Download, Upload, Printer, Cake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -105,6 +105,14 @@ export default function MitgliederInhalt() {
   const [statusFilter, setStatusFilter] = useState('');
   const [sportFilter, setSportFilter] = useState('');
   const [rollenFilter, setRollenFilter] = useState('');
+  const [geburtstagsMonat, setGeburtstagsMonat] = useState('');
+  const [eintrittAb, setEintrittAb] = useState('');
+  const [eintrittBis, setEintrittBis] = useState('');
+
+  // CSV Import
+  const [importDialogOffen, setImportDialogOffen] = useState(false);
+  const [importDaten, setImportDaten] = useState<string[][]>([]);
+  const [importLadend, setImportLadend] = useState(false);
 
   // Rollen-Daten
   const [rollenMap, setRollenMap] = useState<Record<string, { vereinsRollen: string[]; farben: Record<string, string> }>>({});
@@ -189,9 +197,28 @@ export default function MitgliederInhalt() {
         return false;
       }
 
+      // Geburtstags-Monat Filter
+      if (geburtstagsMonat && m.birthDate) {
+        const monat = new Date(m.birthDate).getMonth() + 1;
+        if (monat !== parseInt(geburtstagsMonat)) return false;
+      } else if (geburtstagsMonat && !m.birthDate) {
+        return false;
+      }
+
+      // Eintritts-Zeitraum Filter
+      if (eintrittAb) {
+        const ab = new Date(eintrittAb);
+        if (new Date(m.joinDate) < ab) return false;
+      }
+      if (eintrittBis) {
+        const bis = new Date(eintrittBis);
+        bis.setHours(23, 59, 59, 999);
+        if (new Date(m.joinDate) > bis) return false;
+      }
+
       return true;
     });
-  }, [mitglieder, suchbegriff, statusFilter, sportFilter, rollenFilter, rollenMap]);
+  }, [mitglieder, suchbegriff, statusFilter, sportFilter, rollenFilter, rollenMap, geburtstagsMonat, eintrittAb, eintrittBis]);
 
   const ausstehendeMitglieder = useMemo(
     () => mitglieder.filter((m) => m.status === 'PENDING'),
@@ -316,6 +343,76 @@ export default function MitgliederInhalt() {
       setTimeout(() => setLinkKopiert(false), 2000);
     } catch {
       console.error('Link konnte nicht kopiert werden');
+    }
+  };
+
+  const handleExport = () => {
+    const header = 'Nr;Name;E-Mail;Geburtsdatum;Telefon;Adresse;Sportarten;Status;Eintritt\n';
+    const rows = gefilterteMitglieder.map(m =>
+      `${m.memberNumber};${m.firstName} ${m.lastName};${m.email || ''};${m.birthDate ? new Date(m.birthDate).toLocaleDateString('de-DE') : ''};${m.phone || ''};${m.address || ''};${m.sport.join(',')};${m.status};${new Date(m.joinDate).toLocaleDateString('de-DE')}`
+    ).join('\n');
+    const blob = new Blob(['\ufeff' + header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mitglieder_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDrucken = () => window.print();
+
+  const handleImportDatei = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const datei = e.target.files?.[0];
+    if (!datei) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const zeilen = text.split('\n').filter(z => z.trim());
+      // Erste Zeile ist Header, Rest sind Daten
+      const daten = zeilen.slice(1).map(z => z.split(';').map(f => f.trim()));
+      setImportDaten(daten);
+      setImportDialogOffen(true);
+    };
+    reader.readAsText(datei, 'utf-8');
+    // Input zuruecksetzen damit gleiche Datei nochmal gewaehlt werden kann
+    e.target.value = '';
+  };
+
+  const handleImportBestaetigen = async () => {
+    setImportLadend(true);
+    try {
+      for (const zeile of importDaten) {
+        const [nr, name, email, geburtsdatum, telefon, adresse, sportarten, status] = zeile;
+        const nameParts = (name || '').split(' ');
+        const vorname = nameParts[0] || '';
+        const nachname = nameParts.slice(1).join(' ') || '';
+        // Datum von dd.mm.yyyy nach yyyy-mm-dd
+        let birthDate: string | undefined;
+        if (geburtsdatum) {
+          const parts = geburtsdatum.split('.');
+          if (parts.length === 3) {
+            birthDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+          }
+        }
+        await apiClient.post('/mitglieder', {
+          firstName: vorname,
+          lastName: nachname,
+          email: email || undefined,
+          birthDate: birthDate || undefined,
+          phone: telefon || undefined,
+          address: adresse || undefined,
+          sport: sportarten ? sportarten.split(',').map(s => s.trim()) : [],
+          status: status || 'ACTIVE',
+        });
+      }
+      setImportDialogOffen(false);
+      setImportDaten([]);
+      datenLaden();
+    } catch (error) {
+      console.error('Fehler beim Import:', error);
+    } finally {
+      setImportLadend(false);
     }
   };
 
@@ -451,14 +548,79 @@ export default function MitgliederInhalt() {
         )}
       </div>
 
+      {/* Erweiterte Filter + Aktionen */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+        <Select
+          value={geburtstagsMonat}
+          onChange={(e) => setGeburtstagsMonat(e.target.value)}
+          className="w-full sm:w-52"
+        >
+          <option value="">Geburtstage (alle)</option>
+          <option value="1">Januar</option>
+          <option value="2">Februar</option>
+          <option value="3">Maerz</option>
+          <option value="4">April</option>
+          <option value="5">Mai</option>
+          <option value="6">Juni</option>
+          <option value="7">Juli</option>
+          <option value="8">August</option>
+          <option value="9">September</option>
+          <option value="10">Oktober</option>
+          <option value="11">November</option>
+          <option value="12">Dezember</option>
+        </Select>
+        <div className="flex items-center gap-2">
+          <Label className="text-sm whitespace-nowrap">Eintritt ab</Label>
+          <Input
+            type="date"
+            value={eintrittAb}
+            onChange={(e) => setEintrittAb(e.target.value)}
+            className="w-40"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Label className="text-sm whitespace-nowrap">bis</Label>
+          <Input
+            type="date"
+            value={eintrittBis}
+            onChange={(e) => setEintrittBis(e.target.value)}
+            className="w-40"
+          />
+        </div>
+        <div className="flex gap-2 ml-auto">
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            CSV Export
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <label className="cursor-pointer">
+              <Upload className="h-4 w-4 mr-2" />
+              CSV Import
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleImportDatei}
+                className="hidden"
+              />
+            </label>
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleDrucken}>
+            <Printer className="h-4 w-4 mr-2" />
+            Drucken
+          </Button>
+        </div>
+      </div>
+
       {/* Tabelle */}
-      <MitgliederTabelle
-        mitglieder={gefilterteMitglieder}
-        rollenMap={rollenMap}
-        onBearbeiten={handleBearbeiten}
-        onLoeschen={handleLoeschen}
-        onKlick={(id) => router.push(`/mitglieder/${id}`)}
-      />
+      <div data-print-bereich>
+        <MitgliederTabelle
+          mitglieder={gefilterteMitglieder}
+          rollenMap={rollenMap}
+          onBearbeiten={handleBearbeiten}
+          onLoeschen={handleLoeschen}
+          onKlick={(id) => router.push(`/mitglieder/${id}`)}
+        />
+      </div>
 
       {/* Formular-Dialog */}
       <MitgliedFormular
@@ -490,6 +652,53 @@ export default function MitgliederInhalt() {
               {freigabeLadend
                 ? 'Wird freigegeben...'
                 : `${ausstehendeMitglieder.length} Mitglieder freigeben`}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* CSV Import Dialog */}
+      <Dialog open={importDialogOffen} onOpenChange={setImportDialogOffen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>CSV Import - Vorschau</DialogTitle>
+            <DialogDescription>
+              {importDaten.length} Datensaetze erkannt. Bitte pruefen Sie die Daten vor dem Import.
+              Erwartetes Format: Nr;Name;E-Mail;Geburtsdatum;Telefon;Adresse;Sportarten;Status
+            </DialogDescription>
+          </DialogHeader>
+          {importDaten.length > 0 && (
+            <div className="max-h-60 overflow-auto border rounded-md">
+              <table className="w-full text-sm">
+                <thead className="bg-muted sticky top-0">
+                  <tr>
+                    <th className="px-2 py-1 text-left">Nr</th>
+                    <th className="px-2 py-1 text-left">Name</th>
+                    <th className="px-2 py-1 text-left">E-Mail</th>
+                    <th className="px-2 py-1 text-left">Geburtsdatum</th>
+                    <th className="px-2 py-1 text-left">Sport</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importDaten.map((zeile, i) => (
+                    <tr key={i} className="border-t">
+                      <td className="px-2 py-1">{zeile[0] || '-'}</td>
+                      <td className="px-2 py-1">{zeile[1] || '-'}</td>
+                      <td className="px-2 py-1">{zeile[2] || '-'}</td>
+                      <td className="px-2 py-1">{zeile[3] || '-'}</td>
+                      <td className="px-2 py-1">{zeile[6] || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outline" onClick={() => { setImportDialogOffen(false); setImportDaten([]); }}>
+              Abbrechen
+            </Button>
+            <Button onClick={handleImportBestaetigen} disabled={importLadend}>
+              {importLadend ? 'Wird importiert...' : `${importDaten.length} Mitglieder importieren`}
             </Button>
           </div>
         </DialogContent>

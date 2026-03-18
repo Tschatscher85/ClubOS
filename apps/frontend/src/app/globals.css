@@ -61,3 +61,19 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  [data-print-bereich],
+  [data-print-bereich] * {
+    visibility: visible;
+  }
+  [data-print-bereich] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
