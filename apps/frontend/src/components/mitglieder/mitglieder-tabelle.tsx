@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2, UserCheck, UserX } from 'lucide-react';
+import { sportartLabel } from '@/lib/sportarten';
 
 interface Mitglied {
   id: string;
@@ -30,12 +31,6 @@ const STATUS_LABEL: Record<string, { text: string; variant: 'default' | 'seconda
   ACTIVE: { text: 'Aktiv', variant: 'default' },
   INACTIVE: { text: 'Inaktiv', variant: 'secondary' },
   CANCELLED: { text: 'Ausgetreten', variant: 'destructive' },
-};
-
-const SPORTARTEN_LABEL: Record<string, string> = {
-  FUSSBALL: 'Fußball', HANDBALL: 'Handball', BASKETBALL: 'Basketball',
-  FOOTBALL: 'Football', TENNIS: 'Tennis', TURNEN: 'Turnen',
-  SCHWIMMEN: 'Schwimmen', LEICHTATHLETIK: 'Leichtathletik', SONSTIGES: 'Sonstiges',
 };
 
 interface MitgliederTabelleProps {
@@ -114,7 +109,7 @@ export function MitgliederTabelle({
                   <div className="flex flex-wrap gap-1">
                     {m.sport.map((s) => (
                       <Badge key={s} variant="secondary" className="text-xs">
-                        {SPORTARTEN_LABEL[s] || s}
+                        {sportartLabel(s)}
                       </Badge>
                     ))}
                     {m.sport.length === 0 && <span className="text-muted-foreground">—</span>}

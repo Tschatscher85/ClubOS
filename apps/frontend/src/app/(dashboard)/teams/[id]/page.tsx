@@ -35,6 +35,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { apiClient } from '@/lib/api-client';
+import { sportartLabel } from '@/lib/sportarten';
 
 interface MitgliedInfo {
   id: string;
@@ -100,17 +101,7 @@ interface VerletzungDaten {
   };
 }
 
-const SPORT_LABEL: Record<string, string> = {
-  FUSSBALL: 'Fussball',
-  HANDBALL: 'Handball',
-  BASKETBALL: 'Basketball',
-  FOOTBALL: 'Football',
-  TENNIS: 'Tennis',
-  TURNEN: 'Turnen',
-  SCHWIMMEN: 'Schwimmen',
-  LEICHTATHLETIK: 'Leichtathletik',
-  SONSTIGES: 'Sonstiges',
-};
+// Sportarten-Labels werden dynamisch geladen
 
 const TYP_LABEL: Record<string, string> = {
   TRAINING: 'Training',
@@ -335,7 +326,7 @@ export default function TeamDetailPage() {
               <h1 className="text-2xl font-bold">{team.name}</h1>
               <div className="flex gap-2 mt-1">
                 <Badge variant="secondary">
-                  {SPORT_LABEL[team.sport] || team.sport}
+                  {sportartLabel(team.sport)}
                 </Badge>
                 <Badge variant="outline">{team.ageGroup}</Badge>
                 <Badge variant="outline">

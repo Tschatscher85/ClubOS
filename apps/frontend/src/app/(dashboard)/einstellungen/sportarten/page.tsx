@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Trophy, Plus, Pencil, Trash2, ArrowLeft, Save, X } from 'lucide-react';
+import { Trophy, Plus, Pencil, Trash2, ArrowLeft, Save, X, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { apiClient } from '@/lib/api-client';
+import { sportartenCacheLeeren } from '@/lib/sportarten';
 import Link from 'next/link';
 
 interface Sportart {
@@ -31,6 +32,30 @@ const LEERE_SPORTART: NeueSportart = {
   icon: '',
 };
 
+// Vorauswahl bekannter Sportarten die schnell hinzugefuegt werden koennen
+const VORAUSWAHL_SPORTARTEN = [
+  { name: 'Badminton', icon: '🏸' },
+  { name: 'Volleyball', icon: '🏐' },
+  { name: 'Tischtennis', icon: '🏓' },
+  { name: 'Eishockey', icon: '🏒' },
+  { name: 'Rugby', icon: '🏉' },
+  { name: 'Baseball', icon: '⚾' },
+  { name: 'Golf', icon: '⛳' },
+  { name: 'Boxen', icon: '🥊' },
+  { name: 'Judo', icon: '🥋' },
+  { name: 'Karate', icon: '🥋' },
+  { name: 'Reiten', icon: '🏇' },
+  { name: 'Rudern', icon: '🚣' },
+  { name: 'Klettern', icon: '🧗' },
+  { name: 'Ski', icon: '⛷️' },
+  { name: 'Tanzen', icon: '💃' },
+  { name: 'Yoga', icon: '🧘' },
+  { name: 'Fechten', icon: '🤺' },
+  { name: 'Bogenschiessen', icon: '🏹' },
+  { name: 'Segeln', icon: '⛵' },
+  { name: 'Triathlon', icon: '🏊' },
+];
+
 export default function SportartenPage() {
   const { benutzer } = useAuth();
   const [sportarten, setSportarten] = useState<Sportart[]>([]);
@@ -42,6 +67,9 @@ export default function SportartenPage() {
   const [neueSportart, setNeueSportart] = useState<NeueSportart>(LEERE_SPORTART);
   const [erstellend, setErstellend] = useState(false);
   const [formularOffen, setFormularOffen] = useState(false);
+
+  // Vorauswahl
+  const [vorauswahlOffen, setVorauswahlOffen] = useState(false);
 
   // Bearbeiten
   const [bearbeitenId, setBearbeitenId] = useState<string | null>(null);
@@ -79,6 +107,7 @@ export default function SportartenPage() {
       setErfolg('Sportart erstellt.');
       setNeueSportart(LEERE_SPORTART);
       setFormularOffen(false);
+      sportartenCacheLeeren();
       setTimeout(() => setErfolg(''), 5000);
       await laden();
     } catch (error) {
@@ -87,6 +116,22 @@ export default function SportartenPage() {
       );
     } finally {
       setErstellend(false);
+    }
+  };
+
+  const handleSchnellHinzufuegen = async (name: string, icon: string) => {
+    setFehler('');
+    setErfolg('');
+    try {
+      await apiClient.post('/sportarten/custom', { name, icon, beschreibung: '' });
+      sportartenCacheLeeren();
+      await laden();
+      setErfolg(`"${name}" hinzugefuegt.`);
+      setTimeout(() => setErfolg(''), 3000);
+    } catch (error) {
+      setFehler(
+        error instanceof Error ? error.message : 'Fehler beim Hinzufuegen.',
+      );
     }
   };
 
@@ -102,6 +147,7 @@ export default function SportartenPage() {
       await apiClient.put(`/sportarten/custom/${id}`, bearbeitenDaten);
       setErfolg('Sportart aktualisiert.');
       setBearbeitenId(null);
+      sportartenCacheLeeren();
       setTimeout(() => setErfolg(''), 5000);
       await laden();
     } catch (error) {
@@ -120,11 +166,34 @@ export default function SportartenPage() {
     try {
       await apiClient.delete(`/sportarten/custom/${id}`);
       setErfolg('Sportart geloescht.');
+      sportartenCacheLeeren();
       setTimeout(() => setErfolg(''), 5000);
       await laden();
     } catch (error) {
       setFehler(
         error instanceof Error ? error.message : 'Fehler beim Loeschen der Sportart.',
+      );
+    }
+  };
+
+  // Alle leeren/unbenannten Sportarten auf einmal loeschen
+  const handleLeereLoeschen = async () => {
+    const leere = eigene.filter((s) => !s.name.trim());
+    if (leere.length === 0) return;
+    if (!confirm(`${leere.length} leere Sportarten loeschen?`)) return;
+    setFehler('');
+    setErfolg('');
+    try {
+      for (const s of leere) {
+        await apiClient.delete(`/sportarten/custom/${s.id}`);
+      }
+      setErfolg(`${leere.length} leere Sportarten geloescht.`);
+      sportartenCacheLeeren();
+      setTimeout(() => setErfolg(''), 5000);
+      await laden();
+    } catch (error) {
+      setFehler(
+        error instanceof Error ? error.message : 'Fehler beim Bereinigen.',
       );
     }
   };
@@ -140,6 +209,13 @@ export default function SportartenPage() {
 
   const vordefinierte = sportarten.filter((s) => s.istVordefiniert);
   const eigene = sportarten.filter((s) => !s.istVordefiniert);
+  const leereAnzahl = eigene.filter((s) => !s.name.trim()).length;
+
+  // Welche Vorauswahl-Sportarten sind schon vorhanden?
+  const vorhandeneNamen = new Set(sportarten.map((s) => s.name.toLowerCase()));
+  const verfuegbareVorauswahl = VORAUSWAHL_SPORTARTEN.filter(
+    (v) => !vorhandeneNamen.has(v.name.toLowerCase()),
+  );
 
   return (
     <div className="space-y-6">
@@ -153,7 +229,9 @@ export default function SportartenPage() {
         <Trophy className="h-8 w-8 text-primary" />
         <div>
           <h1 className="text-2xl font-bold">Sportarten</h1>
-          <p className="text-muted-foreground">Sportarten des Vereins verwalten</p>
+          <p className="text-muted-foreground">
+            Sportarten des Vereins verwalten — werden ueberall im System verwendet
+          </p>
         </div>
       </div>
 
@@ -168,7 +246,9 @@ export default function SportartenPage() {
       <Card>
         <CardHeader>
           <CardTitle>Vordefinierte Sportarten</CardTitle>
-          <CardDescription>Diese Sportarten sind im System vordefiniert und koennen nicht geaendert werden.</CardDescription>
+          <CardDescription>
+            Im System vorinstalliert. Werden automatisch in Formularen angezeigt.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {ladend ? (
@@ -194,13 +274,29 @@ export default function SportartenPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Eigene Sportarten</CardTitle>
-              <CardDescription>Selbst erstellte Sportarten des Vereins</CardDescription>
+              <CardDescription>
+                Zusaetzliche Sportarten fuer Ihren Verein. Erscheinen automatisch in Team-, Mitglied- und Abteilungs-Formularen.
+              </CardDescription>
             </div>
-            {istAdmin && !formularOffen && (
-              <Button onClick={() => setFormularOffen(true)} size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Neue Sportart
-              </Button>
+            {istAdmin && (
+              <div className="flex gap-2">
+                {leereAnzahl > 0 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleLeereLoeschen}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    {leereAnzahl} Leere bereinigen
+                  </Button>
+                )}
+                {!formularOffen && (
+                  <Button onClick={() => setFormularOffen(true)} size="sm">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Neue Sportart
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         </CardHeader>
@@ -219,11 +315,11 @@ export default function SportartenPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Icon</Label>
+                  <Label>Icon (Emoji)</Label>
                   <Input
                     value={neueSportart.icon}
                     onChange={(e) => setNeueSportart((p) => ({ ...p, icon: e.target.value }))}
-                    placeholder="z.B. Emoji oder Icon-Name"
+                    placeholder="z.B. 🏸"
                   />
                 </div>
                 <div className="space-y-2">
@@ -255,14 +351,46 @@ export default function SportartenPage() {
             </div>
           )}
 
+          {/* Schnell-Vorauswahl */}
+          {istAdmin && verfuegbareVorauswahl.length > 0 && (
+            <div>
+              <button
+                onClick={() => setVorauswahlOffen(!vorauswahlOffen)}
+                className="flex items-center gap-2 text-sm text-primary hover:underline"
+              >
+                <Zap className="h-4 w-4" />
+                {vorauswahlOffen ? 'Vorauswahl verbergen' : 'Sportart schnell hinzufuegen'}
+              </button>
+              {vorauswahlOffen && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {verfuegbareVorauswahl.map((v) => (
+                    <button
+                      key={v.name}
+                      onClick={() => handleSchnellHinzufuegen(v.name, v.icon)}
+                      className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm hover:bg-primary/10 hover:border-primary transition-colors"
+                    >
+                      <span>{v.icon}</span>
+                      <span>{v.name}</span>
+                      <Plus className="h-3 w-3 text-muted-foreground" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Liste der eigenen Sportarten */}
           {ladend ? (
             <p className="text-muted-foreground">Wird geladen...</p>
-          ) : eigene.length === 0 ? (
-            <p className="text-muted-foreground">Noch keine eigenen Sportarten erstellt.</p>
+          ) : eigene.filter((s) => s.name.trim()).length === 0 ? (
+            <p className="text-muted-foreground">
+              Noch keine eigenen Sportarten erstellt. Nutzen Sie die Schnell-Vorauswahl oben oder erstellen Sie eine neue Sportart.
+            </p>
           ) : (
             <div className="space-y-3">
-              {eigene.map((sportart) => (
+              {eigene
+                .filter((s) => s.name.trim())
+                .map((sportart) => (
                 <div
                   key={sportart.id}
                   className="flex items-center justify-between border rounded-lg p-3"
@@ -357,6 +485,15 @@ export default function SportartenPage() {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6">
+          <CardDescription>
+            Aenderungen an Sportarten wirken sich automatisch auf alle Formulare im System aus
+            (Team erstellen, Mitglied bearbeiten, Abteilung erstellen).
+          </CardDescription>
         </CardContent>
       </Card>
     </div>

@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api-client';
+import { sportartLabel } from '@/lib/sportarten';
 
 // --- Typen ---
 
@@ -61,18 +62,6 @@ interface Einladung {
 }
 
 // --- Hilfsfunktionen ---
-
-const SPORTARTEN_LABEL: Record<string, string> = {
-  FUSSBALL: 'Fussball',
-  HANDBALL: 'Handball',
-  BASKETBALL: 'Basketball',
-  FOOTBALL: 'Football',
-  TENNIS: 'Tennis',
-  TURNEN: 'Turnen',
-  SCHWIMMEN: 'Schwimmen',
-  LEICHTATHLETIK: 'Leichtathletik',
-  SONSTIGES: 'Sonstiges',
-};
 
 const EVENT_TYP_LABEL: Record<string, string> = {
   TRAINING: 'Training',
@@ -348,7 +337,7 @@ export default function DashboardPage() {
                     <div key={sport} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-medium">
-                          {SPORTARTEN_LABEL[sport] || sport}
+                          {sportartLabel(sport)}
                         </span>
                         <span className="text-muted-foreground">
                           {anzahl} {anzahl === 1 ? 'Mitglied' : 'Mitglieder'}

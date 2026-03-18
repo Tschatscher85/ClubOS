@@ -19,6 +19,7 @@ import {
 import { MitgliederTabelle } from '@/components/mitglieder/mitglieder-tabelle';
 import { MitgliedFormular } from '@/components/mitglieder/mitglied-formular';
 import { apiClient } from '@/lib/api-client';
+import { sportartenLaden, sportartLabel } from '@/lib/sportarten';
 
 interface Mitglied {
   id: string;
@@ -63,19 +64,6 @@ interface EinladungAntwort {
   link: string;
 }
 
-const SPORTARTEN_OPTIONEN = [
-  { value: '', label: 'Alle Sportarten' },
-  { value: 'FUSSBALL', label: 'Fussball' },
-  { value: 'HANDBALL', label: 'Handball' },
-  { value: 'BASKETBALL', label: 'Basketball' },
-  { value: 'FOOTBALL', label: 'Football' },
-  { value: 'TENNIS', label: 'Tennis' },
-  { value: 'TURNEN', label: 'Turnen' },
-  { value: 'SCHWIMMEN', label: 'Schwimmen' },
-  { value: 'LEICHTATHLETIK', label: 'Leichtathletik' },
-  { value: 'SONSTIGES', label: 'Sonstiges' },
-];
-
 const STATUS_OPTIONEN = [
   { value: '', label: 'Alle Status' },
   { value: 'ACTIVE', label: 'Aktiv' },
@@ -114,6 +102,9 @@ export default function MitgliederInhalt() {
   const [importDaten, setImportDaten] = useState<string[][]>([]);
   const [importLadend, setImportLadend] = useState(false);
 
+  // Sportarten-Optionen (dynamisch geladen)
+  const [sportartenOptionen, setSportartenOptionen] = useState<{ value: string; label: string }[]>([{ value: '', label: 'Alle Sportarten' }]);
+
   // Rollen-Daten
   const [rollenMap, setRollenMap] = useState<Record<string, { vereinsRollen: string[]; farben: Record<string, string> }>>({});
   const [verfuegbareRollen, setVerfuegbareRollen] = useState<string[]>([]);
@@ -143,14 +134,24 @@ export default function MitgliederInhalt() {
 
   const datenLaden = useCallback(async () => {
     try {
-      const [mitgliederDaten, statistikDaten, benutzerDaten, vorlagenDaten] = await Promise.all([
+      const [mitgliederDaten, statistikDaten, benutzerDaten, vorlagenDaten, sportartenDaten] = await Promise.all([
         apiClient.get<Mitglied[]>('/mitglieder'),
         apiClient.get<Statistik>('/mitglieder/statistik'),
         apiClient.get<{ id: string; vereinsRollen: string[] }[]>('/benutzer/verwaltung/liste').catch(() => []),
         apiClient.get<{ name: string; farbe: string | null }[]>('/rollen-vorlagen').catch(() => []),
+        sportartenLaden(),
       ]);
       setMitglieder(mitgliederDaten);
       setStatistik(statistikDaten);
+
+      // Sportarten-Optionen aufbauen
+      setSportartenOptionen([
+        { value: '', label: 'Alle Sportarten' },
+        ...sportartenDaten.map((s) => ({
+          value: s.istVordefiniert ? s.name.toUpperCase().replace(/[^A-Z]/g, '') || s.name : s.name,
+          label: s.name,
+        })),
+      ]);
 
       // Rollen-Map aufbauen: userId → { vereinsRollen, farben }
       const farbenMap: Record<string, string> = {};
@@ -485,7 +486,7 @@ export default function MitgliederInhalt() {
         <div className="flex flex-wrap gap-2">
           {Object.entries(statistik.sportartenVerteilung).map(([sport, anzahl]) => (
             <Badge key={sport} variant="secondary" className="text-sm">
-              {SPORTARTEN_OPTIONEN.find((o) => o.value === sport)?.label || sport}: {anzahl}
+              {sportartLabel(sport)}: {anzahl}
             </Badge>
           ))}
         </div>
@@ -518,7 +519,7 @@ export default function MitgliederInhalt() {
           onChange={(e) => setSportFilter(e.target.value)}
           className="w-full sm:w-48"
         >
-          {SPORTARTEN_OPTIONEN.map((opt) => (
+          {sportartenOptionen.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
@@ -824,7 +825,7 @@ export default function MitgliederInhalt() {
                             <div className="flex gap-1 mt-1">
                               {wf.sportarten.map((s) => (
                                 <Badge key={s} variant="outline" className="text-xs">
-                                  {SPORTARTEN_OPTIONEN.find((o) => o.value === s)?.label || s}
+                                  {sportartLabel(s)}
                                 </Badge>
                               ))}
                             </div>
@@ -883,7 +884,7 @@ export default function MitgliederInhalt() {
                   <div className="space-y-2">
                     <Label>Sportarten</Label>
                     <div className="flex flex-wrap gap-2">
-                      {SPORTARTEN_OPTIONEN.filter((o) => o.value).map((opt) => (
+                      {sportartenOptionen.filter((o) => o.value).map((opt) => (
                         <label
                           key={opt.value}
                           className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 cursor-pointer text-sm transition-colors ${
