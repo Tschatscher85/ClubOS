@@ -1,630 +1,712 @@
-# ClubOS — Claude Code Prompts
+# ClubOS — Claude Code Prompts (Stand: März 2026)
 
-Alle Prompts sind auf das Repo `Tschatscher85/ClubOS` abgestimmt.
-Vor jedem Prompt: Claude Code zuerst `CLAUDE.md` lesen lassen.
+> Vor jedem Prompt: Claude Code liest automatisch `CLAUDE.md` —
+> dort ist der komplette Projektkontext hinterlegt.
+> Repo: https://github.com/Tschatscher85/ClubOS
 
 ---
 
-## Prompt #01 — Eltern-Hallen & Pinwand-System (Phase 2)
+## SOFORT — Sicherheit (5 Minuten)
 ```
-# ClubOS — Eltern-Hallen & Pinwand-System
+# ClubOS — Passwort aus README entfernen
 
-## Kontext
-ClubOS ist ein Multi-Tenant SaaS für Sportvereine.
-Repo: https://github.com/Tschatscher85/ClubOS
-Backend: NestJS + Prisma + PostgreSQL (apps/backend/)
-Frontend: Next.js 14 + shadcn/ui + Tailwind (apps/frontend/)
+## Problem
+In README.md steht öffentlich sichtbar: Passwort fuer alle: ClubOS2024!
 
 ## Aufgabe
-Baue das Hallen & Pinwand-System für das Eltern-Portal.
+1. In README.md die Zeile "Passwort fuer alle: ClubOS2024!" entfernen
+2. Stattdessen schreiben: "Passwort: siehe .env.example (lokal setzen)"
+3. In setup.sh prüfen: wird das Passwort dort hardkodiert gesetzt?
+   Falls ja: durch openssl rand -base64 32 ersetzen und in .env schreiben
+4. In apps/backend/prisma/seed.ts prüfen: wird ClubOS2024! verwendet?
+   Falls ja: durch process.env.SEED_PASSWORD || 'LocalDev2024!' ersetzen
+   und SEED_PASSWORD in .env.example dokumentieren
 
-## 1. Prisma Schema erweitern (apps/backend/prisma/schema.prisma):
-model Location {
-  id          String         @id @default(cuid())
-  tenantId    String
-  name        String
-  address     String
-  lat         Float?
-  lng         Float?
-  mapsUrl     String?
-  parkingInfo String?
-  accessCode  String?
-  notes       String?
-  teams       TeamLocation[]
-  tenant      Tenant @relation(fields: [tenantId], references: [id])
-}
-
-model TeamLocation {
-  id         String   @id @default(cuid())
-  teamId     String
-  locationId String
-  weekday    Int      // 0=Mo, 1=Di, 2=Mi, 3=Do, 4=Fr, 5=Sa, 6=So
-  startTime  String   // z.B. '17:00'
-  team       Team @relation(fields: [teamId], references: [id])
-  location   Location @relation(fields: [locationId], references: [id])
-}
-
-model PinboardItem {
-  id       String  @id @default(cuid())
-  teamId   String
-  title    String
-  content  String
-  icon     String  @default('info')
-  isPinned Boolean @default(false)
-  team     Team @relation(fields: [teamId], references: [id])
-}
-
-## 2. Backend Module: apps/backend/src/location/
-Erstelle LocationModule mit CRUD-Endpoints:
-- GET  /orte              — alle Orte des Tenants
-- POST /orte              — Ort anlegen (nur Admin/Trainer)
-- GET  /orte/:id          — Einzelner Ort mit Google Maps Deeplink
-- GET  /pinboard/:teamId  — Pinwand-Inhalte des Teams
-- POST /pinboard/:teamId  — Pinwand-Item hinzufügen (nur Trainer)
-- PATCH /pinboard/:itemId — Item aktualisieren
-- DELETE /pinboard/:itemId — Item löschen
-
-## 3. Frontend: Eltern-Portal Seite
-apps/frontend/src/app/(member)/halle/page.tsx
-
-Zeige:
-- Hallenname + vollständige Adresse
-- Großer "Navigation starten"-Button (Deeplink)
-- Parkplatz-Info falls vorhanden
-- Zugangscode falls vorhanden
-- Pinwand-Items des Teams
-
-## 4. Maps Deeplink-Logik (iOS vs Android):
-const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-const mapsUrl = isIOS
-  ? `maps://?q=${lat},${lng}`
-  : `https://maps.google.com/?q=${lat},${lng}`;
-window.location.href = mapsUrl;
-
-## 5. Admin-UI: Ort-Editor
-Seite: apps/frontend/src/app/(admin)/orte/page.tsx
-Formular: Name, Adresse, Google Maps URL einfügen.
-Auto-Extraktion von lat/lng aus der Maps-URL falls möglich.
-
-## Wichtig:
-- Alle deutschen Variablennamen in API-Responses (wie im Repo)
-- JWT-Auth via bestehenden AuthGuard
-- Tenant-Kontext via bestehenden TenantGuard
+## Wichtig
+Commit-Nachricht: "security: Testpasswort aus öffentlichem README entfernt"
 ```
 
 ---
 
-## Prompt #02 — Eltern-FAQ mit KI-Assistent (Phase 2)
+## Phase 6-A — Vereinshomepage Frontend-Editor
 ```
-# ClubOS — Eltern-FAQ mit KI-Auto-Antwort
+# ClubOS — Vereinshomepage Frontend-Editor
+
+## Kontext
+ClubOS Repo: https://github.com/Tschatscher85/ClubOS
+Das Backend-System für Vereinshomepages ist vollständig fertig (API + DB).
+Jetzt braucht es den visuellen Editor im Frontend.
+
+## Was bereits existiert (Backend)
+- Vereinshomepage-Model in Prisma mit Sektionen (JSON)
+- API-Endpunkte für CRUD der Sektionen
+- Öffentliche URL pro Verein bereits geplant
+
+## Aufgabe: Frontend-Editor
+Datei: apps/frontend/src/app/(admin)/einstellungen/homepage/page.tsx
+
+### Sektions-Typen die editierbar sein müssen:
+1. HERO — Großes Banner mit Titel, Untertitel, Hintergrundbild
+2. TEXT — Freier Textbereich (Vereinsnews, Beschreibung)
+3. TEAMS — Automatisch aus DB: alle Teams des Vereins anzeigen
+4. TERMINE — Automatisch aus DB: nächste 5 Veranstaltungen
+5. KONTAKT — Adresse, Telefon, E-Mail, Google Maps Embed
+6. GALERIE — Fotos hochladen und anzeigen
+7. SPONSOREN — Sponsoren-Logos mit Links
+
+### Editor-Funktionen:
+- Sektionen per Drag & Drop sortieren (react-beautiful-dnd)
+  npm install react-beautiful-dnd @types/react-beautiful-dnd
+- Jede Sektion hat: sichtbar/versteckt Toggle, Bearbeiten-Button, Löschen
+- Beim Klick auf Bearbeiten: rechts öffnet sich ein Panel mit Formular
+- Speichern: PATCH /vereinshomepage/sektionen (einzelne Sektion)
+- Oben: "Vorschau öffnen" → öffnet öffentliche Seite in neuem Tab
+
+### Live-Vorschau (rechte Seite, 50/50 Layout):
+- Desktop: Editor links | Vorschau rechts in iframe
+- Mobile: Editor oben, Vorschau-Button für Vollbild
+
+### Dateistruktur:
+apps/frontend/src/app/(admin)/einstellungen/homepage/
+  page.tsx              — Haupt-Editor mit Split-Layout
+  components/
+    SektionListe.tsx    — Drag & Drop Liste aller Sektionen
+    SektionEditor.tsx   — Panel für Einzel-Bearbeitung
+    SektionVorschau.tsx — Vorschau-Rendering einer Sektion
+    sektionen/
+      HeroEditor.tsx
+      TextEditor.tsx
+      KontaktEditor.tsx
+
+## Wichtig
+- Alle Texte deutsch
+- shadcn/ui Komponenten verwenden
+- Automatisch speichern nach 2 Sekunden Inaktivität (debounce)
+- Änderungen ohne Speichern: Browser-Warnung beim Verlassen
+```
+
+---
+
+## Phase 6-B — Vereinshomepage öffentliche SSR-Seite
+```
+# ClubOS — Vereinshomepage öffentliche Darstellung (SSR)
+
+## Kontext
+ClubOS Repo: https://github.com/Tschatscher85/ClubOS
+Backend für Vereinshomepages ist fertig.
+Editor (Phase 6-A) ist fertig.
+Jetzt braucht es die öffentliche Seite die Besucher sehen.
+
+## Aufgabe: Öffentliche SSR-Seite
+Datei: apps/frontend/src/app/(public)/[vereinSlug]/page.tsx
+
+### Funktionsweise:
+- URL: /fckunchen oder fckunchen.clubos.de (nach Subdomain-Routing)
+- Seite wird Server-Side gerendert (generateMetadata + fetch)
+- SEO: automatisch Vereinsname als Title, Logo als og:image
+- Lädt: Vereins-Branding (Logo, Farben) + alle aktiven Sektionen
+
+### Sektions-Rendering (für jede Sektion ein React-Komponente):
+components/public/
+  HeroSektion.tsx     — Vollbreite Banner
+  TextSektion.tsx     — Fließtext, Bilder
+  TeamsSektion.tsx    — Karten der Mannschaften
+  TermineSektion.tsx  — Nächste Veranstaltungen
+  KontaktSektion.tsx  — Adresse + Google Maps Embed
+  GalerieSektion.tsx  — Foto-Grid
+  SponsorenSektion.tsx — Logo-Reihe mit Links
+
+### generateMetadata (SEO):
+export async function generateMetadata({ params }) {
+  const verein = await fetch(`/api/public/${params.vereinSlug}`).then(r => r.json());
+  return {
+    title: `${verein.name} — Willkommen`,
+    description: verein.beschreibung,
+    openGraph: { images: [verein.logo] }
+  };
+}
+
+### Öffentliche API-Endpoints (kein Auth nötig):
+GET /public/:slug        — Vereins-Info + alle aktiven Sektionen
+GET /public/:slug/teams  — Teams für TEAMS-Sektion
+GET /public/:slug/events — Kommende Events für TERMINE-Sektion
+
+### Navigationsleiste der öffentlichen Seite:
+- Vereinslogo links
+- Navigationspunkte: Home | Teams | Termine | Kontakt
+- Rechts: "Mitglied werden"-Button → /[vereinSlug]/anmelden
+- Header in Vereins-Primärfarbe (CSS-Variable aus Branding)
+
+## Wichtig
+- next/image für alle Bilder (automatische Optimierung)
+- Kein Auth-Guard auf dieser Route
+- In middleware.ts: /(public) vom Auth ausschließen
+- Tailwind: CSS-Variablen für Vereinsfarben nutzen
+```
+
+---
+
+## Phase 6-C — Subdomain-Routing
+```
+# ClubOS — Subdomain-Routing für Vereinshomepages
+
+## Kontext
+ClubOS Repo: https://github.com/Tschatscher85/ClubOS
+Ziel: fckunchen.clubos.de soll die Vereinshomepage zeigen.
+Backend-Tenant-Middleware existiert bereits.
+
+## Aufgabe: Next.js Middleware für Subdomains
+
+### apps/frontend/src/middleware.ts anpassen:
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+export function middleware(request: NextRequest) {
+  const hostname = request.headers.get('host') || '';
+  const mainDomain = process.env.NEXT_PUBLIC_DOMAIN || 'clubos.de';
+
+  // Subdomain extrahieren
+  const subdomain = hostname.replace(`.${mainDomain}`, '').replace('.localhost:3000', '');
+
+  // Keine Weiterleitung für www, api oder Haupt-Domain
+  if (
+    subdomain === 'www' ||
+    subdomain === 'api' ||
+    subdomain === mainDomain ||
+    hostname === 'localhost:3000' ||
+    !hostname.includes('.')
+  ) {
+    return NextResponse.next();
+  }
+
+  // Subdomain → Vereinshomepage umschreiben
+  const url = request.nextUrl.clone();
+  url.pathname = `/${subdomain}${url.pathname}`;
+  return NextResponse.rewrite(url);
+}
+
+export const config = {
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+};
+
+### .env ergänzen:
+NEXT_PUBLIC_DOMAIN=clubos.de
+
+### Lokal testen (ohne echte Domain):
+# In /etc/hosts hinzufügen:
+# 127.0.0.1 fckunchen.localhost
+# Dann: http://fckunchen.localhost:3000
+
+### DNS-Setup für Produktion (Hetzner):
+# A-Record: *.clubos.de → [VM-IP]
+# Traefik erkennt alle Subdomains automatisch
+```
+
+---
+
+## Phase 7-A — 2-Faktor-Authentifizierung (TOTP)
+```
+# ClubOS — 2-Faktor-Authentifizierung (TOTP)
 
 ## Kontext
 ClubOS Repo: https://github.com/Tschatscher85/ClubOS
 Backend: NestJS + Prisma + PostgreSQL
+Auth-Modul existiert: apps/backend/src/auth/
 
-## Aufgabe
-Baue das strukturierte Fragen-System mit KI-Auto-Antworten via OpenAI.
-Eltern stellen Fragen — bekannte Antworten kommen sofort automatisch.
+## npm installieren:
+npm install otplib qrcode
+npm install --save-dev @types/qrcode
 
-## 1. Prisma Schema ergänzen:
-model ParentQuestion {
-  id           String         @id @default(cuid())
-  tenantId     String
-  teamId       String
-  parentId     String
-  question     String
-  answer       String?
-  autoAnswered Boolean        @default(false)
-  status       QuestionStatus @default(OPEN)
-  createdAt    DateTime       @default(now())
-  answeredAt   DateTime?
-  tenant       Tenant @relation(fields: [tenantId], references: [id])
-  team         Team @relation(fields: [teamId], references: [id])
-  parent       User @relation(fields: [parentId], references: [id])
+## Prisma Schema erweitern:
+model User {
+  // ... bestehende Felder ...
+  twoFactorSecret  String?   // TOTP Secret (verschlüsselt!)
+  twoFactorEnabled Boolean   @default(false)
+  backupCodes      String[]  // 8 Einmal-Backup-Codes (gehasht)
 }
 
-enum QuestionStatus {
-  OPEN
-  AUTO_ANSWERED
-  ANSWERED
-}
+## Backend: apps/backend/src/auth/two-factor/
 
-model FAQ {
-  id        String   @id @default(cuid())
-  teamId    String
-  question  String
-  answer    String
-  embedding Json?    // Float-Array von OpenAI text-embedding-3-small
-  hits      Int      @default(0)
-  createdAt DateTime @default(now())
-  team      Team @relation(fields: [teamId], references: [id])
-}
+### Endpunkte:
+POST /auth/2fa/einrichten
+  1. TOTP-Secret generieren: authenticator.generateSecret()
+  2. QR-Code URL erstellen: otpauth://totp/ClubOS:email?secret=...
+  3. QR-Code als Base64-PNG generieren (qrcode.toDataURL)
+  4. Secret verschlüsselt in DB speichern (twoFactorEnabled: false)
+  5. Response: { qrCode: base64, secret: plaintext, backupCodes: string[] }
 
-## 2. .env ergänzen:
-OPENAI_API_KEY=sk-...
+POST /auth/2fa/bestaetigen
+  Body: { token: string }  — 6-stelliger Code aus Authenticator
+  1. Token validieren: authenticator.verify({ token, secret })
+  2. twoFactorEnabled: true setzen
+  3. Response: { success: true }
 
-## 3. npm installieren:
-npm install openai
+POST /auth/2fa/deaktivieren
+  Body: { password: string }  — Passwort als Bestätigung
+  1. Passwort prüfen
+  2. twoFactorEnabled: false, twoFactorSecret: null
 
-## 4. Backend: apps/backend/src/faq/
-
-POST /fragen
-  1. Neue Frage empfangen
-  2. OpenAI Embedding berechnen (text-embedding-3-small)
-  3. Alle FAQ-Embeddings des Teams aus DB laden
-  4. Cosine Similarity für jede FAQ berechnen
-  5. Wenn similarity > 0.85: Auto-Antwort zurückgeben, autoAnswered=true
-  6. Wenn similarity < 0.85: ParentQuestion anlegen, Trainer benachrichtigen
-
-GET  /fragen/offen         — offene Fragen für Trainer-Dashboard
-PATCH /fragen/:id/antworten — Trainer antwortet
-  Body: { answer: string, addToFaq: boolean }
-  Falls addToFaq=true: Embedding berechnen und FAQ anlegen
-
-## 5. Cosine Similarity (TypeScript):
-function cosineSimilarity(a: number[], b: number[]): number {
-  const dot = a.reduce((sum, ai, i) => sum + ai * b[i], 0);
-  const magA = Math.sqrt(a.reduce((sum, ai) => sum + ai * ai, 0));
-  const magB = Math.sqrt(b.reduce((sum, bi) => sum + bi * bi, 0));
-  return dot / (magA * magB);
-}
-
-## 6. OpenAI Embedding aufrufen:
-import OpenAI from 'openai';
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const response = await openai.embeddings.create({
-  model: 'text-embedding-3-small',
-  input: question,
-});
-const embedding = response.data[0].embedding;
-
-## 7. Frontend: Eltern-Seite
-apps/frontend/src/app/(member)/fragen/page.tsx
-- Textarea: "Stell dem Trainer eine Frage..."
-- Submit-Button
-- Wenn autoAnswered=true: grüne Antwort-Box sofort anzeigen
-- Wenn OPEN: "Deine Frage wurde an den Trainer weitergeleitet"
-- Verlauf: alle eigenen Fragen mit Status
-
-## 8. Frontend: Trainer-Dashboard Ergänzung
-apps/frontend/src/app/(trainer)/fragen/page.tsx
-- Badge mit Anzahl offener Fragen im Nav
-- Liste offener Fragen mit Antwort-Textarea
-- Checkbox: "Zur FAQ hinzufügen"
-```
-
----
-
-## Prompt #03 — Broadcast-System als WhatsApp-Ersatz (Phase 3)
-```
-# ClubOS — Broadcast-System (WhatsApp-Ersatz)
-
-## Kontext
-ClubOS Repo: https://github.com/Tschatscher85/ClubOS
-Backend: NestJS + Prisma + PostgreSQL + BullMQ (Redis bereits im Stack)
-
-## Aufgabe
-Trainer schreibt eine Nachricht → alle Mitglieder bekommen sie.
-Reaktionen (Ja/Nein/Vielleicht) ersetzen WhatsApp-Antworten.
-
-## 1. Prisma Schema:
-model Message {
-  id          String          @id @default(cuid())
-  tenantId    String
-  senderId    String
-  teamId      String?
-  content     String
-  type        MessageType     @default(BROADCAST)
-  isEmergency Boolean         @default(false)
-  createdAt   DateTime        @default(now())
-  reactions   MessageReaction[]
-  tenant      Tenant @relation(fields: [tenantId], references: [id])
-  sender      User @relation(fields: [senderId], references: [id])
-  team        Team? @relation(fields: [teamId], references: [id])
-}
-
-enum MessageType { BROADCAST BULLETIN }
-
-model MessageReaction {
-  id        String       @id @default(cuid())
-  messageId String
-  userId    String
-  reaction  ReactionType
-  createdAt DateTime     @default(now())
-  message   Message @relation(fields: [messageId], references: [id])
-  user      User @relation(fields: [userId], references: [id])
-  @@unique([messageId, userId])
-}
-
-enum ReactionType { SEEN YES NO MAYBE }
-
-model NotificationPrefs {
-  id                String  @id @default(cuid())
-  userId            String  @unique
-  pushEnabled       Boolean @default(true)
-  emailEnabled      Boolean @default(true)
-  quietFrom         Int     @default(20)
-  quietTo           Int     @default(8)
-  emergencyOverride Boolean @default(true)
-  user              User @relation(fields: [userId], references: [id])
-}
-
-## 2. Backend: apps/backend/src/messaging/
-
-POST /nachrichten/broadcast
-  - Nachricht in DB speichern
-  - Alle Teammitglieder laden
-  - BullMQ Job: für jeden User stille Stunden prüfen
-  - Falls isEmergency=true: stille Stunden ignorieren
-  - E-Mail via Mail-Service senden
-  - Response: { id, content, recipientCount }
-
-POST /nachrichten/:id/reaktion
-  Body: { reaction: 'YES' | 'NO' | 'MAYBE' | 'SEEN' }
-  Reaktion upsert (eine pro User+Message)
-
-GET /nachrichten/reaktionen/:id
-  Response: { total: 15, seen: 12, yes: 8, no: 3, maybe: 1 }
-
-GET /nachrichten/team/:teamId
-  Nachrichten mit eigener Reaktion des eingeloggten Users
-
-## 3. Stille Stunden Check:
-function isQuietTime(prefs: NotificationPrefs): boolean {
-  const hour = new Date().getHours();
-  const { quietFrom, quietTo } = prefs;
-  if (quietFrom > quietTo) {
-    return hour >= quietFrom || hour < quietTo;
+### Login-Flow anpassen (auth.service.ts):
+Nach Passwort-Prüfung:
+  if (user.twoFactorEnabled) {
+    // Kein JWT zurückgeben, sondern temporären Token
+    return { requires2FA: true, tempToken: signTempToken(user.id) };
   }
-  return hour >= quietFrom && hour < quietTo;
-}
+  // Normal weiter mit JWT
 
-## 4. BullMQ: Automatische Erinnerungen (Cron alle 5 Min):
-- Events in den nächsten 25-26h prüfen
-- Wenn Event in ~24h: Erinnerung mit Hallenlink senden
-- Wenn Event in ~2h: Kurze Push-Erinnerung
-- reminder_sent Flag in Event-Tabelle setzen (kein doppelter Versand)
+POST /auth/2fa/verifizieren
+  Body: { tempToken: string, code: string }
+  1. tempToken validieren
+  2. TOTP-Code prüfen
+  3. Bei Erfolg: echtes JWT zurückgeben
 
-## 5. Frontend: Trainer
-apps/frontend/src/app/(trainer)/nachrichten/page.tsx
-- Textarea + DRINGEND-Checkbox + Senden-Button
-- Reaktions-Übersicht: Wer hat Ja/Nein/Vielleicht geklickt
-- Gesendete Nachrichten mit Zusammenfassung
+## Frontend: 2FA-Einrichtung
+apps/frontend/src/app/(admin)/einstellungen/sicherheit/page.tsx
 
-## 6. Frontend: Mitglieder
-apps/frontend/src/app/(member)/nachrichten/page.tsx
-- Nachrichten-Feed (neueste zuerst)
-- 3 Buttons pro Nachricht: JA / NEIN / VIELLEICHT
-- Grüner Haken wenn bereits reagiert
-- Badge-Counter für ungelesene im Nav
+Schritte im UI:
+1. "2FA aktivieren"-Button → POST /auth/2fa/einrichten
+2. QR-Code anzeigen + Secret als Text (für Passwort-Manager)
+3. Input: 6-stelligen Code eingeben → POST /auth/2fa/bestaetigen
+4. Backup-Codes anzeigen (einmalig, zum Ausdrucken)
+5. Bestätigung: "2FA ist jetzt aktiv"
+
+## Frontend: Login mit 2FA
+Falls Backend { requires2FA: true } zurückgibt:
+→ Zeige zweites Formular: "Authenticator-Code eingeben"
+→ POST /auth/2fa/verifizieren
+→ Bei Erfolg: JWT speichern wie normal
+
+## Wichtig
+- TOTP-Secret in DB verschlüsseln (AES-256 mit ENCRYPTION_KEY aus .env)
+- Backup-Codes als bcrypt-Hashes speichern
+- Rate Limiting auf 2FA-Endpunkte: max 5 Versuche / 15 Minuten
 ```
 
 ---
 
-## Prompt #04 — White-Label Branding-System (Phase 5)
+## Phase 7-B — Web Push Notifications
 ```
-# ClubOS — White-Label Branding-Editor
+# ClubOS — Web Push Notifications (ohne App!)
 
 ## Kontext
 ClubOS Repo: https://github.com/Tschatscher85/ClubOS
-Backend: NestJS + Prisma
-Storage: MinIO (S3-kompatibel, läuft via Docker)
+Ziel: Mitglieder bekommen Push-Notifications im Browser,
+ohne die Mobile App installiert zu haben.
 
-## Aufgabe
-Jeder Verein bekommt eigenes Logo, Farben und Subdomain.
+## npm installieren:
+npm install web-push
+npm install --save-dev @types/web-push
 
-## 1. npm installieren:
-npm install @aws-sdk/client-s3
+## VAPID-Keys generieren (einmalig, auf Server):
+npx web-push generate-vapid-keys
+# → Ausgabe in .env speichern:
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_EMAIL=admin@clubos.de
 
-## 2. Prisma Schema:
-model TenantBranding {
-  id             String   @id @default(cuid())
-  tenantId       String   @unique
-  primaryColor   String   @default('#1E40AF')
-  secondaryColor String   @default('#2C5282')
-  logoUrl        String?
-  faviconUrl     String?
-  emailFrom      String?
-  emailFromName  String?
-  customDomain   String?
-  updatedAt      DateTime @updatedAt
-  tenant         Tenant @relation(fields: [tenantId], references: [id])
+## Prisma Schema:
+model PushSubscription {
+  id           String   @id @default(cuid())
+  userId       String
+  endpoint     String   @unique
+  p256dh       String
+  auth         String
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  user         User @relation(fields:[userId],references:[id])
 }
 
-## 3. .env ergänzen:
-MINIO_ENDPOINT=http://localhost:9000
-MINIO_USER=minioadmin
-MINIO_PASSWORD=minioadmin
+## Backend: apps/backend/src/push/
 
-## 4. Backend: apps/backend/src/branding/
+POST /push/abonnieren
+  Body: { endpoint, keys: { p256dh, auth }, userAgent? }
+  → PushSubscription in DB speichern
 
-GET  /branding             — Branding des aktuellen Tenants (öffentlich)
-PATCH /branding            — Farben + E-Mail-Absender aktualisieren (Admin)
-POST /branding/logo        — Logo hochladen (Multipart, max 2MB PNG/SVG/JPG)
+DELETE /push/abonnieren
+  Body: { endpoint }
+  → Subscription löschen
 
-## 5. MinIO S3-Client:
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+### PushService (push.service.ts):
+import webpush from 'web-push';
 
-const s3 = new S3Client({
-  endpoint: process.env.MINIO_ENDPOINT,
-  region: 'eu-central-1',
-  credentials: {
-    accessKeyId: process.env.MINIO_USER,
-    secretAccessKey: process.env.MINIO_PASSWORD,
-  },
-  forcePathStyle: true, // Wichtig für MinIO!
+webpush.setVapidDetails(
+  'mailto:' + process.env.VAPID_EMAIL,
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY,
+);
+
+async sendToUser(userId: string, payload: { title: string; body: string; url?: string }) {
+  const subs = await this.prisma.pushSubscription.findMany({ where: { userId } });
+  for (const sub of subs) {
+    try {
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        JSON.stringify(payload)
+      );
+    } catch (err) {
+      // 410 Gone = Subscription abgelaufen → löschen
+      if (err.statusCode === 410) {
+        await this.prisma.pushSubscription.delete({ where: { id: sub.id } });
+      }
+    }
+  }
+}
+
+### In bestehenden Services einbinden:
+// In messaging.service.ts nach Broadcast:
+await this.pushService.sendToUser(userId, {
+  title: `Neue Nachricht von ${trainer.name}`,
+  body: nachricht.content.substring(0, 100),
+  url: '/nachrichten'
 });
 
-## 6. Frontend: CSS-Variablen-System (apps/frontend/src/app/layout.tsx):
-const branding = await fetchBrandingBySubdomain(host);
-const cssVars = {
-  '--color-primary': branding.primaryColor,
-  '--color-secondary': branding.secondaryColor,
-} as React.CSSProperties;
-// <html style={cssVars}>
+// In event.service.ts nach Erinnerung:
+await this.pushService.sendToUser(userId, {
+  title: `Training in 2 Stunden: ${event.title}`,
+  body: `${event.hallName} · ${event.location}`,
+  url: '/kalender'
+});
 
-In tailwind.config.ts:
-colors: {
-  primary: 'var(--color-primary)',
-  secondary: 'var(--color-secondary)',
+## Frontend: Service Worker
+apps/frontend/public/sw.js:
+self.addEventListener('push', event => {
+  const data = event.data.json();
+  self.registration.showNotification(data.title, {
+    body: data.body,
+    icon: '/logo.png',
+    badge: '/badge.png',
+    data: { url: data.url }
+  });
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  clients.openWindow(event.notification.data.url || '/');
+});
+
+## Frontend: Push-Opt-In Komponente
+apps/frontend/src/components/PushOptIn.tsx
+
+'use client';
+export function PushOptIn() {
+  const subscribe = async () => {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+    });
+    await fetch('/api/push/abonnieren', {
+      method: 'POST',
+      body: JSON.stringify(sub.toJSON())
+    });
+  };
+  return <button onClick={subscribe}>Push-Benachrichtigungen aktivieren</button>;
 }
 
-## 7. Frontend: Branding-Editor
-apps/frontend/src/app/(admin)/einstellungen/branding/page.tsx
-- Logo-Upload mit Drag & Drop + aktuelles Logo als Vorschau
-- Color-Picker für Primärfarbe (input type="color" + Hex-Input)
-- Live-Vorschau der Farben auf Button/Header/Sidebar
-- E-Mail-Absender einstellen (emailFrom + emailFromName)
-- Speichern-Button
+## .env.local ergänzen:
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=...  (der PUBLIC Key von oben)
+```
 
-## 8. Subdomain-Middleware (falls noch nicht vorhanden):
-// apps/backend/src/common/middleware/tenant.middleware.ts
-const host = request.hostname; // z.B. 'fckunchen.clubos.de'
-const subdomain = host.split('.')[0];
-if (subdomain !== 'www' && subdomain !== 'api') {
-  const tenant = await this.tenantService.findBySlug(subdomain);
-  request['tenant'] = tenant;
+---
+
+## Phase 8 — Stripe Billing
+```
+# ClubOS — Stripe Billing Integration
+
+## Kontext
+ClubOS Repo: https://github.com/Tschatscher85/ClubOS
+Ziel: Vereine können per Kreditkarte oder SEPA bezahlen.
+30 Tage kostenlos testen, dann automatische Abrechnung.
+
+## npm installieren:
+npm install stripe @stripe/stripe-js
+
+## Stripe-Konto einrichten:
+1. stripe.com → Konto erstellen
+2. API-Keys aus Dashboard holen (Test-Keys für Entwicklung)
+3. Webhook-Secret beim Einrichten des Webhooks holen
+
+## .env ergänzen:
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+
+## Stripe Produkte anlegen (einmalig, via Stripe Dashboard):
+- Starter: 29 EUR/Monat → Produkt-ID merken
+- Pro: 79 EUR/Monat → Produkt-ID merken
+- Club: 149 EUR/Monat → Produkt-ID merken
+
+## Prisma Schema erweitern:
+model Tenant {
+  // ... bestehende Felder ...
+  stripeCustomerId       String?
+  stripeSubscriptionId   String?
+  trialEndsAt            DateTime?
+  planActivatedAt        DateTime?
+}
+
+## Backend: apps/backend/src/billing/
+
+POST /billing/checkout
+  Body: { plan: 'STARTER' | 'PRO' | 'CLUB' }
+  1. Stripe Customer anlegen (oder laden)
+  2. Checkout Session erstellen mit 30-Tage-Trial
+  3. Response: { checkoutUrl: string }
+  → Frontend leitet zu Stripe weiter
+
+GET /billing/status
+  → Aktueller Plan, Trial-Ende, nächste Zahlung
+
+POST /billing/portal
+  → Stripe Customer Portal URL zurückgeben
+  → Kunde kann Karte ändern, kündigen etc.
+
+POST /billing/webhook (öffentlich, kein Auth!)
+  → Stripe Webhook empfangen
+  Wichtige Events:
+  - checkout.session.completed → Plan aktivieren
+  - invoice.payment_succeeded → Plan verlängern
+  - invoice.payment_failed → Mahnung senden
+  - customer.subscription.deleted → Plan deaktivieren
+
+### Webhook-Signatur verifizieren:
+const sig = request.headers['stripe-signature'];
+const event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
+
+## Frontend: Billing-Seite
+apps/frontend/src/app/(admin)/einstellungen/abonnement/page.tsx
+
+Anzeige:
+- Aktueller Plan + Preis
+- Trial-Countdown falls aktiv ("noch 23 Tage kostenlos")
+- "Plan upgraden" → öffnet Stripe Checkout
+- "Zahlungsmethode ändern" → öffnet Stripe Portal
+- Rechnungshistorie
+
+## Trial-Guard:
+In bestehenden Guards prüfen:
+if (tenant.trialEndsAt && tenant.trialEndsAt < new Date() && !tenant.stripeSubscriptionId) {
+  throw new ForbiddenException('Testzeitraum abgelaufen. Bitte Abonnement aktivieren.');
 }
 ```
 
 ---
 
-## Prompt #05 — Expo Mobile App (Phase 6)
+## Phase 9 — Expo Mobile App
 ```
-# ClubOS — Expo Mobile App Setup
+# ClubOS — Expo Mobile App (apps/mobile/)
 
 ## Kontext
-ClubOS Monorepo: https://github.com/Tschatscher85/ClubOS
-Neues Verzeichnis: apps/mobile/
+ClubOS Repo: https://github.com/Tschatscher85/ClubOS
+Alle Backend-Endpunkte sind fertig und dokumentiert unter /api/docs.
+Jetzt kommt die Mobile App als drittes App im Monorepo.
 
-## Aufgabe
-Erstelle die Expo React Native App als drittes App im Monorepo.
-iOS + Android aus einer Codebasis.
-
-## 1. App anlegen:
+## Setup:
 cd apps
 npx create-expo-app@latest mobile --template blank-typescript
 cd mobile
-
-## 2. Dependencies:
 npx expo install expo-secure-store expo-notifications expo-constants
 npm install @react-navigation/native @react-navigation/bottom-tabs
 npx expo install react-native-screens react-native-safe-area-context
 npm install zustand axios
 
-## 3. Ordnerstruktur: apps/mobile/src/
+## Projektstruktur: apps/mobile/src/
 screens/
   LoginScreen.tsx
   DashboardScreen.tsx
   KalenderScreen.tsx
   NachrichtenScreen.tsx
-  HalleScreen.tsx
+  TurnierScreen.tsx
   ProfilScreen.tsx
 components/
   EventCard.tsx
   NachrichtItem.tsx
-  ReaktionButtons.tsx
+  ReaktionButtons.tsx    — JA / NEIN / VIELLEICHT Buttons
+  TurniertabelleCard.tsx
 stores/
   authStore.ts
   eventsStore.ts
+  nachrichtenStore.ts
 lib/
   api.ts
   pushTokens.ts
 
-## 4. Auth Store (WICHTIG: SecureStore, NICHT AsyncStorage!):
+## Auth Store (SecureStore, NICHT AsyncStorage!):
 import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
 
 export const useAuthStore = create((set) => ({
   token: null,
   user: null,
+  tenant: null,
   loadToken: async () => {
     const token = await SecureStore.getItemAsync('accessToken');
-    if (token) set({ token });
+    const user = await SecureStore.getItemAsync('user');
+    if (token) set({ token, user: user ? JSON.parse(user) : null });
   },
   login: async (email, password) => {
     const res = await api.post('/auth/anmelden', { email, password });
     await SecureStore.setItemAsync('accessToken', res.data.accessToken);
+    await SecureStore.setItemAsync('user', JSON.stringify(res.data.user));
     set({ token: res.data.accessToken, user: res.data.user });
   },
   logout: async () => {
+    await api.post('/auth/abmelden');
     await SecureStore.deleteItemAsync('accessToken');
+    await SecureStore.deleteItemAsync('user');
     set({ token: null, user: null });
   },
 }));
 
-## 5. API Client:
+## API Client:
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const api = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL, // http://[VM-IP]:3001
+export const api = axios.create({
+  baseURL: process.env.EXPO_PUBLIC_API_URL,  // http://[VM-IP]:3001
+  timeout: 10000,
 });
 
-api.interceptors.request.use(async (config) => {
+api.interceptors.request.use(async config => {
   const token = await SecureStore.getItemAsync('accessToken');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-## 6. Push Notifications registrieren:
-import * as Notifications from 'expo-notifications';
+api.interceptors.response.use(
+  res => res,
+  async err => {
+    if (err.response?.status === 401) {
+      await SecureStore.deleteItemAsync('accessToken');
+      // Navigation zu Login (via Store-State)
+    }
+    return Promise.reject(err);
+  }
+);
 
-export async function registerForPushNotifications() {
+## Bottom Tab Navigator:
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+
+const Tab = createBottomTabNavigator();
+// Tabs: Dashboard | Kalender | Nachrichten | Turnier | Profil
+
+## .env für Mobile:
+EXPO_PUBLIC_API_URL=http://[VM-IP]:3001
+
+## Push Notifications registrieren (nach Login):
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+
+async function registerPush() {
   const { status } = await Notifications.requestPermissionsAsync();
-  if (status !== 'granted') return null;
-  const token = await Notifications.getExpoPushTokenAsync();
-  await api.post('/push-tokens', { token: token.data });
-  return token.data;
+  if (status !== 'granted') return;
+  const token = await Notifications.getExpoPushTokenAsync({
+    projectId: Constants.expoConfig?.extra?.eas?.projectId,
+  });
+  await api.post('/push-tokens', { token: token.data, platform: Platform.OS });
 }
 
-## 7. Reihenfolge beim Bauen:
-1. LoginScreen mit JWT-Auth
-2. Bottom Tab Navigator (Dashboard / Kalender / Nachrichten / Halle / Profil)
-3. KalenderScreen: Event-Liste + An-/Abmeldung per Tap
+## Reihenfolge beim Bauen:
+1. LoginScreen + Auth-Flow mit SecureStore
+2. DashboardScreen: Willkommen + nächste Events
+3. KalenderScreen: Event-Liste + An-/Abmeldung (1 Tap)
 4. NachrichtenScreen: Broadcasts + Reaktions-Buttons
-5. HalleScreen: Hallen-Info + Maps-Deeplink Button
+5. ProfilScreen: Profil, QR-Ausweis, Abmelden
 
-## 8. Starten:
-cd apps/mobile
-npx expo start
-# QR-Code mit Expo Go App scannen
+## EAS Build (App Store + Play Store):
+npm install -g eas-cli
+eas login
+eas build:configure
+eas build --platform all --profile preview  # Test-Build
+eas build --platform all --profile production  # Release
+eas submit --platform ios     # TestFlight
+eas submit --platform android # Play Store
 ```
 
 ---
 
-## Prompt #06 — Digitaler Mitgliedsantrag mit Unterschrift (Phase 4)
+## Bonus — GitHub Actions CI
 ```
-# ClubOS — Digitaler Mitgliedsantrag mit Unterschrift
+# ClubOS — GitHub Actions CI/CD Pipeline
 
 ## Kontext
 ClubOS Repo: https://github.com/Tschatscher85/ClubOS
-Backend: NestJS + Prisma
-PDF-Generierung: Puppeteer | Storage: MinIO
+Ziel: Bei jedem Push automatisch TypeScript prüfen + Tests laufen lassen.
 
-## Zwei Wege:
-Weg A (Selbst): Mitglied ruft /[slug]/anmelden auf, füllt selbst aus
-Weg B (Einladung): Trainer gibt E-Mail ein → Link per Mail
+## Aufgabe
+Datei anlegen: .github/workflows/ci.yml
 
-## 1. npm installieren:
-npm install puppeteer      # Backend — PDF-Generierung
-npm install signature_pad  # Frontend — Unterschrift-Canvas
+name: CI
 
-## 2. Prisma Schema:
-model MemberForm {
-  id          String           @id @default(cuid())
-  tenantId    String
-  name        String
-  fields      Json
-  isDefault   Boolean          @default(false)
-  submissions FormSubmission[]
-  tenant      Tenant @relation(fields: [tenantId], references: [id])
-}
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
 
-model FormSubmission {
-  id             String     @id @default(cuid())
-  formId         String
-  tenantId       String
-  data           Json
-  signatureData  String     // Base64 PNG
-  parentSignData String?    // Eltern-Unterschrift wenn unter 18
-  pdfUrl         String?
-  status         String     @default('PENDING')
-  submittedAt    DateTime   @default(now())
-  form           MemberForm @relation(fields: [formId], references: [id])
-}
+jobs:
+  typecheck:
+    name: TypeScript Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build --workspace=packages/shared
+      - name: Backend TypeScript
+        run: npx tsc --noEmit --project apps/backend/tsconfig.json
+      - name: Frontend TypeScript
+        run: npx tsc --noEmit --project apps/frontend/tsconfig.json
 
-model MemberInvite {
-  id        String   @id @default(cuid())
-  tenantId  String
-  email     String
-  teamId    String?
-  token     String   @unique @default(cuid())
-  status    String   @default('PENDING')
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  tenant    Tenant @relation(fields: [tenantId], references: [id])
-}
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint --workspace=apps/backend || true
+      - run: npm run lint --workspace=apps/frontend || true
 
-## 3. Backend: apps/backend/src/forms/
+## Datei: .github/workflows/deploy.yml (automatisches Deployment)
+name: Deploy
 
-POST /einladungen
-  Body: { email: string, teamId?: string }
-  - MemberInvite anlegen (14 Tage gültig)
-  - Einladungsmail senden mit Link: /anmelden?token=xxx
-  - BullMQ: Erinnerung nach 2 und 5 Tagen
+on:
+  push:
+    branches: [main]
 
-POST /einladungen/:token/einreichen
-  Body: FormData { data: JSON, signatureData: base64, parentSignData?: base64 }
-  - Token validieren
-  - FormSubmission anlegen
-  - PDF mit Puppeteer generieren
-  - PDF zu MinIO hochladen
-  - Admin/Trainer per E-Mail benachrichtigen
-  - Invite-Status auf COMPLETED setzen
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy auf Hetzner VM
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            cd /opt/clubos
+            git pull origin main
+            npm ci
+            docker compose -f docker-compose.prod.yml build
+            docker compose -f docker-compose.prod.yml up -d
+            docker exec clubos-backend npx prisma migrate deploy
 
-## 4. Frontend: Öffentliche Anmelde-Seite
-apps/frontend/src/app/(public)/[slug]/anmelden/page.tsx
-
-WICHTIG: Route in middleware.ts vom Auth-Guard ausnehmen!
-
-## 5. Unterschrift-Canvas:
-'use client';
-import SignaturePad from 'signature_pad';
-import { useEffect, useRef } from 'react';
-
-export function UnterschriftCanvas({ onSave }) {
-  const canvasRef = useRef(null);
-  const padRef = useRef(null);
-
-  useEffect(() => {
-    padRef.current = new SignaturePad(canvasRef.current, {
-      backgroundColor: 'rgb(255, 255, 255)',
-    });
-  }, []);
-
-  const handleSave = () => {
-    if (padRef.current.isEmpty()) return;
-    onSave(padRef.current.toDataURL('image/png'));
-  };
-
-  return (
-    <div>
-      <canvas ref={canvasRef} width={400} height={200}
-        style={{ border: '1px solid #ccc', borderRadius: '8px' }} />
-      <button onClick={() => padRef.current.clear()}>Löschen</button>
-      <button onClick={handleSave}>Unterschrift bestätigen</button>
-    </div>
-  );
-}
-
-## 6. PDF-Generierung (Puppeteer):
-import puppeteer from 'puppeteer';
-
-async function generatePDF(submission) {
-  const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
-  const page = await browser.newPage();
-  await page.setContent(`
-    <html><body>
-      <h1>Mitgliedsantrag</h1>
-      <p>Name: ${submission.data.name}</p>
-      <p>Datum: ${new Date().toLocaleDateString('de-DE')}</p>
-      <hr />
-      <p>Unterschrift:</p>
-      <img src="${submission.signatureData}" style="height:80px" />
-    </body></html>
-  `);
-  const pdf = await page.pdf({ format: 'A4' });
-  await browser.close();
-  return pdf;
-}
-
-## 7. Trainer-Dashboard: Einladungen verwalten
-apps/frontend/src/app/(trainer)/mitglieder/einladen/page.tsx
-- E-Mail-Feld + "Einladung senden"-Button
-- Tabelle: gesendete Einladungen mit Status (Ausstehend / Ausgefüllt / Abgelaufen)
+## GitHub Secrets anlegen (Repository → Settings → Secrets):
+VM_HOST      = [Hetzner VM IP]
+VM_USER      = root
+VM_SSH_KEY   = [SSH Private Key]
 ```
 
 ---
 
-> **Hinweis:** Vor jedem Prompt Claude Code die `CLAUDE.md` lesen lassen — dort ist der gesamte Projektkontext hinterlegt.
+> **Hinweis:** Diese Prompts bauen auf dem Stand vom 18. März 2026 auf.
+> Alle Core-Features (34 Backend-Module + 20 Frontend-Seiten) sind fertig.
+> Die Prompts hier decken ausschließlich die noch offenen Phasen 6–9 ab.
