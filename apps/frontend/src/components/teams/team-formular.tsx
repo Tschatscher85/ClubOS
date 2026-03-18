@@ -20,12 +20,27 @@ interface Team {
   sport: string;
   ageGroup: string;
   trainerId: string;
+  abteilungId?: string | null;
+}
+
+interface Mitglied {
+  id: string;
+  firstName: string;
+  lastName: string;
+  userId: string | null;
 }
 
 interface Benutzer {
   id: string;
   email: string;
   role: string;
+  vereinsRollen: string[];
+}
+
+interface Abteilung {
+  id: string;
+  name: string;
+  sport: string;
 }
 
 interface TeamFormularProps {
@@ -36,7 +51,7 @@ interface TeamFormularProps {
 }
 
 const SPORTARTEN = [
-  { wert: 'FUSSBALL', label: 'Fussball' },
+  { wert: 'FUSSBALL', label: 'Fußball' },
   { wert: 'HANDBALL', label: 'Handball' },
   { wert: 'BASKETBALL', label: 'Basketball' },
   { wert: 'FOOTBALL', label: 'Football' },
@@ -60,30 +75,77 @@ export function TeamFormular({
   team,
 }: TeamFormularProps) {
   const istBearbeitung = !!team;
-  const [name, setName] = useState(team?.name || '');
-  const [sportart, setSportart] = useState(team?.sport || 'FUSSBALL');
-  const [altersklasse, setAltersklasse] = useState(team?.ageGroup || 'U10');
-  const [trainerId, setTrainerId] = useState(team?.trainerId || '');
-  const [benutzer, setBenutzer] = useState<Benutzer[]>([]);
+  const [name, setName] = useState('');
+  const [sportart, setSportart] = useState('FUSSBALL');
+  const [altersklasse, setAltersklasse] = useState('U10');
+  const [trainerId, setTrainerId] = useState('');
+  const [abteilungId, setAbteilungId] = useState('');
+  const [trainerListe, setTrainerListe] = useState<{ id: string; name: string }[]>([]);
+  const [abteilungen, setAbteilungen] = useState<Abteilung[]>([]);
   const [ladend, setLadend] = useState(false);
   const [fehler, setFehler] = useState('');
 
+  // Daten laden + Felder setzen
   useEffect(() => {
-    if (offen) {
-      apiClient
-        .get<Benutzer[]>('/benutzer')
-        .then((daten) => {
-          const trainer = daten.filter(
-            (b) => b.role === 'TRAINER' || b.role === 'ADMIN' || b.role === 'SUPERADMIN',
-          );
-          setBenutzer(trainer);
-          if (!trainerId && trainer.length > 0) {
-            setTrainerId(trainer[0].id);
-          }
-        })
-        .catch(() => {});
+    if (!offen) return;
+
+    // Abteilungen laden
+    apiClient.get<Abteilung[]>('/abteilungen')
+      .then(setAbteilungen)
+      .catch(() => {});
+
+    // Trainer laden: Mitglieder mit Trainer-Rolle (über Benutzer-API)
+    Promise.all([
+      apiClient.get<Mitglied[]>('/mitglieder'),
+      apiClient.get<Benutzer[]>('/benutzer/verwaltung/liste').catch(() => [] as Benutzer[]),
+    ]).then(([mitglieder, benutzerListe]) => {
+      // Finde User-IDs die Trainer-Rolle haben
+      const trainerUserIds = new Set(
+        benutzerListe
+          .filter((b) =>
+            b.vereinsRollen.includes('Trainer') ||
+            b.vereinsRollen.includes('Vorstand') ||
+            ['TRAINER', 'ADMIN', 'SUPERADMIN'].includes(b.role),
+          )
+          .map((b) => b.id),
+      );
+
+      // Mitglieder mit Trainer-User matchen
+      const trainerMitglieder = mitglieder
+        .filter((m) => m.userId && trainerUserIds.has(m.userId))
+        .map((m) => ({
+          id: m.userId!,
+          name: `${m.firstName} ${m.lastName}`,
+        }));
+
+      // Fallback: Auch User ohne Mitglied-Profil anzeigen (z.B. Admin)
+      const vorhandeneUserIds = new Set(trainerMitglieder.map((t) => t.id));
+      const ohneProfileTrainer = benutzerListe
+        .filter((b) => trainerUserIds.has(b.id) && !vorhandeneUserIds.has(b.id))
+        .map((b) => ({
+          id: b.id,
+          name: b.email.split('@')[0],
+        }));
+
+      setTrainerListe([...trainerMitglieder, ...ohneProfileTrainer]);
+    }).catch(() => {});
+
+    // Felder setzen
+    if (team) {
+      setName(team.name || '');
+      setSportart(team.sport || 'FUSSBALL');
+      setAltersklasse(team.ageGroup || 'U10');
+      setTrainerId(team.trainerId || '');
+      setAbteilungId(team.abteilungId || '');
+    } else {
+      setName('');
+      setSportart('FUSSBALL');
+      setAltersklasse('U10');
+      setTrainerId('');
+      setAbteilungId('');
     }
-  }, [offen, trainerId]);
+    setFehler('');
+  }, [offen, team]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +153,13 @@ export function TeamFormular({
     setFehler('');
 
     try {
-      const daten = { name, sportart, altersklasse, trainerId };
+      const daten = {
+        name,
+        sportart,
+        altersklasse,
+        trainerId: trainerId || undefined,
+        abteilungId: abteilungId || undefined,
+      };
 
       if (istBearbeitung && team) {
         await apiClient.put(`/teams/${team.id}`, daten);
@@ -116,18 +184,41 @@ export function TeamFormular({
             {istBearbeitung ? 'Team bearbeiten' : 'Neues Team erstellen'}
           </DialogTitle>
           <DialogDescription>
-            Mannschaft mit Sportart, Altersklasse und Trainer anlegen
+            Mannschaft einer Abteilung zuordnen, Sportart und Trainer festlegen
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Abteilung */}
+          {abteilungen.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="abteilung">Abteilung</Label>
+              <Select
+                id="abteilung"
+                value={abteilungId}
+                onChange={(e) => {
+                  setAbteilungId(e.target.value);
+                  // Sportart automatisch von Abteilung übernehmen
+                  const abt = abteilungen.find((a) => a.id === e.target.value);
+                  if (abt?.sport) setSportart(abt.sport);
+                }}
+              >
+                <option value="">-- Keine Abteilung --</option>
+                {abteilungen.map((a) => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </Select>
+            </div>
+          )}
+
+          {/* Teamname */}
           <div className="space-y-2">
             <Label htmlFor="teamname">Teamname *</Label>
             <Input
               id="teamname"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="z.B. E-Jugend 1"
+              placeholder="z.B. Bambini, E-Jugend 1"
               required
             />
           </div>
@@ -159,6 +250,7 @@ export function TeamFormular({
             </div>
           </div>
 
+          {/* Trainer - zeigt Namen statt E-Mails */}
           <div className="space-y-2">
             <Label htmlFor="trainer">Trainer</Label>
             <Select
@@ -166,12 +258,18 @@ export function TeamFormular({
               value={trainerId}
               onChange={(e) => setTrainerId(e.target.value)}
             >
-              {benutzer.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.email} ({b.role})
+              <option value="">-- Kein Trainer zugewiesen --</option>
+              {trainerListe.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
                 </option>
               ))}
             </Select>
+            {trainerListe.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Noch keine Trainer vorhanden. Weisen Sie einem Mitglied die Rolle &quot;Trainer&quot; zu.
+              </p>
+            )}
           </div>
 
           {fehler && (
