@@ -18,6 +18,7 @@ interface BenutzerState {
   email: string;
   rolle: string;
   tenantId: string;
+  emailVerifiziert?: boolean;
 }
 
 interface AnmeldeAntwort {
@@ -32,6 +33,7 @@ interface ProfilAntwort {
   email: string;
   rolle: string;
   tenantId: string;
+  emailVerifiziert: boolean;
   tenant: TenantState;
   erstelltAm: string;
 }
@@ -49,6 +51,7 @@ interface AuthState {
   abmelden: () => void;
   profilLaden: () => Promise<void>;
   themeAnwenden: () => void;
+  emailVerifizierungSenden: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -145,6 +148,7 @@ export const useAuthStore = create<AuthState>()(
                 email: profil.email,
                 rolle: profil.rolle,
                 tenantId: profil.tenantId,
+                emailVerifiziert: profil.emailVerifiziert,
               },
               tenant: profil.tenant,
               istAngemeldet: true,
@@ -164,6 +168,10 @@ export const useAuthStore = create<AuthState>()(
           if (tenant?.primaryColor) {
             applyTenantTheme(tenant.primaryColor);
           }
+        },
+
+        emailVerifizierungSenden: async () => {
+          await apiClient.post('/auth/email-verifizierung-erneut-senden', {});
         },
       };
     },

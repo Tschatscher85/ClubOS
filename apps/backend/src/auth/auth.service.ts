@@ -7,6 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegistrierenDto } from './dto/registrieren.dto';
 import { AnmeldenDto } from './dto/anmelden.dto';
@@ -50,6 +51,10 @@ export class AuthService {
     // Passwort hashen
     const passwortHash = await bcrypt.hash(dto.passwort, BCRYPT_ROUNDS);
 
+    // E-Mail-Verifizierungs-Token generieren
+    const emailVerifyToken = crypto.randomBytes(32).toString('hex');
+    const emailVerifyExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 Stunden
+
     // Tenant und Admin-Benutzer in einer Transaktion erstellen
     const ergebnis = await this.prisma.$transaction(async (tx) => {
       const tenant = await tx.tenant.create({
@@ -65,6 +70,8 @@ export class AuthService {
           passwordHash: passwortHash,
           role: Role.ADMIN,
           tenantId: tenant.id,
+          emailVerifyToken,
+          emailVerifyExpiresAt,
         },
       });
 
@@ -83,6 +90,11 @@ export class AuthService {
     await this.aktualisiereRefreshToken(
       ergebnis.benutzer.id,
       tokens.refreshToken,
+    );
+
+    // E-Mail-Verifizierung: Token in der Konsole loggen (SMTP nicht konfiguriert)
+    console.log(
+      `[Auth] E-Mail-Verifizierung fuer ${dto.email}: Token=${emailVerifyToken}`,
     );
 
     return {
@@ -142,6 +154,7 @@ export class AuthService {
         email: benutzer.email,
         rolle: benutzer.role,
         tenantId: benutzer.tenantId,
+        emailVerifiziert: benutzer.emailVerifiziert,
       },
       tenant: {
         id: benutzer.tenant.id,
@@ -215,6 +228,7 @@ export class AuthService {
       email: benutzer.email,
       rolle: benutzer.role,
       tenantId: benutzer.tenantId,
+      emailVerifiziert: benutzer.emailVerifiziert,
       tenant: {
         id: benutzer.tenant.id,
         name: benutzer.tenant.name,
@@ -261,6 +275,308 @@ export class AuthService {
     return { nachricht: 'Passwort wurde erfolgreich geaendert.' };
   }
 
+  // ==================== E-Mail-Verifizierung ====================
+
+  /**
+   * Verifiziert die E-Mail-Adresse mit dem Token
+   */
+  async emailVerifizieren(token: string) {
+    const benutzer = await this.prisma.user.findUnique({
+      where: { emailVerifyToken: token },
+    });
+
+    if (!benutzer) {
+      throw new BadRequestException(
+        'Ungueltiger Verifizierungs-Link. Bitte fordern Sie einen neuen an.',
+      );
+    }
+
+    if (
+      benutzer.emailVerifyExpiresAt &&
+      benutzer.emailVerifyExpiresAt < new Date()
+    ) {
+      throw new BadRequestException(
+        'Der Verifizierungs-Link ist abgelaufen. Bitte fordern Sie einen neuen an.',
+      );
+    }
+
+    if (benutzer.emailVerifiziert) {
+      return { nachricht: 'E-Mail-Adresse wurde bereits verifiziert.' };
+    }
+
+    await this.prisma.user.update({
+      where: { id: benutzer.id },
+      data: {
+        emailVerifiziert: true,
+        emailVerifyToken: null,
+        emailVerifyExpiresAt: null,
+      },
+    });
+
+    return { nachricht: 'E-Mail-Adresse wurde erfolgreich verifiziert.' };
+  }
+
+  /**
+   * Sendet den Verifizierungs-Link erneut
+   */
+  async emailVerifizierungErneutSenden(userId: string) {
+    const benutzer = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!benutzer) {
+      throw new BadRequestException('Benutzer nicht gefunden.');
+    }
+
+    if (benutzer.emailVerifiziert) {
+      return { nachricht: 'E-Mail-Adresse ist bereits verifiziert.' };
+    }
+
+    const emailVerifyToken = crypto.randomBytes(32).toString('hex');
+    const emailVerifyExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { emailVerifyToken, emailVerifyExpiresAt },
+    });
+
+    // Token loggen (in Produktion per E-Mail senden)
+    console.log(
+      `[Auth] Neuer Verifizierungs-Token fuer ${benutzer.email}: ${emailVerifyToken}`,
+    );
+
+    return {
+      nachricht:
+        'Verifizierungs-E-Mail wurde erneut gesendet. Bitte pruefen Sie Ihr Postfach.',
+    };
+  }
+
+  // ==================== Passwort vergessen ====================
+
+  /**
+   * Erstellt einen Passwort-Reset-Token und sendet ihn per E-Mail
+   */
+  async passwortVergessen(email: string) {
+    const benutzer = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    // Immer die gleiche Antwort zurueckgeben (Sicherheit: keine Info ob E-Mail existiert)
+    const antwort = {
+      nachricht:
+        'Falls ein Konto mit dieser E-Mail-Adresse existiert, wurde ein Link zum Zuruecksetzen gesendet.',
+    };
+
+    if (!benutzer) {
+      return antwort;
+    }
+
+    const passwortResetToken = crypto.randomBytes(32).toString('hex');
+    const passwortResetExpiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 Stunde
+
+    await this.prisma.user.update({
+      where: { id: benutzer.id },
+      data: { passwortResetToken, passwortResetExpiresAt },
+    });
+
+    // Token loggen (in Produktion per E-Mail senden)
+    console.log(
+      `[Auth] Passwort-Reset fuer ${email}: Token=${passwortResetToken}`,
+    );
+
+    return antwort;
+  }
+
+  /**
+   * Setzt das Passwort mit einem gueltigen Reset-Token zurueck
+   */
+  async passwortZuruecksetzen(token: string, neuesPasswort: string) {
+    const benutzer = await this.prisma.user.findUnique({
+      where: { passwortResetToken: token },
+    });
+
+    if (!benutzer) {
+      throw new BadRequestException(
+        'Ungueltiger oder abgelaufener Reset-Link. Bitte fordern Sie einen neuen an.',
+      );
+    }
+
+    if (
+      benutzer.passwortResetExpiresAt &&
+      benutzer.passwortResetExpiresAt < new Date()
+    ) {
+      // Token abgelaufen -> loeschen
+      await this.prisma.user.update({
+        where: { id: benutzer.id },
+        data: { passwortResetToken: null, passwortResetExpiresAt: null },
+      });
+      throw new BadRequestException(
+        'Der Reset-Link ist abgelaufen. Bitte fordern Sie einen neuen an.',
+      );
+    }
+
+    const neuerHash = await bcrypt.hash(neuesPasswort, BCRYPT_ROUNDS);
+
+    await this.prisma.user.update({
+      where: { id: benutzer.id },
+      data: {
+        passwordHash: neuerHash,
+        passwortResetToken: null,
+        passwortResetExpiresAt: null,
+        // Alle Sessions invalidieren
+        refreshToken: null,
+      },
+    });
+
+    return { nachricht: 'Passwort wurde erfolgreich zurueckgesetzt. Sie koennen sich jetzt anmelden.' };
+  }
+
+  // ==================== Google OAuth ====================
+
+  /**
+   * Authentifiziert einen Benutzer ueber Google OAuth
+   */
+  async googleAuth(idToken: string) {
+    // Google ID Token verifizieren
+    const googlePayload = await this.verifiziereGoogleToken(idToken);
+
+    if (!googlePayload || !googlePayload.email) {
+      throw new UnauthorizedException('Ungueltiges Google-Token.');
+    }
+
+    const { email, sub: googleId, name } = googlePayload;
+
+    // Benutzer mit Google-ID suchen
+    let benutzer = await this.prisma.user.findUnique({
+      where: { googleId },
+      include: { tenant: true },
+    });
+
+    if (benutzer) {
+      // Bestehender Google-Benutzer: anmelden
+      const tokens = await this.generiereTokens(
+        benutzer.id,
+        benutzer.email,
+        benutzer.role,
+        benutzer.tenantId,
+      );
+      await this.aktualisiereRefreshToken(benutzer.id, tokens.refreshToken);
+
+      return {
+        benutzer: {
+          id: benutzer.id,
+          email: benutzer.email,
+          rolle: benutzer.role,
+          tenantId: benutzer.tenantId,
+          emailVerifiziert: benutzer.emailVerifiziert,
+        },
+        tenant: {
+          id: benutzer.tenant.id,
+          name: benutzer.tenant.name,
+          slug: benutzer.tenant.slug,
+        },
+        ...tokens,
+        istNeu: false,
+      };
+    }
+
+    // Benutzer mit E-Mail suchen (bestehender Benutzer der Google verknuepft)
+    benutzer = await this.prisma.user.findUnique({
+      where: { email },
+      include: { tenant: true },
+    });
+
+    if (benutzer) {
+      // Bestehenden Benutzer mit Google verknuepfen + E-Mail verifizieren
+      await this.prisma.user.update({
+        where: { id: benutzer.id },
+        data: {
+          googleId,
+          emailVerifiziert: true,
+          emailVerifyToken: null,
+          emailVerifyExpiresAt: null,
+        },
+      });
+
+      const tokens = await this.generiereTokens(
+        benutzer.id,
+        benutzer.email,
+        benutzer.role,
+        benutzer.tenantId,
+      );
+      await this.aktualisiereRefreshToken(benutzer.id, tokens.refreshToken);
+
+      return {
+        benutzer: {
+          id: benutzer.id,
+          email: benutzer.email,
+          rolle: benutzer.role,
+          tenantId: benutzer.tenantId,
+          emailVerifiziert: true,
+        },
+        tenant: {
+          id: benutzer.tenant.id,
+          name: benutzer.tenant.name,
+          slug: benutzer.tenant.slug,
+        },
+        ...tokens,
+        istNeu: false,
+      };
+    }
+
+    // Neuer Benutzer: Verein + Admin erstellen
+    const slug = this.generiereSlug(name || email.split('@')[0]);
+
+    const ergebnis = await this.prisma.$transaction(async (tx) => {
+      const tenant = await tx.tenant.create({
+        data: {
+          name: name || email.split('@')[0],
+          slug,
+        },
+      });
+
+      const neuerBenutzer = await tx.user.create({
+        data: {
+          email,
+          googleId,
+          role: Role.ADMIN,
+          tenantId: tenant.id,
+          emailVerifiziert: true, // Google verifiziert E-Mail
+        },
+      });
+
+      return { tenant, benutzer: neuerBenutzer };
+    });
+
+    const tokens = await this.generiereTokens(
+      ergebnis.benutzer.id,
+      ergebnis.benutzer.email,
+      ergebnis.benutzer.role,
+      ergebnis.tenant.id,
+    );
+    await this.aktualisiereRefreshToken(
+      ergebnis.benutzer.id,
+      tokens.refreshToken,
+    );
+
+    return {
+      benutzer: {
+        id: ergebnis.benutzer.id,
+        email: ergebnis.benutzer.email,
+        rolle: ergebnis.benutzer.role,
+        tenantId: ergebnis.tenant.id,
+        emailVerifiziert: true,
+      },
+      tenant: {
+        id: ergebnis.tenant.id,
+        name: ergebnis.tenant.name,
+        slug: ergebnis.tenant.slug,
+      },
+      ...tokens,
+      istNeu: true,
+    };
+  }
+
   // ==================== Private Hilfsmethoden ====================
 
   private async generiereTokens(
@@ -293,5 +609,58 @@ export class AuthService {
       where: { id: userId },
       data: { refreshToken },
     });
+  }
+
+  /**
+   * Verifiziert ein Google ID Token ueber die Google API
+   */
+  private async verifiziereGoogleToken(
+    idToken: string,
+  ): Promise<{ email: string; sub: string; name?: string } | null> {
+    try {
+      const response = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
+      );
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = (await response.json()) as {
+        email: string;
+        sub: string;
+        name?: string;
+        aud?: string;
+      };
+      const clientId = this.configService.get<string>('google.clientId');
+
+      // Client-ID pruefen wenn konfiguriert
+      if (clientId && data.aud !== clientId) {
+        return null;
+      }
+
+      return {
+        email: data.email,
+        sub: data.sub,
+        name: data.name,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Generiert einen URL-freundlichen Slug aus einem Namen
+   */
+  private generiereSlug(name: string): string {
+    const basis = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .substring(0, 40);
+
+    // Zufaellige Zeichen anhaengen um Eindeutigkeit zu gewaehrleisten
+    const zufall = crypto.randomBytes(3).toString('hex');
+    return `${basis}-${zufall}`;
   }
 }

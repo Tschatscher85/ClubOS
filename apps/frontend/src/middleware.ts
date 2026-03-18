@@ -2,7 +2,14 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Oeffentliche Routen die keinen Login brauchen
-const OEFFENTLICHE_ROUTEN = ['/anmelden', '/registrieren'];
+const OEFFENTLICHE_ROUTEN = [
+  '/anmelden',
+  '/registrieren',
+  '/passwort-vergessen',
+  '/passwort-zuruecksetzen',
+  '/email-verifizieren',
+  '/onboarding',
+];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

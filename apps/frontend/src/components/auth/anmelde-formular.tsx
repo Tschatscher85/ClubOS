@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PasswortInput } from '@/components/ui/passwort-input';
 import { useAuth } from '@/hooks/use-auth';
 
 export function AnmeldeFormular() {
@@ -38,10 +40,17 @@ export function AnmeldeFormular() {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="passwort">Passwort</Label>
-        <Input
+        <div className="flex items-center justify-between">
+          <Label htmlFor="passwort">Passwort</Label>
+          <Link
+            href="/passwort-vergessen"
+            className="text-xs text-muted-foreground hover:text-primary underline"
+          >
+            Passwort vergessen?
+          </Link>
+        </div>
+        <PasswortInput
           id="passwort"
-          type="password"
           placeholder="Passwort eingeben"
           value={passwort}
           onChange={(e) => setPasswort(e.target.value)}

@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { TenantModule } from './tenant/tenant.module';
@@ -27,6 +29,8 @@ import { BuchhaltungModule } from './buchhaltung/buchhaltung.module';
 import { KiModule } from './ki/ki.module';
 import { EmailEinstellungenModule } from './email/email-einstellungen.module';
 import { DfbnetModule } from './dfbnet/dfbnet.module';
+import { HomepageModule } from './homepage/homepage.module';
+import { ProfilbildModule } from './profilbild/profilbild.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -35,6 +39,23 @@ import configuration from './config/configuration';
       isGlobal: true,
       load: [configuration],
     }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 1000,    // 1 Sekunde
+        limit: 3,     // max 3 Anfragen pro Sekunde
+      },
+      {
+        name: 'medium',
+        ttl: 10000,   // 10 Sekunden
+        limit: 20,    // max 20 Anfragen pro 10 Sekunden
+      },
+      {
+        name: 'long',
+        ttl: 60000,   // 1 Minute
+        limit: 100,   // max 100 Anfragen pro Minute
+      },
+    ]),
     PrismaModule,
     KiModule,
     AuthModule,
@@ -62,6 +83,14 @@ import configuration from './config/configuration';
     BuchhaltungModule,
     EmailEinstellungenModule,
     DfbnetModule,
+    HomepageModule,
+    ProfilbildModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

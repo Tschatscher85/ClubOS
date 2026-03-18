@@ -4,6 +4,7 @@ import {
   Put,
   Body,
   Get,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -14,11 +15,15 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegistrierenDto } from './dto/registrieren.dto';
 import { AnmeldenDto } from './dto/anmelden.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { PasswortAendernDto } from './dto/passwort-aendern.dto';
+import { PasswortVergessenDto } from './dto/passwort-vergessen.dto';
+import { PasswortZuruecksetzenDto } from './dto/passwort-zuruecksetzen.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { JwtRefreshGuard } from '../common/guards/jwt-refresh.guard';
 import { AktuellerBenutzer } from '../common/decorators/aktueller-benutzer.decorator';
@@ -37,6 +42,7 @@ export class AuthController {
   }
 
   @Post('anmelden')
+  @Throttle({ short: { ttl: 10000, limit: 5 } }) // Max 5 Login-Versuche pro 10 Sekunden
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Benutzer anmelden' })
   @ApiResponse({ status: 200, description: 'Erfolgreich angemeldet' })
@@ -94,5 +100,61 @@ export class AuthController {
       dto.altesPasswort,
       dto.neuesPasswort,
     );
+  }
+
+  // ==================== E-Mail-Verifizierung ====================
+
+  @Get('email-verifizieren')
+  @ApiOperation({ summary: 'E-Mail-Adresse mit Token verifizieren' })
+  @ApiResponse({ status: 200, description: 'E-Mail erfolgreich verifiziert' })
+  @ApiResponse({ status: 400, description: 'Ungueltiger oder abgelaufener Token' })
+  async emailVerifizieren(@Query('token') token: string) {
+    return this.authService.emailVerifizieren(token);
+  }
+
+  @Post('email-verifizierung-erneut-senden')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Verifizierungs-E-Mail erneut senden' })
+  @ApiResponse({ status: 200, description: 'E-Mail wurde erneut gesendet' })
+  async emailVerifizierungErneutSenden(
+    @AktuellerBenutzer('id') userId: string,
+  ) {
+    return this.authService.emailVerifizierungErneutSenden(userId);
+  }
+
+  // ==================== Passwort vergessen ====================
+
+  @Post('passwort-vergessen')
+  @Throttle({ short: { ttl: 60000, limit: 3 } }) // Max 3 Reset-Anfragen pro Minute
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Passwort-Reset-Link per E-Mail anfordern' })
+  @ApiResponse({ status: 200, description: 'E-Mail wurde gesendet (falls Konto existiert)' })
+  async passwortVergessen(@Body() dto: PasswortVergessenDto) {
+    return this.authService.passwortVergessen(dto.email);
+  }
+
+  @Post('passwort-zuruecksetzen')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Passwort mit Reset-Token zuruecksetzen' })
+  @ApiResponse({ status: 200, description: 'Passwort erfolgreich zurueckgesetzt' })
+  @ApiResponse({ status: 400, description: 'Ungueltiger oder abgelaufener Token' })
+  async passwortZuruecksetzen(@Body() dto: PasswortZuruecksetzenDto) {
+    return this.authService.passwortZuruecksetzen(
+      dto.token,
+      dto.neuesPasswort,
+    );
+  }
+
+  // ==================== Google OAuth ====================
+
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Mit Google anmelden/registrieren' })
+  @ApiResponse({ status: 200, description: 'Erfolgreich mit Google angemeldet' })
+  @ApiResponse({ status: 401, description: 'Ungueltiges Google-Token' })
+  async googleAuth(@Body() dto: GoogleAuthDto) {
+    return this.authService.googleAuth(dto.idToken);
   }
 }

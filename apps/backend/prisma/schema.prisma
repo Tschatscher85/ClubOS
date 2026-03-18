@@ -38,6 +38,7 @@ model Tenant {
   workflows          Workflow[]
   hallen             Halle[]
   sponsoren          Sponsor[]
+  homepage           Homepage?
 
   @@index([slug])
 }
@@ -60,6 +61,15 @@ model User {
   tenantId     String
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   refreshToken String?
+  // E-Mail-Verifizierung
+  emailVerifiziert     Boolean  @default(false)
+  emailVerifyToken     String?  @unique
+  emailVerifyExpiresAt DateTime?
+  // Passwort vergessen
+  passwortResetToken     String?  @unique
+  passwortResetExpiresAt DateTime?
+  // Google OAuth
+  googleId             String?  @unique
   profile              Member?
   emailEinstellungen   EmailEinstellungen?
   createdAt            DateTime @default(now())
@@ -282,7 +292,8 @@ model Tournament {
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 
-  matches TournamentMatch[]
+  matches     TournamentMatch[]
+  landingpage TurnierLandingpage?
 
   @@index([tenantId])
   @@index([publicUrl])
@@ -694,6 +705,120 @@ model EmailEinstellungen {
   updatedAt     DateTime @updatedAt
 
   @@index([userId])
+}
+
+// ==================== Profilbild ====================
+
+model Profilbild {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  bildUrl   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ==================== Vereinshomepage ====================
+
+model Homepage {
+  id          String         @id @default(cuid())
+  tenantId    String         @unique
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  istAktiv    Boolean        @default(false)
+  subdomain   String?        @unique  // z.B. "fckunchen" -> fckunchen.clubos.de
+  customDomain String?       @unique  // z.B. "www.fc-kunchen.de"
+  // Inhalte
+  heroTitel       String?    // z.B. "Willkommen beim FC Kunchen"
+  heroUntertitel  String?    // z.B. "Seit 1920 - Ihr Sportverein im Filstal"
+  heroBildUrl     String?
+  ueberUns        String?    // Freitext HTML/Markdown
+  gruendungsjahr  Int?
+  mitgliederAnzahl Int?      // Wird automatisch berechnet
+  kontaktEmail    String?
+  kontaktTelefon  String?
+  kontaktAdresse  String?
+  oeffnungszeiten String?
+  impressum       String?
+  datenschutz     String?
+  socialFacebook  String?
+  socialInstagram String?
+  socialYoutube   String?
+  // SEO
+  seoTitel        String?
+  seoBeschreibung String?
+  // Design
+  headerBildUrl   String?
+  footerText      String?
+  customCss       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sektionen  HomepageSektion[]
+
+  @@index([tenantId])
+  @@index([subdomain])
+}
+
+model HomepageSektion {
+  id          String   @id @default(cuid())
+  homepageId  String
+  homepage    Homepage @relation(fields: [homepageId], references: [id], onDelete: Cascade)
+  typ         SektionsTyp
+  titel       String?
+  inhalt      String?    // HTML/Markdown Inhalt
+  bildUrl     String?
+  reihenfolge Int        @default(0)
+  istSichtbar Boolean    @default(true)
+  daten       Json?      // Zusaetzliche strukturierte Daten
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([homepageId])
+  @@index([reihenfolge])
+}
+
+enum SektionsTyp {
+  HERO              // Grosses Header-Bild mit Titel
+  UEBER_UNS         // Ueber den Verein
+  ABTEILUNGEN       // Sportarten/Abteilungen Uebersicht
+  MANNSCHAFTEN      // Teams anzeigen
+  TERMINE           // Naechste Events/Spiele
+  NEUIGKEITEN       // Aktuelles/News
+  KONTAKT           // Kontaktformular/Infos
+  SPONSOREN         // Sponsor-Logos
+  GALERIE           // Bildergalerie
+  MITGLIED_WERDEN   // CTA zum Beitreten
+  FREITEXT          // Freier HTML-Inhalt
+  TURNIER           // Turnier Landing-Page Sektion
+}
+
+// ==================== Turnier-Landingpage ====================
+
+model TurnierLandingpage {
+  id            String   @id @default(cuid())
+  tournamentId  String   @unique
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  istAktiv      Boolean  @default(true)
+  slug          String   @unique    // z.B. "hallencup-2026"
+  // Inhalte
+  titel         String
+  beschreibung  String?  // HTML fuer Werbezwecke
+  bannerBildUrl String?
+  ort           String?
+  datum         String?  // Freitext: "14.-15. Juni 2026"
+  teilnahmeInfo String?  // Wie teilnehmen
+  preise        String?  // Preise/Pokale
+  sponsoren     String[] // Sponsor-Namen
+  sponsorLogos  String[] // Sponsor-Logo-URLs
+  kontaktEmail  String?
+  // SEO
+  seoTitel        String?
+  seoBeschreibung String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
 }
 
 // ==================== Einladungen ====================

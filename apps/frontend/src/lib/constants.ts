@@ -3,6 +3,10 @@ export const API_BASE_URL =
 
 export const ROUTEN = {
   ANMELDEN: '/anmelden',
+  REGISTRIEREN: '/registrieren',
+  PASSWORT_VERGESSEN: '/passwort-vergessen',
+  PASSWORT_ZURUECKSETZEN: '/passwort-zuruecksetzen',
+  EMAIL_VERIFIZIEREN: '/email-verifizieren',
   DASHBOARD: '/dashboard',
   MITGLIEDER: '/mitglieder',
   MITARBEITER: '/mitarbeiter',

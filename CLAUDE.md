@@ -413,38 +413,97 @@ model FAQ {
 
 ---
 
-## 📦 Aktueller Status
+## 📦 Aktueller Status (Stand: 18.03.2026)
 
-**Aktueller Sprint:** Sprint 1 — Infrastruktur & Auth
+**Alle Sprints abgeschlossen (außer Mobile App)**
 
-**Offene Tasks:**
-- [ ] Turborepo Monorepo initialisieren
-- [ ] Docker Compose Setup
-- [ ] PostgreSQL + Prisma
-- [ ] NestJS Backend Basis
-- [ ] JWT Auth
-- [ ] GitHub Repo anlegen
+### 34 Backend-Module:
+- [x] Auth (JWT, Refresh, Passwort-Aenderung, Passwort-Reset, E-Mail-Verifizierung, Google OAuth)
+- [x] Multi-Tenant (Schema-per-Tenant)
+- [x] Mitgliederverwaltung (E-Mail, Multi-Sport, Auto-Login, QR-Ausweis)
+- [x] Abteilungen + Berichte
+- [x] Teams + Kader
+- [x] Kalender/Events + Erinnerungen (24h + 2h)
+- [x] Turnier-Manager + Livescoring + Public-URL
+- [x] Nachrichten + Notfall-Broadcast
+- [x] Einladungs-System (Multi-Formular, Wizard, Unterschrift)
+- [x] Workflows (Einladungs-Pakete pro Sportart)
+- [x] Formulare (PDF-Upload + KI-Felderkennung)
+- [x] PDF-Export fuer Einreichungen
+- [x] KI-FAQ-System (automatische Antworten)
+- [x] Multi-KI-Provider (Claude + OpenAI, pro Verein konfigurierbar)
+- [x] QR-Code Mitgliedsausweis
+- [x] BullMQ Job-Queue (E-Mail, Erinnerungen async via Redis)
+- [x] Socket.io Realtime (Turnier-Live, Team-Chat)
+- [x] Hallenbelegung (Wochenplan)
+- [x] Schiedsrichter-Einteilung (manuell + Auto-Rotation)
+- [x] Buchhaltung/SEPA (Rechnungen, Beitraege, DATEV-Export)
+- [x] Sponsoren-Modul
+- [x] E-Mail pro Trainer/Vorstand (eigenes SMTP + Signatur)
+- [x] DFBnet CSV Import/Export
+- [x] Dokumenten-Ablage
+- [x] Fahrtenboerse
+- [x] Eltern-Portal (Kinder, Teams, Abteilungen)
+- [x] Dashboard (Statistiken, Uebersicht)
+- [x] Vereins-Branding (Logo, Farbe, Subdomain)
+- [x] Health + Config
+- [x] Self-Hosting (install.sh, Docker, Traefik)
+- [x] Rate Limiting (Throttler: Auth-Endpoints strenger, global)
+- [x] Profilbild-Upload (Upload, Abruf, Loeschen)
+- [x] Vereinshomepage-System (Sektionen, oeffentliche URLs, auto-generiert)
+- [x] Turnier-Landingpages (Werbung, Sponsoren, oeffentliche URLs)
+
+### 20 Frontend-Seiten:
+Dashboard, Mitglieder (+Detail), Mitarbeiter, Abteilungen, Teams (+Detail),
+Kalender (+Detail), Turniere (+Detail), Nachrichten, Fahrgemeinschaften,
+Eltern-Portal, Hallenbelegung, Schiedsrichter, Buchhaltung, Sponsoren,
+Workflows, Formulare (+Detail), Dokumente, DFBnet, Einstellungen (Verein,
+KI, E-Mail, Passwort), Einladung-Wizard, Registrierung, Passwort-Vergessen,
+Passwort-Zuruecksetzen, E-Mail-Verifizierung, Onboarding-Wizard
+
+### Erledigt (Stand: 18.03.2026):
+- [x] Registrierungs-Seite (Frontend + Backend)
+- [x] Passwort vergessen Flow (E-Mail anfordern + neues Passwort setzen)
+- [x] Google OAuth (Backend + Frontend mit Google Sign-In Button)
+- [x] E-Mail-Verifizierung (Token-basiert, automatisch bei Registrierung)
+- [x] Passwort-Toggle (Auge-Icon) + Passwort-Staerke-Anzeige
+- [x] Dark Mode (Toggle im Header, CSS-Variablen fuer Light/Dark)
+- [x] Onboarding-Wizard (Logo, Farbe, Sportarten nach Registrierung)
+- [x] Rate Limiting (Brute-Force-Schutz auf Auth-Endpoints)
+- [x] Profilbild-Upload (API + Multer)
+- [x] Vereinshomepage-System (Backend: Sektionen-basiert, auto-generiert)
+- [x] Turnier-Landingpages (Backend: oeffentliche Werbeseiten fuer Turniere)
+
+### Offen:
+- [ ] Mobile App (Expo React Native) — kommt als letztes
+- [ ] Vereinshomepage Frontend-Editor (Sektionen drag&drop, Vorschau)
+- [ ] Turnier-Landingpage Frontend-Editor
+- [ ] Vereinshomepage oeffentliche Darstellung (SSR-Seite fuer Besucher)
+- [ ] 2-Faktor-Authentifizierung (TOTP)
+- [ ] Push-Notifications (Web mit Service Worker)
+- [ ] Subdomain-Routing (fckunchen.clubos.de → Vereinshomepage)
 
 ---
 
-## 🔑 Zugangsdaten (Entwicklung)
+## 🔑 Test-Zugangsdaten (Entwicklung)
 
 ```
-DB_NAME=clubos_dev
-DB_USER=clubos
-DB_PASSWORD=→ aus .env
-JWT_SECRET=→ aus .env
+Passwort fuer alle: ClubOS2024!
+
+Superadmin:  admin@clubos.de
+Admin:       vorstand@fckunchen.de
+Trainer:     trainer@fckunchen.de
+Mitglied:    spieler@fckunchen.de
+Elternteil:  eltern@fckunchen.de
 ```
+
+Testdaten laden: `npx prisma db seed --schema=apps/backend/prisma/schema.prisma`
 
 ---
 
-## 💡 Weitere geplante Features (Backlog)
+## 💡 Backlog (Zukunft)
 
-- **KI-Trainer-Assistent:** "Erstelle mir einen Trainingsplan für die U12"
-- **Fahrtenbörse:** Fahrgemeinschaften zu Auswärtsspielen
-- **Sponsoren-Modul:** Werbepartner mit Logo-Anzeige
-- **Hallenbelegungs-Tool:** Welche Mannschaft trainiert wann wo
-- **Schiedsrichter-Einteilung:** Automatisch mit Benachrichtigung
-- **DFBnet-Schnittstelle:** Spielerlizenzen abrufen
-- **Eltern-Portal:** Nur relevante Jugendmannschaft sichtbar
-- **Buchhaltung:** SEPA-Lastschrift, DATEV-Export, E-Rechnung (ZUGFeRD)
+- **KI-Trainer-Assistent:** "Erstelle mir einen Trainingsplan fuer die U12"
+- **E-Rechnung (ZUGFeRD):** Automatische Rechnungserstellung
+- **Subdomain-Routing:** fckunchen.clubos.de
+- **Push-Notifications:** Firebase Cloud Messaging

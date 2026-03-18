@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -15,6 +15,7 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { MobileSidebar } from './mobile-sidebar';
 import { Badge } from '@/components/ui/badge';
+import { DarkModeToggle } from '@/components/dark-mode-toggle';
 
 const ROLLEN_LABEL: Record<string, string> = {
   SUPERADMIN: 'Superadmin',
@@ -33,6 +34,8 @@ export function Header() {
     router.push('/anmelden');
   };
 
+  const istVerifiziert = benutzer?.emailVerifiziert;
+
   return (
     <header className="flex h-16 items-center gap-4 border-b bg-card px-4">
       <MobileSidebar />
@@ -42,6 +45,8 @@ export function Header() {
           {tenant?.name || 'ClubOS'}
         </h2>
       </div>
+
+      <DarkModeToggle />
 
       {/* User-Dropdown */}
       <DropdownMenu>
@@ -55,15 +60,31 @@ export function Header() {
             <span className="hidden md:inline text-sm">
               {benutzer?.email}
             </span>
+            {!istVerifiziert && (
+              <ShieldAlert className="h-4 w-4 text-yellow-500" />
+            )}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium">{benutzer?.email}</p>
-              <Badge variant="secondary" className="w-fit">
-                {ROLLEN_LABEL[benutzer?.rolle || ''] || benutzer?.rolle}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="w-fit">
+                  {ROLLEN_LABEL[benutzer?.rolle || ''] || benutzer?.rolle}
+                </Badge>
+                {istVerifiziert ? (
+                  <Badge variant="outline" className="w-fit text-green-600 border-green-300">
+                    <ShieldCheck className="mr-1 h-3 w-3" />
+                    Verifiziert
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="w-fit text-yellow-600 border-yellow-300">
+                    <ShieldAlert className="mr-1 h-3 w-3" />
+                    Nicht verifiziert
+                  </Badge>
+                )}
+              </div>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
