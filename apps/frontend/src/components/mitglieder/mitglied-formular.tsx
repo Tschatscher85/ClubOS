@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -37,28 +38,27 @@ interface MitgliedFormularProps {
 }
 
 const SPORTARTEN = [
-  'FUSSBALL',
-  'HANDBALL',
-  'BASKETBALL',
-  'FOOTBALL',
-  'TENNIS',
-  'TURNEN',
-  'SCHWIMMEN',
-  'LEICHTATHLETIK',
-  'SONSTIGES',
+  'FUSSBALL', 'HANDBALL', 'BASKETBALL', 'FOOTBALL',
+  'TENNIS', 'TURNEN', 'SCHWIMMEN', 'LEICHTATHLETIK', 'SONSTIGES',
 ];
 
 const SPORTARTEN_LABEL: Record<string, string> = {
-  FUSSBALL: 'Fussball',
-  HANDBALL: 'Handball',
-  BASKETBALL: 'Basketball',
-  FOOTBALL: 'Football',
-  TENNIS: 'Tennis',
-  TURNEN: 'Turnen',
-  SCHWIMMEN: 'Schwimmen',
-  LEICHTATHLETIK: 'Leichtathletik',
-  SONSTIGES: 'Sonstiges',
+  FUSSBALL: 'Fußball', HANDBALL: 'Handball', BASKETBALL: 'Basketball',
+  FOOTBALL: 'Football', TENNIS: 'Tennis', TURNEN: 'Turnen',
+  SCHWIMMEN: 'Schwimmen', LEICHTATHLETIK: 'Leichtathletik', SONSTIGES: 'Sonstiges',
 };
+
+function berechneAlter(geburtsdatum: string): number | null {
+  if (!geburtsdatum) return null;
+  const heute = new Date();
+  const geb = new Date(geburtsdatum);
+  let alter = heute.getFullYear() - geb.getFullYear();
+  const monatsDiff = heute.getMonth() - geb.getMonth();
+  if (monatsDiff < 0 || (monatsDiff === 0 && heute.getDate() < geb.getDate())) {
+    alter--;
+  }
+  return alter;
+}
 
 export function MitgliedFormular({
   offen,
@@ -68,24 +68,52 @@ export function MitgliedFormular({
 }: MitgliedFormularProps) {
   const istBearbeitung = !!mitglied;
 
-  const [vorname, setVorname] = useState(mitglied?.firstName || '');
-  const [nachname, setNachname] = useState(mitglied?.lastName || '');
-  const [email, setEmail] = useState(mitglied?.email || '');
-  const [geburtsdatum, setGeburtsdatum] = useState(
-    mitglied?.birthDate ? mitglied.birthDate.split('T')[0] : '',
-  );
-  const [eintrittsdatum, setEintrittsdatum] = useState(
-    mitglied?.joinDate ? mitglied.joinDate.split('T')[0] : new Date().toISOString().split('T')[0],
-  );
-  const [telefon, setTelefon] = useState(mitglied?.phone || '');
-  const [adresse, setAdresse] = useState(mitglied?.address || '');
-  const [gewaehlteSportarten, setGewaehlteSportarten] = useState<string[]>(
-    mitglied?.sport || [],
-  );
-  const [elternEmail, setElternEmail] = useState(mitglied?.parentEmail || '');
-  const [status, setStatus] = useState(mitglied?.status || 'PENDING');
+  const [vorname, setVorname] = useState('');
+  const [nachname, setNachname] = useState('');
+  const [email, setEmail] = useState('');
+  const [geburtsdatum, setGeburtsdatum] = useState('');
+  const [eintrittsdatum, setEintrittsdatum] = useState(new Date().toISOString().split('T')[0]);
+  const [telefon, setTelefon] = useState('');
+  const [adresse, setAdresse] = useState('');
+  const [gewaehlteSportarten, setGewaehlteSportarten] = useState<string[]>([]);
+  const [elternEmail, setElternEmail] = useState('');
+  const [status, setStatus] = useState('PENDING');
   const [ladend, setLadend] = useState(false);
   const [fehler, setFehler] = useState('');
+
+  // Felder aktualisieren wenn ein anderes Mitglied geoeffnet wird
+  useEffect(() => {
+    if (offen && mitglied) {
+      setVorname(mitglied.firstName || '');
+      setNachname(mitglied.lastName || '');
+      setEmail(mitglied.email || '');
+      setGeburtsdatum(mitglied.birthDate ? mitglied.birthDate.split('T')[0] : '');
+      setEintrittsdatum(mitglied.joinDate ? mitglied.joinDate.split('T')[0] : new Date().toISOString().split('T')[0]);
+      setTelefon(mitglied.phone || '');
+      setAdresse(mitglied.address || '');
+      setGewaehlteSportarten(mitglied.sport || []);
+      setElternEmail(mitglied.parentEmail || '');
+      setStatus(mitglied.status || 'PENDING');
+      setFehler('');
+    } else if (offen && !mitglied) {
+      // Neues Mitglied - alles zuruecksetzen
+      setVorname('');
+      setNachname('');
+      setEmail('');
+      setGeburtsdatum('');
+      setEintrittsdatum(new Date().toISOString().split('T')[0]);
+      setTelefon('');
+      setAdresse('');
+      setGewaehlteSportarten([]);
+      setElternEmail('');
+      setStatus('PENDING');
+      setFehler('');
+    }
+  }, [offen, mitglied]);
+
+  // Alter berechnen fuer Eltern-E-Mail Sichtbarkeit
+  const alter = useMemo(() => berechneAlter(geburtsdatum), [geburtsdatum]);
+  const istMinderjaehrig = alter !== null && alter < 18;
 
   const handleSportartToggle = (sportart: string) => {
     setGewaehlteSportarten((prev) =>
@@ -101,7 +129,7 @@ export function MitgliedFormular({
     setFehler('');
 
     if (gewaehlteSportarten.length === 0) {
-      setFehler('Bitte mindestens eine Sportart auswaehlen.');
+      setFehler('Bitte mindestens eine Sportart auswählen.');
       setLadend(false);
       return;
     }
@@ -116,8 +144,8 @@ export function MitgliedFormular({
         ...(telefon && { telefon }),
         ...(adresse && { adresse }),
         sportarten: gewaehlteSportarten,
-        ...(elternEmail && { elternEmail }),
-        ...(istBearbeitung && { status }),
+        ...(istMinderjaehrig && elternEmail && { elternEmail }),
+        status,
       };
 
       if (istBearbeitung && mitglied) {
@@ -146,12 +174,13 @@ export function MitgliedFormular({
           </DialogTitle>
           <DialogDescription>
             {istBearbeitung
-              ? 'Mitgliedsdaten aktualisieren'
+              ? `${mitglied?.firstName} ${mitglied?.lastName} bearbeiten`
               : 'Erfassen Sie die Daten des neuen Mitglieds'}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Name */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="vorname">Vorname *</Label>
@@ -175,6 +204,7 @@ export function MitgliedFormular({
             </div>
           </div>
 
+          {/* E-Mail */}
           <div className="space-y-2">
             <Label htmlFor="email">E-Mail-Adresse</Label>
             <Input
@@ -185,10 +215,11 @@ export function MitgliedFormular({
               placeholder="max@beispiel.de"
             />
             <p className="text-xs text-muted-foreground">
-              Wird fuer den persoenlichen Login verwendet
+              Wird für den persönlichen Login verwendet
             </p>
           </div>
 
+          {/* Geburtsdatum + Eintrittsdatum */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="geburtsdatum">Geburtsdatum</Label>
@@ -198,6 +229,14 @@ export function MitgliedFormular({
                 value={geburtsdatum}
                 onChange={(e) => setGeburtsdatum(e.target.value)}
               />
+              {alter !== null && (
+                <p className="text-xs text-muted-foreground">
+                  Alter: {alter} Jahre
+                  {istMinderjaehrig && (
+                    <Badge variant="secondary" className="ml-2 text-xs">Minderjährig</Badge>
+                  )}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="eintrittsdatum">Eintrittsdatum *</Label>
@@ -211,6 +250,7 @@ export function MitgliedFormular({
             </div>
           </div>
 
+          {/* Telefon */}
           <div className="space-y-2">
             <Label htmlFor="telefon">Telefon</Label>
             <Input
@@ -221,17 +261,18 @@ export function MitgliedFormular({
             />
           </div>
 
+          {/* Adresse */}
           <div className="space-y-2">
             <Label htmlFor="adresse">Adresse</Label>
             <Input
               id="adresse"
               value={adresse}
               onChange={(e) => setAdresse(e.target.value)}
-              placeholder="Musterstr. 1, 73037 Goeppingen"
+              placeholder="Musterstr. 1, 73037 Göppingen"
             />
           </div>
 
-          {/* Mehrfach-Auswahl Sportarten */}
+          {/* Sportarten */}
           <div className="space-y-2">
             <Label>Sportarten *</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -256,35 +297,39 @@ export function MitgliedFormular({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="elternEmail">Eltern-E-Mail (bei Jugendlichen)</Label>
-            <Input
-              id="elternEmail"
-              type="email"
-              value={elternEmail}
-              onChange={(e) => setElternEmail(e.target.value)}
-              placeholder="eltern@beispiel.de"
-            />
-            <p className="text-xs text-muted-foreground">
-              Eltern sehen dann ihr Kind und die zugehoerigen Abteilungen/Teams
-            </p>
-          </div>
-
-          {istBearbeitung && (
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                id="status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option value="PENDING">Ausstehend</option>
-                <option value="ACTIVE">Aktiv</option>
-                <option value="INACTIVE">Inaktiv</option>
-                <option value="CANCELLED">Ausgetreten</option>
-              </Select>
+          {/* Eltern-E-Mail - nur bei Minderjährigen */}
+          {istMinderjaehrig && (
+            <div className="space-y-2 rounded-lg border border-orange-200 bg-orange-50 p-4">
+              <Label htmlFor="elternEmail" className="text-orange-800">
+                Eltern-E-Mail (Pflicht bei Minderjährigen)
+              </Label>
+              <Input
+                id="elternEmail"
+                type="email"
+                value={elternEmail}
+                onChange={(e) => setElternEmail(e.target.value)}
+                placeholder="eltern@beispiel.de"
+              />
+              <p className="text-xs text-orange-700">
+                Eltern erhalten Zugang zum Eltern-Portal und sehen Teams, Kalender und Nachrichten ihres Kindes.
+              </p>
             </div>
           )}
+
+          {/* Status */}
+          <div className="space-y-2">
+            <Label htmlFor="status">Status</Label>
+            <Select
+              id="status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
+              <option value="PENDING">Ausstehend</option>
+              <option value="ACTIVE">Aktiv</option>
+              <option value="INACTIVE">Inaktiv</option>
+              <option value="CANCELLED">Ausgetreten</option>
+            </Select>
+          </div>
 
           {fehler && (
             <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
