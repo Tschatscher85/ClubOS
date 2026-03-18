@@ -122,14 +122,17 @@ export function TeamFormular({
           name: `${m.firstName} ${m.lastName}`,
         }));
 
-      // Fallback: User ohne Mitglied-Profil (z.B. Admin ohne Member-Eintrag)
+      // Fallback: User ohne Mitglied-Profil (z.B. Trainer ohne Member-Eintrag)
       const vorhandeneUserIds = new Set(trainerMitglieder.map((t) => t.id));
       const ohneProfileTrainer = benutzerListe
         .filter((b) => trainerUserIds.has(b.id) && !vorhandeneUserIds.has(b.id))
-        .map((b) => ({
-          id: b.id,
-          name: b.email.split('@')[0],
-        }));
+        .map((b) => {
+          const rollenText = (b.vereinsRollen || []).join(', ') || b.role;
+          return {
+            id: b.id,
+            name: `${b.email.split('@')[0]} (${rollenText})`,
+          };
+        });
 
       setTrainerListe([...trainerMitglieder, ...ohneProfileTrainer]);
     }).catch(() => {});
