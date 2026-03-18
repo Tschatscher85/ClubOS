@@ -8,8 +8,22 @@ import {
   Param,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  Res,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+  ApiConsumes,
+} from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 import { Role } from '@prisma/client';
 import { MemberService } from './member.service';
 import {
@@ -72,6 +86,55 @@ export class MemberController {
     @Body() dto: BatchFreigebenDto,
   ) {
     return this.memberService.batchFreigeben(tenantId, dto.ids);
+  }
+
+  // ==================== CSV Import/Export ====================
+
+  @Post('importieren')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Mitglieder aus CSV-Datei importieren' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('datei'))
+  async csvImportieren(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10 MB
+        ],
+        fileIsRequired: true,
+      }),
+    )
+    datei: Express.Multer.File,
+  ) {
+    if (!datei.originalname.toLowerCase().endsWith('.csv')) {
+      throw new BadRequestException(
+        'Nur CSV-Dateien werden unterstuetzt. Bitte laden Sie eine .csv-Datei hoch.',
+      );
+    }
+
+    const csvInhalt = datei.buffer.toString('utf-8');
+
+    return this.memberService.csvImportieren(tenantId, csvInhalt);
+  }
+
+  @Get('exportieren')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Alle Mitglieder als CSV exportieren' })
+  async csvExportieren(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Res() res: Response,
+  ) {
+    const csvInhalt = await this.memberService.csvExportieren(tenantId);
+
+    const dateiname = `mitglieder-export-${new Date().toISOString().split('T')[0]}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${dateiname}"`,
+    );
+    res.send(csvInhalt);
   }
 
   // ==================== Eltern-Portal ====================

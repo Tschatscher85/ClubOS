@@ -224,6 +224,7 @@ model Event {
   reminders        Reminder[]
   comments         EventComment[]
   schnellTokens    SchnellAnmeldungToken[]
+  landingpage      EventLandingpage?
 
   @@index([tenantId])
   @@index([teamId])
@@ -817,6 +818,33 @@ model TurnierLandingpage {
   seoBeschreibung String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([slug])
+}
+
+// ==================== Event-Landingpages ====================
+
+model EventLandingpage {
+  id              String   @id @default(cuid())
+  eventId         String   @unique
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  istAktiv        Boolean  @default(true)
+  slug            String   @unique    // z.B. "sommercamp-2026"
+  // Inhalte
+  titel           String
+  beschreibung    String?  // HTML fuer Werbezwecke
+  bannerBildUrl   String?
+  ort             String?
+  datum           String?  // Freitext: "14.-15. Juni 2026"
+  zeitplan        String?  // Ablauf/Zeitplan
+  anfahrt         String?  // Anfahrtsbeschreibung
+  kontaktEmail    String?
+  kontaktTelefon  String?
+  // SEO
+  seoTitel        String?
+  seoBeschreibung String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([slug])
 }

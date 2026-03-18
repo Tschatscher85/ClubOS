@@ -405,6 +405,269 @@ export class MemberService {
     });
   }
 
+  // ==================== CSV Import/Export ====================
+
+  /**
+   * Importiert Mitglieder aus einer allgemeinen CSV-Datei.
+   * Erkennt automatisch Semikolon- oder Komma-Trennung.
+   * Erkennt Duplikate anhand von E-Mail ODER Vorname+Nachname+Geburtsdatum.
+   */
+  async csvImportieren(
+    tenantId: string,
+    csvContent: string,
+  ): Promise<{ importiert: number; uebersprungen: number; fehler: string[] }> {
+    const ergebnis = {
+      importiert: 0,
+      uebersprungen: 0,
+      fehler: [] as string[],
+    };
+
+    // BOM entfernen falls vorhanden
+    const bereinigterInhalt = csvContent.replace(/^\uFEFF/, '');
+
+    const zeilen = bereinigterInhalt.split(/\r?\n/).filter((z) => z.trim());
+
+    if (zeilen.length < 2) {
+      ergebnis.fehler.push(
+        'CSV-Datei enthaelt keine Daten (mindestens Kopfzeile und eine Datenzeile erforderlich).',
+      );
+      return ergebnis;
+    }
+
+    // Trennzeichen automatisch erkennen (Semikolon oder Komma)
+    const trennzeichen = zeilen[0].includes(';') ? ';' : ',';
+
+    // Kopfzeile parsen
+    const kopfzeile = this.csvZeileParsen(zeilen[0], trennzeichen);
+
+    // Pflichtfelder pruefen
+    const pflichtfelder = ['Vorname', 'Nachname'];
+    for (const feld of pflichtfelder) {
+      if (!kopfzeile.map((s) => s.trim()).includes(feld)) {
+        ergebnis.fehler.push(
+          `Pflichtfeld "${feld}" fehlt in der CSV-Kopfzeile.`,
+        );
+      }
+    }
+    if (ergebnis.fehler.length > 0) {
+      return ergebnis;
+    }
+
+    // Bestehende Mitglieder laden fuer Duplikat-Erkennung
+    const bestehendeMembers = await this.prisma.member.findMany({
+      where: { tenantId },
+      select: { firstName: true, lastName: true, birthDate: true, email: true },
+    });
+
+    const duplikatSetName = new Set(
+      bestehendeMembers.map((m) =>
+        `${(m.firstName || '').toLowerCase().trim()}|${(m.lastName || '').toLowerCase().trim()}|${m.birthDate ? m.birthDate.toISOString().split('T')[0] : 'kein-datum'}`,
+      ),
+    );
+
+    const duplikatSetEmail = new Set(
+      bestehendeMembers
+        .filter((m) => m.email)
+        .map((m) => m.email!.toLowerCase().trim()),
+    );
+
+    // Aktuelle Anzahl fuer Mitgliedsnummern-Generierung
+    let laufendeNummer =
+      (await this.prisma.member.count({ where: { tenantId } })) + 1;
+
+    // Datenzeilen verarbeiten
+    for (let i = 1; i < zeilen.length; i++) {
+      try {
+        const werte = this.csvZeileParsen(zeilen[i], trennzeichen);
+        const zeileObj = this.csvWerteZuObjekt(kopfzeile, werte);
+
+        const vorname = (zeileObj['Vorname'] || '').trim();
+        const nachname = (zeileObj['Nachname'] || '').trim();
+
+        if (!vorname || !nachname) {
+          ergebnis.fehler.push(
+            `Zeile ${i + 1}: Vorname oder Nachname fehlt.`,
+          );
+          continue;
+        }
+
+        const email = (zeileObj['E-Mail'] || '').trim() || null;
+        const geburtsdatum = this.deutschesDatumParsen(zeileObj['Geburtsdatum']);
+
+        // Duplikat-Pruefung: E-Mail ODER Vorname+Nachname+Geburtsdatum
+        if (email && duplikatSetEmail.has(email.toLowerCase())) {
+          ergebnis.uebersprungen++;
+          continue;
+        }
+
+        const nameSchluessel = `${vorname.toLowerCase()}|${nachname.toLowerCase()}|${geburtsdatum ? geburtsdatum.toISOString().split('T')[0] : 'kein-datum'}`;
+        if (duplikatSetName.has(nameSchluessel)) {
+          ergebnis.uebersprungen++;
+          continue;
+        }
+
+        // Sportart mappen
+        const sportartRaw = (zeileObj['Sportart'] || '').trim();
+        const sport: string[] = sportartRaw
+          ? sportartRaw.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean)
+          : [];
+
+        // Mitgliedsnummer
+        const mitgliedsnummer =
+          (zeileObj['Mitgliedsnummer'] || '').trim() ||
+          `M-${String(laufendeNummer).padStart(4, '0')}`;
+
+        await this.prisma.member.create({
+          data: {
+            tenantId,
+            memberNumber: mitgliedsnummer,
+            firstName: vorname,
+            lastName: nachname,
+            email,
+            birthDate: geburtsdatum,
+            phone: (zeileObj['Telefon'] || '').trim() || null,
+            address: (zeileObj['Adresse'] || '').trim() || null,
+            sport,
+            joinDate: new Date(),
+            parentEmail: (zeileObj['Eltern-E-Mail'] || '').trim() || null,
+          },
+        });
+
+        // Duplikat-Sets aktualisieren
+        if (email) duplikatSetEmail.add(email.toLowerCase());
+        duplikatSetName.add(nameSchluessel);
+        laufendeNummer++;
+        ergebnis.importiert++;
+      } catch (fehler) {
+        const meldung =
+          fehler instanceof Error ? fehler.message : String(fehler);
+        ergebnis.fehler.push(`Zeile ${i + 1}: ${meldung}`);
+      }
+    }
+
+    return ergebnis;
+  }
+
+  /**
+   * Exportiert alle Mitglieder des Tenants als CSV-Datei.
+   * Semikolon-getrennt mit BOM fuer Excel-Kompatibilitaet.
+   */
+  async csvExportieren(tenantId: string): Promise<string> {
+    const mitglieder = await this.prisma.member.findMany({
+      where: { tenantId },
+      orderBy: { lastName: 'asc' },
+    });
+
+    const bom = '\uFEFF';
+
+    const spalten = [
+      'Mitgliedsnummer',
+      'Vorname',
+      'Nachname',
+      'E-Mail',
+      'Geburtsdatum',
+      'Telefon',
+      'Adresse',
+      'Sportart',
+      'Status',
+      'Beitrittsdatum',
+      'Eltern-E-Mail',
+    ];
+
+    const kopfzeile = spalten.join(';');
+
+    const datenzeilen = mitglieder.map((m) => {
+      const werte = [
+        this.csvWertEscapen(m.memberNumber || ''),
+        this.csvWertEscapen(m.firstName || ''),
+        this.csvWertEscapen(m.lastName || ''),
+        this.csvWertEscapen(m.email || ''),
+        this.datumFormatieren(m.birthDate),
+        this.csvWertEscapen(m.phone || ''),
+        this.csvWertEscapen(m.address || ''),
+        this.csvWertEscapen(m.sport.join(', ')),
+        this.csvWertEscapen(m.status || ''),
+        this.datumFormatieren(m.joinDate),
+        this.csvWertEscapen(m.parentEmail || ''),
+      ];
+      return werte.join(';');
+    });
+
+    return bom + [kopfzeile, ...datenzeilen].join('\r\n');
+  }
+
+  // ==================== CSV-Hilfsfunktionen ====================
+
+  private csvZeileParsen(zeile: string, trennzeichen: string): string[] {
+    const ergebnis: string[] = [];
+    let aktuellerWert = '';
+    let inAnfuehrungszeichen = false;
+
+    for (let i = 0; i < zeile.length; i++) {
+      const zeichen = zeile[i];
+
+      if (zeichen === '"') {
+        if (inAnfuehrungszeichen && zeile[i + 1] === '"') {
+          aktuellerWert += '"';
+          i++;
+        } else {
+          inAnfuehrungszeichen = !inAnfuehrungszeichen;
+        }
+      } else if (zeichen === trennzeichen && !inAnfuehrungszeichen) {
+        ergebnis.push(aktuellerWert);
+        aktuellerWert = '';
+      } else {
+        aktuellerWert += zeichen;
+      }
+    }
+
+    ergebnis.push(aktuellerWert);
+    return ergebnis;
+  }
+
+  private csvWerteZuObjekt(
+    kopfzeile: string[],
+    werte: string[],
+  ): Record<string, string> {
+    const obj: Record<string, string> = {};
+    kopfzeile.forEach((spalte, index) => {
+      obj[spalte.trim()] = (werte[index] || '').trim();
+    });
+    return obj;
+  }
+
+  private deutschesDatumParsen(wert: string | undefined): Date | null {
+    if (!wert || !wert.trim()) return null;
+
+    const teile = wert.trim().split('.');
+    if (teile.length !== 3) return null;
+
+    const tag = parseInt(teile[0], 10);
+    const monat = parseInt(teile[1], 10);
+    const jahr = parseInt(teile[2], 10);
+
+    if (isNaN(tag) || isNaN(monat) || isNaN(jahr)) return null;
+    if (tag < 1 || tag > 31 || monat < 1 || monat > 12) return null;
+
+    return new Date(jahr, monat - 1, tag);
+  }
+
+  private datumFormatieren(datum: Date | null | undefined): string {
+    if (!datum) return '';
+    const d = new Date(datum);
+    const tag = String(d.getDate()).padStart(2, '0');
+    const monat = String(d.getMonth() + 1).padStart(2, '0');
+    const jahr = d.getFullYear();
+    return `${tag}.${monat}.${jahr}`;
+  }
+
+  private csvWertEscapen(wert: string): string {
+    if (wert.includes(';') || wert.includes('"') || wert.includes('\n')) {
+      return `"${wert.replace(/"/g, '""')}"`;
+    }
+    return wert;
+  }
+
   async statistik(tenantId: string) {
     const [gesamt, aktiv, ausstehend, sportarten] = await Promise.all([
       this.prisma.member.count({ where: { tenantId } }),

@@ -83,6 +83,16 @@ export class HomepageController {
     return { nachricht: 'Sektion geloescht.' };
   }
 
+  @Post('admin/ki-generieren')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Homepage-Inhalte mit KI generieren' })
+  @ApiResponse({ status: 200, description: 'KI-generierte Homepage' })
+  @ApiResponse({ status: 400, description: 'KI nicht konfiguriert oder Fehler bei der Generierung' })
+  async mitKiGenerieren(@AktuellerBenutzer('tenantId') tenantId: string) {
+    return this.homepageService.mitKiGenerieren(tenantId);
+  }
+
   // ==================== Turnier-Landingpages (Admin) ====================
 
   @Post('admin/turnier-landingpage')
@@ -109,6 +119,32 @@ export class HomepageController {
     return this.homepageService.turnierLandingpageAktualisieren(id, daten as Parameters<typeof this.homepageService.turnierLandingpageAktualisieren>[1]);
   }
 
+  // ==================== Event-Landingpages (Admin) ====================
+
+  @Post('admin/event-landingpage')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Event-Landingpage erstellen' })
+  async eventLandingpageErstellen(
+    @Body() daten: { eventId: string; slug: string; titel: string; beschreibung?: string; ort?: string; datum?: string; zeitplan?: string; anfahrt?: string; kontaktEmail?: string; kontaktTelefon?: string },
+  ) {
+    return this.homepageService.eventLandingpageErstellen(
+      daten.eventId,
+      daten,
+    );
+  }
+
+  @Put('admin/event-landingpage/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Event-Landingpage aktualisieren' })
+  async eventLandingpageAktualisieren(
+    @Param('id') id: string,
+    @Body() daten: Record<string, unknown>,
+  ) {
+    return this.homepageService.eventLandingpageAktualisieren(id, daten as Parameters<typeof this.homepageService.eventLandingpageAktualisieren>[1]);
+  }
+
   // ==================== Oeffentliche Endpoints (ohne Auth) ====================
 
   @Get('verein/:subdomain')
@@ -127,5 +163,14 @@ export class HomepageController {
   @ApiResponse({ status: 404, description: 'Turnier nicht gefunden' })
   async turnierLandingpageOeffentlich(@Param('slug') slug: string) {
     return this.homepageService.turnierLandingpageOeffentlich(slug);
+  }
+
+  @Get('event/:slug')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Oeffentliche Event-Landingpage laden' })
+  @ApiResponse({ status: 200, description: 'Event-Landingpage mit Teilnahmestatistik' })
+  @ApiResponse({ status: 404, description: 'Event nicht gefunden' })
+  async eventLandingpageOeffentlich(@Param('slug') slug: string) {
+    return this.homepageService.eventLandingpageOeffentlich(slug);
   }
 }
