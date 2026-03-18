@@ -368,14 +368,6 @@ export default function EinstellungenPage() {
           </Link>
         )}
         {istAdmin && (
-          <Link href="/einstellungen/benutzer">
-            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-              <Users className="h-3 w-3 mr-1" />
-              Benutzer
-            </Badge>
-          </Link>
-        )}
-        {istAdmin && (
           <Link href="/einstellungen/empfehlen">
             <Badge variant="outline" className="cursor-pointer hover:bg-muted">
               <Gift className="h-3 w-3 mr-1" />
