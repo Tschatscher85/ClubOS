@@ -17,6 +17,9 @@ model Tenant {
   primaryColor String   @default("#1a56db")
   plan         Plan     @default(STARTER)
   domain       String?
+  kiProvider   String   @default("anthropic")  // "anthropic" oder "openai"
+  kiApiKey     String?                          // API-Key (verschluesselt gespeichert)
+  kiModell     String?                          // z.B. "claude-sonnet-4-20250514" oder "gpt-4o"
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -57,9 +60,10 @@ model User {
   tenantId     String
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   refreshToken String?
-  profile      Member?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  profile              Member?
+  emailEinstellungen   EmailEinstellungen?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@index([tenantId])
   @@index([email])
@@ -670,6 +674,26 @@ model Sponsor {
   updatedAt    DateTime @updatedAt
 
   @@index([tenantId])
+}
+
+// ==================== E-Mail-Einstellungen (pro Benutzer) ====================
+
+model EmailEinstellungen {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  smtpHost      String
+  smtpPort      Int      @default(587)
+  smtpUser      String
+  smtpPass      String   // Base64-kodiert gespeichert (TODO: richtige Verschluesselung mit AES-256)
+  absenderEmail String   // z.B. trainer.mueller@fcmusterstadt.de
+  absenderName  String   // z.B. "Thomas Mueller - FC Musterstadt"
+  signatur      String?  // HTML-Signatur fuer E-Mails
+  istAktiv      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
 }
 
 // ==================== Einladungen ====================

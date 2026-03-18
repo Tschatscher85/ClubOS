@@ -24,6 +24,8 @@ import { SponsorModule } from './sponsor/sponsor.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { SchiedsrichterModule } from './schiedsrichter/schiedsrichter.module';
 import { BuchhaltungModule } from './buchhaltung/buchhaltung.module';
+import { KiModule } from './ki/ki.module';
+import { EmailEinstellungenModule } from './email/email-einstellungen.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -33,6 +35,7 @@ import configuration from './config/configuration';
       load: [configuration],
     }),
     PrismaModule,
+    KiModule,
     AuthModule,
     TenantModule,
     UserModule,
@@ -56,6 +59,7 @@ import configuration from './config/configuration';
     RealtimeModule,
     SchiedsrichterModule,
     BuchhaltungModule,
+    EmailEinstellungenModule,
   ],
 })
 export class AppModule {}

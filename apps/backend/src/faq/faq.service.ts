@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { KiService } from '../ki/ki.service';
 import { ErstelleFaqDto, AktualisiereFaqDto } from './dto/erstelle-faq.dto';
-import Anthropic from '@anthropic-ai/sdk';
 
 export interface AutomatischeAntwort {
   antwort: string;
@@ -12,17 +11,10 @@ export interface AutomatischeAntwort {
 
 @Injectable()
 export class FaqService {
-  private client: Anthropic | null = null;
-
   constructor(
     private prisma: PrismaService,
-    private configService: ConfigService,
-  ) {
-    const apiKey = this.configService.get<string>('ANTHROPIC_API_KEY');
-    if (apiKey) {
-      this.client = new Anthropic({ apiKey });
-    }
-  }
+    private kiService: KiService,
+  ) {}
 
   /** Neue FAQ erstellen */
   async faqErstellen(tenantId: string, dto: ErstelleFaqDto) {
@@ -83,7 +75,7 @@ export class FaqService {
   /**
    * Automatisch auf eine Frage antworten.
    * 1. Sucht zuerst in bestehenden FAQs nach einer passenden Antwort.
-   * 2. Falls nichts gefunden, wird Claude KI genutzt um eine Antwort zu generieren.
+   * 2. Falls nichts gefunden, wird KI genutzt um eine Antwort zu generieren.
    */
   async automatischAntworten(
     tenantId: string,
@@ -128,49 +120,25 @@ export class FaqService {
     }
 
     // Keine passende FAQ gefunden -> KI-Antwort generieren
-    if (!this.client) {
-      throw new BadRequestException(
-        'KI-FAQ ist nicht konfiguriert. ANTHROPIC_API_KEY fehlt.',
-      );
-    }
-
-    // Kontext aus bestehenden FAQs aufbauen
     const faqKontext = faqs.length > 0
       ? faqs
           .map((faq) => `Frage: ${faq.question}\nAntwort: ${faq.answer}`)
           .join('\n\n')
       : 'Keine bestehenden FAQs vorhanden.';
 
-    const response = await this.client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: `Du bist ein hilfreicher FAQ-Assistent fuer einen Sportverein. Beantworte die folgende Frage basierend auf den bestehenden FAQs als Kontext. Antworte freundlich, kurz und praezise auf Deutsch. Falls du keine passende Antwort findest, sage hoeflich, dass du die Frage leider nicht beantworten kannst und empfehle, den Trainer oder Vorstand direkt zu kontaktieren.
+    const systemPrompt = `Du bist ein hilfreicher FAQ-Assistent fuer einen Sportverein. Beantworte die folgende Frage basierend auf den bestehenden FAQs als Kontext. Antworte freundlich, kurz und praezise auf Deutsch. Falls du keine passende Antwort findest, sage hoeflich, dass du die Frage leider nicht beantworten kannst und empfehle, den Trainer oder Vorstand direkt zu kontaktieren.`;
 
-Bestehende FAQs:
+    const userPrompt = `Bestehende FAQs:
 ${faqKontext}
 
 Frage des Nutzers: ${frage}
 
-Antworte direkt ohne Einfuehrung oder Erklaerung.`,
-        },
-      ],
-    });
+Antworte direkt ohne Einfuehrung oder Erklaerung.`;
 
-    const textBlock = response.content.find(
-      (block): block is Anthropic.TextBlock => block.type === 'text',
-    );
-
-    if (!textBlock) {
-      throw new BadRequestException(
-        'KI konnte keine Antwort generieren. Bitte versuchen Sie es erneut.',
-      );
-    }
+    const antwort = await this.kiService.textGenerieren(tenantId, systemPrompt, userPrompt);
 
     return {
-      antwort: textBlock.text,
+      antwort: antwort.text,
       kiGeneriert: true,
     };
   }

@@ -1,12 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { EmailEinstellungenService } from '../email/email-einstellungen.service';
 
 @Injectable()
 export class MailService {
   private transporter: nodemailer.Transporter | null = null;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private emailEinstellungenService: EmailEinstellungenService,
+  ) {
     const smtpHost = this.configService.get<string>('SMTP_HOST');
     if (smtpHost) {
       this.transporter = nodemailer.createTransport({
@@ -20,17 +24,61 @@ export class MailService {
     }
   }
 
+  /**
+   * Transporter fuer einen bestimmten Benutzer erstellen.
+   * Prueft zuerst die persoenlichen SMTP-Einstellungen, faellt auf den globalen Transporter zurueck.
+   */
+  async transporterFuerBenutzer(
+    userId: string,
+  ): Promise<nodemailer.Transporter | null> {
+    // Persoenliche Einstellungen pruefen
+    const persoenlicherTransporter =
+      await this.emailEinstellungenService.transporterFuerBenutzer(userId);
+
+    if (persoenlicherTransporter) {
+      return persoenlicherTransporter;
+    }
+
+    // Fallback auf globalen Transporter
+    return this.transporter;
+  }
+
   async einladungSenden(
     email: string,
     vorname: string,
     vereinsname: string,
     link: string,
     anzahlFormulare: number = 0,
+    senderId?: string,
   ): Promise<void> {
     const formularHinweis =
       anzahlFormulare > 0
         ? `<p>Es ${anzahlFormulare === 1 ? 'muss 1 Formular' : `muessen ${anzahlFormulare} Formulare`} ausgefuellt und unterschrieben werden.</p>`
         : '';
+
+    let absenderEmail =
+      this.configService.get<string>('SMTP_FROM') || 'noreply@clubos.de';
+    let absenderName = vereinsname;
+    let signatur = '';
+
+    // Persoenliche Absender-Infos laden, falls senderId vorhanden
+    let aktuellerTransporter: nodemailer.Transporter | null = this.transporter;
+
+    if (senderId) {
+      const persoenlicheInfos =
+        await this.emailEinstellungenService.absenderInfos(senderId);
+
+      if (persoenlicheInfos) {
+        absenderEmail = persoenlicheInfos.absenderEmail;
+        absenderName = persoenlicheInfos.absenderName;
+        signatur = persoenlicheInfos.signatur
+          ? `<hr/>${persoenlicheInfos.signatur}`
+          : '';
+      }
+
+      // Persoenlichen Transporter verwenden, falls vorhanden
+      aktuellerTransporter = await this.transporterFuerBenutzer(senderId);
+    }
 
     const htmlInhalt = `<h2>Hallo ${vorname},</h2>
       <p>Sie wurden zum <strong>${vereinsname}</strong> eingeladen.</p>
@@ -38,15 +86,16 @@ export class MailService {
       <p>Bitte fuellen Sie die Unterlagen aus:</p>
       <p><a href="${link}" style="background:#1a56db;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;">Unterlagen ausfuellen</a></p>
       <p>Der Link ist 30 Tage gueltig.</p>
-      <p>Mit sportlichen Gruessen,<br>${vereinsname}</p>`;
+      <p>Mit sportlichen Gruessen,<br>${absenderName}</p>
+      ${signatur}`;
 
-    if (!this.transporter) {
+    if (!aktuellerTransporter) {
       console.log(`[Mail] SMTP nicht konfiguriert. Einladung an ${email}: ${link}`);
       return;
     }
 
-    await this.transporter.sendMail({
-      from: this.configService.get<string>('SMTP_FROM') || 'noreply@clubos.de',
+    await aktuellerTransporter.sendMail({
+      from: `"${absenderName}" <${absenderEmail}>`,
       to: email,
       subject: `Einladung zum ${vereinsname}`,
       html: htmlInhalt,
@@ -59,7 +108,30 @@ export class MailService {
     vereinsname: string,
     temporaeresPasswort: string,
     loginUrl: string,
+    senderId?: string,
   ): Promise<void> {
+    let absenderEmail =
+      this.configService.get<string>('SMTP_FROM') || 'noreply@clubos.de';
+    let absenderName = vereinsname;
+    let signatur = '';
+
+    let aktuellerTransporter: nodemailer.Transporter | null = this.transporter;
+
+    if (senderId) {
+      const persoenlicheInfos =
+        await this.emailEinstellungenService.absenderInfos(senderId);
+
+      if (persoenlicheInfos) {
+        absenderEmail = persoenlicheInfos.absenderEmail;
+        absenderName = persoenlicheInfos.absenderName;
+        signatur = persoenlicheInfos.signatur
+          ? `<hr/>${persoenlicheInfos.signatur}`
+          : '';
+      }
+
+      aktuellerTransporter = await this.transporterFuerBenutzer(senderId);
+    }
+
     const htmlInhalt = `<h2>Willkommen beim ${vereinsname}, ${vorname}!</h2>
       <p>Ihr Mitgliedskonto wurde aktiviert. Hier sind Ihre Zugangsdaten:</p>
       <table style="border-collapse:collapse;margin:16px 0;">
@@ -68,17 +140,18 @@ export class MailService {
       </table>
       <p>Bitte aendern Sie Ihr Passwort nach dem ersten Login.</p>
       <p><a href="${loginUrl}" style="background:#1a56db;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;">Jetzt einloggen</a></p>
-      <p>Mit sportlichen Gruessen,<br>${vereinsname}</p>`;
+      <p>Mit sportlichen Gruessen,<br>${absenderName}</p>
+      ${signatur}`;
 
-    if (!this.transporter) {
+    if (!aktuellerTransporter) {
       console.log(
         `[Mail] SMTP nicht konfiguriert. Login-Daten an ${email}: Passwort=${temporaeresPasswort}`,
       );
       return;
     }
 
-    await this.transporter.sendMail({
-      from: this.configService.get<string>('SMTP_FROM') || 'noreply@clubos.de',
+    await aktuellerTransporter.sendMail({
+      from: `"${absenderName}" <${absenderEmail}>`,
       to: email,
       subject: `Ihre Zugangsdaten fuer ${vereinsname}`,
       html: htmlInhalt,

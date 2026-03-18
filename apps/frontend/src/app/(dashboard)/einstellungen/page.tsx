@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Settings, Palette, Save, Upload, ImageIcon, Lock } from 'lucide-react';
+import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff } from 'lucide-react';
+import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,6 +45,16 @@ export default function EinstellungenPage() {
   const [fehler, setFehler] = useState('');
   const logoInputRef = useRef<HTMLInputElement>(null);
 
+  // KI-Einstellungen
+  const [kiProvider, setKiProvider] = useState('');
+  const [kiApiKey, setKiApiKey] = useState('');
+  const [kiModell, setKiModell] = useState('');
+  const [kiAnzeigen, setKiAnzeigen] = useState(false);
+  const [kiLadend, setKiLadend] = useState(false);
+  const [kiErfolg, setKiErfolg] = useState('');
+  const [kiFehler, setKiFehler] = useState('');
+  const [kiGeladen, setKiGeladen] = useState(false);
+
   // Passwort aendern
   const [altesPasswort, setAltesPasswort] = useState('');
   const [neuesPasswort, setNeuesPasswort] = useState('');
@@ -84,6 +95,44 @@ export default function EinstellungenPage() {
       );
     } finally {
       setPwLadend(false);
+    }
+  };
+
+  const handleKiLaden = async () => {
+    if (kiGeladen) return;
+    try {
+      const daten = await apiClient.get<{
+        kiProvider: string;
+        kiApiKey: string | null;
+        kiModell: string | null;
+      }>('/vereine/ki-einstellungen');
+      setKiProvider(daten.kiProvider || 'anthropic');
+      setKiApiKey(daten.kiApiKey || '');
+      setKiModell(daten.kiModell || '');
+      setKiGeladen(true);
+    } catch {
+      // Endpoint existiert ggf. noch nicht
+    }
+  };
+
+  const handleKiSpeichern = async () => {
+    setKiLadend(true);
+    setKiFehler('');
+    setKiErfolg('');
+    try {
+      await apiClient.put('/vereine/ki-einstellungen', {
+        kiProvider,
+        kiApiKey: kiApiKey || undefined,
+        kiModell: kiModell || undefined,
+      });
+      setKiErfolg('KI-Einstellungen gespeichert.');
+      setTimeout(() => setKiErfolg(''), 5000);
+    } catch (error) {
+      setKiFehler(
+        error instanceof Error ? error.message : 'Fehler beim Speichern.',
+      );
+    } finally {
+      setKiLadend(false);
     }
   };
 
@@ -327,6 +376,110 @@ export default function EinstellungenPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* KI-Einstellungen */}
+      {istAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5" />
+              KI-Einstellungen
+            </CardTitle>
+            <CardDescription>
+              Waehlen Sie den KI-Anbieter fuer FAQ-Antworten und PDF-Erkennung.
+              Unterstuetzt werden Anthropic (Claude) und OpenAI (GPT).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4" onClick={handleKiLaden}>
+            <div className="space-y-2">
+              <Label>KI-Anbieter</Label>
+              <Select
+                value={kiProvider}
+                onChange={(e) => {
+                  setKiProvider(e.target.value);
+                  if (e.target.value === 'anthropic' && !kiModell) {
+                    setKiModell('claude-sonnet-4-20250514');
+                  } else if (e.target.value === 'openai' && !kiModell) {
+                    setKiModell('gpt-4o');
+                  }
+                }}
+              >
+                <option value="anthropic">Anthropic (Claude)</option>
+                <option value="openai">OpenAI (GPT)</option>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>API-Key</Label>
+              <div className="flex gap-2">
+                <Input
+                  type={kiAnzeigen ? 'text' : 'password'}
+                  value={kiApiKey}
+                  onChange={(e) => setKiApiKey(e.target.value)}
+                  placeholder={
+                    kiProvider === 'openai'
+                      ? 'sk-...'
+                      : 'sk-ant-...'
+                  }
+                  className="flex-1"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setKiAnzeigen(!kiAnzeigen)}
+                >
+                  {kiAnzeigen ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Leer lassen um den globalen API-Key aus der Server-Konfiguration zu verwenden
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Modell</Label>
+              <Select
+                value={kiModell}
+                onChange={(e) => setKiModell(e.target.value)}
+              >
+                {kiProvider === 'anthropic' ? (
+                  <>
+                    <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                    <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (schneller, guenstiger)</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="gpt-4o">GPT-4o</option>
+                    <option value="gpt-4o-mini">GPT-4o Mini (schneller, guenstiger)</option>
+                    <option value="gpt-4.1">GPT-4.1</option>
+                  </>
+                )}
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={handleKiSpeichern}
+                disabled={kiLadend}
+              >
+                <Brain className="h-4 w-4 mr-2" />
+                {kiLadend ? 'Wird gespeichert...' : 'KI-Einstellungen speichern'}
+              </Button>
+              {kiErfolg && (
+                <span className="text-sm text-green-600">{kiErfolg}</span>
+              )}
+              {kiFehler && (
+                <span className="text-sm text-destructive">{kiFehler}</span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Passwort aendern */}
       <Card>

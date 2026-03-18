@@ -74,13 +74,14 @@ export class EinladungService {
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const link = `${frontendUrl}/einladung/${token}`;
 
-    // E-Mail versenden
+    // E-Mail versenden (mit persoenlichem SMTP des Absenders, falls konfiguriert)
     await this.mailService.einladungSenden(
       dto.email,
       dto.vorname,
       tenant.name,
       link,
       templateIds.length,
+      userId,
     );
 
     return {

@@ -1,4 +1,17 @@
+# ============================================================
+# ClubOS - Produktions Docker Compose
+# ============================================================
+# Nutzung:
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Oder ueber das Installationsskript:
+#   ./install.sh
+# ============================================================
+
 services:
+  # --------------------------------------------------------
+  # Traefik - Reverse Proxy mit automatischem SSL
+  # --------------------------------------------------------
   traefik:
     image: traefik:v3.3
     container_name: clubos-traefik
@@ -10,44 +23,74 @@ services:
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@localhost}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      # HTTP -> HTTPS Weiterleitung
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      # Dashboard deaktiviert in Produktion
+      - "--api.dashboard=false"
+      # Logging
+      - "--log.level=WARN"
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - letsencrypt:/letsencrypt
+    networks:
+      - clubos-netz
+    profiles:
+      - ssl
 
+  # --------------------------------------------------------
+  # PostgreSQL 16 - Datenbank
+  # --------------------------------------------------------
   postgres:
     image: postgres:16-alpine
     container_name: clubos-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-clubos}
+      POSTGRES_USER: ${DB_USER:-clubos}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD muss in .env gesetzt sein}
+      # Performance-Tuning
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - clubos-netz
+    # Kein Port-Mapping - nur intern erreichbar
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-clubos} -d ${DB_NAME:-clubos}"]
+      interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
+  # --------------------------------------------------------
+  # Redis 7 - Cache und Queue
+  # --------------------------------------------------------
   redis:
     image: redis:7-alpine
     container_name: clubos-redis
     restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
+    networks:
+      - clubos-netz
+    # Kein Port-Mapping - nur intern erreichbar
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 5s
 
+  # --------------------------------------------------------
+  # Backend - NestJS API
+  # --------------------------------------------------------
   backend:
     build:
       context: .
@@ -55,24 +98,51 @@ services:
     container_name: clubos-backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      DATABASE_URL: postgresql://${DB_USER:-clubos}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-clubos}
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET muss in .env gesetzt sein}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET muss in .env gesetzt sein}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-15m}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-7d}
       NODE_ENV: production
       PORT: 3001
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      # SMTP (optional)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      # KI (optional)
+      KI_PROVIDER: ${KI_PROVIDER:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - clubos-netz
+    ports:
+      # Port nur direkt exponiert wenn kein Traefik (localhost-Modus)
+      - "${BACKEND_PORT:-3001}:3001"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`api.${DOMAIN}`)"
+      - "traefik.http.routers.backend.rule=Host(`api.${DOMAIN:-localhost}`)"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
       - "traefik.http.services.backend.loadbalancer.server.port=3001"
 
+  # --------------------------------------------------------
+  # Frontend - Next.js Web-App
+  # --------------------------------------------------------
   frontend:
     build:
       context: .
@@ -80,17 +150,44 @@ services:
     container_name: clubos-frontend
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: https://api.${DOMAIN}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      NODE_ENV: production
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    networks:
+      - clubos-netz
+    ports:
+      # Port nur direkt exponiert wenn kein Traefik (localhost-Modus)
+      - "${FRONTEND_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN:-localhost}`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
       - "traefik.http.services.frontend.loadbalancer.server.port=3000"
 
+# --------------------------------------------------------
+# Volumes - Persistente Daten
+# --------------------------------------------------------
 volumes:
   postgres_data:
+    name: clubos-postgres-data
   redis_data:
+    name: clubos-redis-data
   letsencrypt:
+    name: clubos-letsencrypt
+
+# --------------------------------------------------------
+# Netzwerk - Isoliertes internes Netzwerk
+# --------------------------------------------------------
+networks:
+  clubos-netz:
+    name: clubos-netz
+    driver: bridge

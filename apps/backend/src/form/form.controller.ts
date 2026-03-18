@@ -102,6 +102,7 @@ export class FormController {
 
     // PDF per KI analysieren
     const felder = await this.kiKonvertierungService.pdfZuFormular(
+      tenantId,
       datei.buffer,
       datei.originalname,
     );

@@ -16,9 +16,11 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagg
 import { Role } from '@prisma/client';
 import { TenantService } from './tenant.service';
 import { ErstelleTenantDto, AktualisiereTenantDto } from './dto/erstelle-tenant.dto';
+import { AktualisiereKiEinstellungenDto } from './dto/ki-einstellungen.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RollenGuard } from '../common/guards/rollen.guard';
 import { Rollen } from '../common/decorators/rollen.decorator';
+import { AktuellerBenutzer } from '../common/decorators/aktueller-benutzer.decorator';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { randomBytes } from 'crypto';
@@ -98,6 +100,27 @@ export class TenantController {
 
     const logoUrl = `/uploads/${file.filename}`;
     return this.tenantService.logoAktualisieren(id, logoUrl);
+  }
+
+  // ==================== KI-Einstellungen ====================
+
+  @Get('ki-einstellungen')
+  @Rollen(Role.ADMIN, Role.SUPERADMIN)
+  @ApiOperation({ summary: 'KI-Einstellungen des Vereins abrufen (API-Key maskiert)' })
+  async kiEinstellungenAbrufen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+  ) {
+    return this.tenantService.kiEinstellungenAbrufen(tenantId);
+  }
+
+  @Put('ki-einstellungen')
+  @Rollen(Role.ADMIN, Role.SUPERADMIN)
+  @ApiOperation({ summary: 'KI-Einstellungen des Vereins aktualisieren' })
+  async kiEinstellungenAktualisieren(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Body() dto: AktualisiereKiEinstellungenDto,
+  ) {
+    return this.tenantService.kiEinstellungenAktualisieren(tenantId, dto);
   }
 
   @Delete(':id')

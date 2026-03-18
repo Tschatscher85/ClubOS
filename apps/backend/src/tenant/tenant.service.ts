@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ErstelleTenantDto, AktualisiereTenantDto } from './dto/erstelle-tenant.dto';
+import { AktualisiereKiEinstellungenDto } from './dto/ki-einstellungen.dto';
 
 @Injectable()
 export class TenantService {
@@ -82,5 +83,74 @@ export class TenantService {
     return this.prisma.tenant.delete({
       where: { id },
     });
+  }
+
+  // ==================== KI-Einstellungen ====================
+
+  /**
+   * API-Key maskieren: Nur die letzten 4 Zeichen anzeigen.
+   */
+  private apiKeyMaskieren(key: string | null): string | null {
+    if (!key) return null;
+    if (key.length <= 4) return '****';
+    return '*'.repeat(key.length - 4) + key.slice(-4);
+  }
+
+  /**
+   * Aktuelle KI-Einstellungen eines Vereins abrufen.
+   * Der API-Key wird maskiert zurueckgegeben.
+   */
+  async kiEinstellungenAbrufen(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { kiProvider: true, kiApiKey: true, kiModell: true },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Verein nicht gefunden.');
+    }
+
+    return {
+      kiProvider: tenant.kiProvider,
+      kiApiKey: this.apiKeyMaskieren(tenant.kiApiKey),
+      kiModell: tenant.kiModell,
+    };
+  }
+
+  /**
+   * KI-Einstellungen eines Vereins aktualisieren.
+   */
+  async kiEinstellungenAktualisieren(
+    tenantId: string,
+    dto: AktualisiereKiEinstellungenDto,
+  ) {
+    await this.nachIdAbrufen(tenantId);
+
+    const updateData: Record<string, string | null> = {
+      kiProvider: dto.kiProvider,
+    };
+
+    // API-Key nur aktualisieren, wenn explizit gesendet
+    if (dto.kiApiKey !== undefined) {
+      updateData.kiApiKey = dto.kiApiKey || null;
+    }
+
+    // Modell nur aktualisieren, wenn explizit gesendet
+    if (dto.kiModell !== undefined) {
+      updateData.kiModell = dto.kiModell || null;
+    }
+
+    const aktualisiert = await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: updateData,
+      select: { kiProvider: true, kiApiKey: true, kiModell: true },
+    });
+
+    return {
+      kiProvider: aktualisiert.kiProvider,
+      kiApiKey: this.apiKeyMaskieren(aktualisiert.kiApiKey),
+      kiModell: aktualisiert.kiModell,
+      nachricht: 'KI-Einstellungen erfolgreich aktualisiert.',
+    };
   }
 }
