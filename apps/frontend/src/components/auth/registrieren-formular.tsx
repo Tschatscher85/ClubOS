@@ -20,6 +20,8 @@ interface RegistrierenAntwort {
     id: string;
     name: string;
     slug: string;
+    logo: string | null;
+    primaryColor: string;
   };
   accessToken: string;
   refreshToken: string;
