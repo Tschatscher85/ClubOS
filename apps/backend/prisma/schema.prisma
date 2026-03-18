@@ -33,6 +33,8 @@ model Tenant {
   fahrgemeinschaften Fahrgemeinschaft[]
   dokumente          Dokument[]
   workflows          Workflow[]
+  hallen             Halle[]
+  sponsoren          Sponsor[]
 
   @@index([slug])
 }
@@ -144,9 +146,10 @@ model Team {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  events      Event[]
-  messages    Message[]
-  teamMembers TeamMember[]
+  events           Event[]
+  messages         Message[]
+  teamMembers      TeamMember[]
+  hallenbelegungen Hallenbelegung[]
 
   @@index([tenantId])
   @@index([abteilungId])
@@ -544,6 +547,59 @@ model Workflow {
   emailText    String?  // Optionaler eigener E-Mail-Text
   istAktiv     Boolean  @default(true)
   erstelltVon  String   // userId des Erstellers (Admin/Vorstand)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+// ==================== Hallenbelegung ====================
+
+model Halle {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  adresse     String?
+  kapazitaet  Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  belegungen  Hallenbelegung[]
+
+  @@index([tenantId])
+}
+
+model Hallenbelegung {
+  id        String   @id @default(cuid())
+  halleId   String
+  halle     Halle    @relation(fields: [halleId], references: [id], onDelete: Cascade)
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  wochentag String   // MO, DI, MI, DO, FR, SA, SO
+  von       String   // "18:00"
+  bis       String   // "20:00"
+  notiz     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([halleId])
+  @@index([teamId])
+}
+
+// ==================== Sponsoren ====================
+
+model Sponsor {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name         String
+  logoUrl      String?
+  webseite     String?
+  beschreibung String?
+  kontaktName  String?
+  kontaktEmail String?
+  istAktiv     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

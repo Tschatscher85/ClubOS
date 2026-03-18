@@ -224,6 +224,43 @@ export class AuthService {
     };
   }
 
+  /**
+   * Aendert das Passwort eines Benutzers
+   */
+  async passwortAendern(
+    userId: string,
+    altesPasswort: string,
+    neuesPasswort: string,
+  ) {
+    const benutzer = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!benutzer || !benutzer.passwordHash) {
+      throw new BadRequestException(
+        'Benutzer nicht gefunden oder kein Passwort gesetzt.',
+      );
+    }
+
+    const passwortStimmt = await bcrypt.compare(
+      altesPasswort,
+      benutzer.passwordHash,
+    );
+
+    if (!passwortStimmt) {
+      throw new UnauthorizedException('Das aktuelle Passwort ist falsch.');
+    }
+
+    const neuerHash = await bcrypt.hash(neuesPasswort, BCRYPT_ROUNDS);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: neuerHash },
+    });
+
+    return { nachricht: 'Passwort wurde erfolgreich geaendert.' };
+  }
+
   // ==================== Private Hilfsmethoden ====================
 
   private async generiereTokens(

@@ -19,6 +19,8 @@ import { FaqModule } from './faq/faq.module';
 import { QrcodeModule } from './qrcode/qrcode.module';
 import { HealthModule } from './health/health.module';
 import { QueueModule } from './queue/queue.module';
+import { HalleModule } from './halle/halle.module';
+import { SponsorModule } from './sponsor/sponsor.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -46,6 +48,8 @@ import configuration from './config/configuration';
     QrcodeModule,
     HealthModule,
     QueueModule,
+    HalleModule,
+    SponsorModule,
   ],
 })
 export class AppModule {}

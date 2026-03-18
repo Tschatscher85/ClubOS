@@ -14,6 +14,8 @@ export const ROUTEN = {
   FAHRGEMEINSCHAFTEN: '/fahrgemeinschaften',
   ELTERN: '/eltern',
   WORKFLOWS: '/workflows',
+  HALLEN: '/hallen',
+  SPONSOREN: '/sponsoren',
   FORMULARE: '/formulare',
   DOKUMENTE: '/dokumente',
   EINSTELLUNGEN: '/einstellungen',

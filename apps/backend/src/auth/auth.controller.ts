@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Put,
   Body,
   Get,
   UseGuards,
@@ -17,6 +18,7 @@ import { AuthService } from './auth.service';
 import { RegistrierenDto } from './dto/registrieren.dto';
 import { AnmeldenDto } from './dto/anmelden.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { PasswortAendernDto } from './dto/passwort-aendern.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { JwtRefreshGuard } from '../common/guards/jwt-refresh.guard';
 import { AktuellerBenutzer } from '../common/decorators/aktueller-benutzer.decorator';
@@ -74,5 +76,23 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Benutzerprofil' })
   async profil(@AktuellerBenutzer('id') userId: string) {
     return this.authService.profil(userId);
+  }
+
+  @Put('passwort')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Passwort aendern' })
+  @ApiResponse({ status: 200, description: 'Passwort erfolgreich geaendert' })
+  @ApiResponse({ status: 401, description: 'Aktuelles Passwort ist falsch' })
+  async passwortAendern(
+    @AktuellerBenutzer('id') userId: string,
+    @Body() dto: PasswortAendernDto,
+  ) {
+    return this.authService.passwortAendern(
+      userId,
+      dto.altesPasswort,
+      dto.neuesPasswort,
+    );
   }
 }

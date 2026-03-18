@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Settings, Palette, Save, Upload, ImageIcon } from 'lucide-react';
+import { Settings, Palette, Save, Upload, ImageIcon, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,6 +43,49 @@ export default function EinstellungenPage() {
   const [gespeichert, setGespeichert] = useState(false);
   const [fehler, setFehler] = useState('');
   const logoInputRef = useRef<HTMLInputElement>(null);
+
+  // Passwort aendern
+  const [altesPasswort, setAltesPasswort] = useState('');
+  const [neuesPasswort, setNeuesPasswort] = useState('');
+  const [passwortBestaetigung, setPasswortBestaetigung] = useState('');
+  const [pwLadend, setPwLadend] = useState(false);
+  const [pwErfolg, setPwErfolg] = useState('');
+  const [pwFehler, setPwFehler] = useState('');
+
+  const handlePasswortAendern = async () => {
+    setPwFehler('');
+    setPwErfolg('');
+
+    if (neuesPasswort.length < 8) {
+      setPwFehler('Das neue Passwort muss mindestens 8 Zeichen lang sein.');
+      return;
+    }
+
+    if (neuesPasswort !== passwortBestaetigung) {
+      setPwFehler('Die Passwoerter stimmen nicht ueberein.');
+      return;
+    }
+
+    setPwLadend(true);
+
+    try {
+      await apiClient.put('/auth/passwort', {
+        altesPasswort,
+        neuesPasswort,
+      });
+      setPwErfolg('Passwort wurde erfolgreich geaendert.');
+      setAltesPasswort('');
+      setNeuesPasswort('');
+      setPasswortBestaetigung('');
+      setTimeout(() => setPwErfolg(''), 5000);
+    } catch (error) {
+      setPwFehler(
+        error instanceof Error ? error.message : 'Fehler beim Aendern des Passworts.',
+      );
+    } finally {
+      setPwLadend(false);
+    }
+  };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const datei = e.target.files?.[0];
@@ -281,6 +324,64 @@ export default function EinstellungenPage() {
               <Label>Rolle</Label>
               <Input value={benutzer?.rolle || ''} disabled />
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Passwort aendern */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5" />
+            Passwort aendern
+          </CardTitle>
+          <CardDescription>
+            Aendern Sie Ihr persoenliches Passwort. Das neue Passwort muss mindestens 8 Zeichen lang sein.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Aktuelles Passwort</Label>
+            <Input
+              type="password"
+              value={altesPasswort}
+              onChange={(e) => setAltesPasswort(e.target.value)}
+              placeholder="Aktuelles Passwort eingeben"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Neues Passwort</Label>
+            <Input
+              type="password"
+              value={neuesPasswort}
+              onChange={(e) => setNeuesPasswort(e.target.value)}
+              placeholder="Neues Passwort eingeben (min. 8 Zeichen)"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Neues Passwort bestaetigen</Label>
+            <Input
+              type="password"
+              value={passwortBestaetigung}
+              onChange={(e) => setPasswortBestaetigung(e.target.value)}
+              placeholder="Neues Passwort wiederholen"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={handlePasswortAendern}
+              disabled={pwLadend || !altesPasswort || !neuesPasswort || !passwortBestaetigung}
+              variant="outline"
+            >
+              <Lock className="h-4 w-4 mr-2" />
+              {pwLadend ? 'Wird geaendert...' : 'Passwort aendern'}
+            </Button>
+            {pwErfolg && (
+              <span className="text-sm text-green-600">{pwErfolg}</span>
+            )}
+            {pwFehler && (
+              <span className="text-sm text-destructive">{pwFehler}</span>
+            )}
           </div>
         </CardContent>
       </Card>

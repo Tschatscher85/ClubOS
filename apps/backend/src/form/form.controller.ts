@@ -13,11 +13,15 @@ import {
   FileTypeValidator,
   MaxFileSizeValidator,
   BadRequestException,
+  Res,
+  Header,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import { Role, FormType } from '@prisma/client';
 import { FormService } from './form.service';
+import { PdfExportService } from './pdf-export.service';
 import { KiKonvertierungService } from './ki-konvertierung.service';
 import {
   ErstelleTemplateDto,
@@ -37,6 +41,7 @@ import { AktuellerBenutzer } from '../common/decorators/aktueller-benutzer.decor
 export class FormController {
   constructor(
     private formService: FormService,
+    private pdfExportService: PdfExportService,
     private kiKonvertierungService: KiKonvertierungService,
   ) {}
 
@@ -178,5 +183,16 @@ export class FormController {
     @Param('id') id: string,
   ) {
     return this.formService.einreichungAlsPdf(tenantId, id);
+  }
+
+  @Get('einreichungen/:id/export')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
+  @ApiOperation({ summary: 'Einreichung als druckbares HTML-Dokument exportieren' })
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  async einreichungExportieren(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.pdfExportService.htmlExportErstellen(tenantId, id);
   }
 }
