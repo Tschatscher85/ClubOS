@@ -417,7 +417,7 @@ model FAQ {
 
 **Alle Sprints abgeschlossen (außer Mobile App)**
 
-### 34 Backend-Module:
+### 36 Backend-Module:
 - [x] Auth (JWT, Refresh, Passwort-Aenderung, Passwort-Reset, E-Mail-Verifizierung, Google OAuth)
 - [x] Multi-Tenant (Schema-per-Tenant)
 - [x] Mitgliederverwaltung (E-Mail, Multi-Sport, Auto-Login, QR-Ausweis)
@@ -452,12 +452,15 @@ model FAQ {
 - [x] Profilbild-Upload (Upload, Abruf, Loeschen)
 - [x] Vereinshomepage-System (Sektionen, oeffentliche URLs, auto-generiert)
 - [x] Turnier-Landingpages (Werbung, Sponsoren, oeffentliche URLs)
+- [x] Vereinsrollen-System (RollenVorlage pro Verein, mehrere Rollen pro User, Auto-Berechnung)
+- [x] Berechtigungs-Guard (BerechtigungenGuard + Decorator auf Controllern)
 
-### 20 Frontend-Seiten:
+### 22 Frontend-Seiten:
 Dashboard, Mitglieder (+Detail), Mitarbeiter, Abteilungen, Teams (+Detail),
 Kalender (+Detail), Turniere (+Detail), Nachrichten, Fahrgemeinschaften,
-Eltern-Portal, Hallenbelegung, Schiedsrichter, Buchhaltung, Sponsoren,
-Workflows, Formulare (+Detail), Dokumente, DFBnet, Einstellungen (Verein,
+Eltern-Portal, Belegung (Hallen+Sportplaetze), Schiedsrichter, Buchhaltung,
+Sponsoren, Workflows, Formulare (+Detail), Dokumente, DFBnet,
+Einstellungen (Verein, Vereinsdaten, Sportarten, Beitraege, Rollen, Benutzer,
 KI, E-Mail, Passwort), Einladung-Wizard, Registrierung, Passwort-Vergessen,
 Passwort-Zuruecksetzen, E-Mail-Verifizierung, Onboarding-Wizard
 
@@ -473,6 +476,12 @@ Passwort-Zuruecksetzen, E-Mail-Verifizierung, Onboarding-Wizard
 - [x] Profilbild-Upload (API + Multer)
 - [x] Vereinshomepage-System (Backend: Sektionen-basiert, auto-generiert)
 - [x] Turnier-Landingpages (Backend: oeffentliche Werbeseiten fuer Turniere)
+- [x] Vereinsrollen-System (Vorstand, Trainer, Kassenprufer, Ehrenamt, Spieler, Eltern, Innendienst)
+- [x] Berechtigungs-Guard (granulare Berechtigung pro Modul, MEMBER/PARENT gefiltert)
+- [x] Hallenbelegung umbenannt zu Belegung (Hallen + Sportplaetze)
+- [x] Geburtsdatum-Spalte in Mitglieder-Tabelle
+- [x] Einstellungen > Rollen (Rollenvorlagen pro Verein konfigurieren)
+- [x] Einstellungen > Benutzer (Vereinsrollen zuweisen + individuelle Anpassung)
 
 ### Offen:
 - [ ] Mobile App (Expo React Native) — kommt als letztes

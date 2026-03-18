@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send, Building2, Trophy, CreditCard } from 'lucide-react';
+import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send, Building2, Trophy, CreditCard, Shield, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -356,6 +356,22 @@ export default function EinstellungenPage() {
             <Badge variant="outline" className="cursor-pointer hover:bg-muted">
               <CreditCard className="h-3 w-3 mr-1" />
               Beitraege
+            </Badge>
+          </Link>
+        )}
+        {istAdmin && (
+          <Link href="/einstellungen/rollen">
+            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
+              <Shield className="h-3 w-3 mr-1" />
+              Rollen
+            </Badge>
+          </Link>
+        )}
+        {istAdmin && (
+          <Link href="/einstellungen/benutzer">
+            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
+              <Users className="h-3 w-3 mr-1" />
+              Benutzer
             </Badge>
           </Link>
         )}
