@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/use-auth';
 import { apiClient } from '@/lib/api-client';
+import { sportartLabel, sportartenFallback } from '@/lib/sportarten';
 import Link from 'next/link';
 
 interface Beitragsklasse {
@@ -39,16 +40,7 @@ const INTERVALL_LABEL: Record<string, string> = {
   JAEHRLICH: 'Jaehrlich',
 };
 
-const SPORTARTEN = [
-  'FUSSBALL', 'HANDBALL', 'BASKETBALL', 'FOOTBALL',
-  'TENNIS', 'TURNEN', 'SCHWIMMEN', 'LEICHTATHLETIK', 'SONSTIGES',
-];
-
-const SPORTARTEN_LABEL: Record<string, string> = {
-  FUSSBALL: 'Fussball', HANDBALL: 'Handball', BASKETBALL: 'Basketball',
-  FOOTBALL: 'Football', TENNIS: 'Tennis', TURNEN: 'Turnen',
-  SCHWIMMEN: 'Schwimmen', LEICHTATHLETIK: 'Leichtathletik', SONSTIGES: 'Sonstiges',
-};
+const SPORTARTEN_FALLBACK = sportartenFallback();
 
 const formatBetrag = (betrag: number) => {
   return new Intl.NumberFormat('de-DE', {
@@ -288,7 +280,7 @@ export default function BeitraegePage() {
                   <div className="flex flex-wrap gap-1">
                     {klasse.sportarten.map((s) => (
                       <Badge key={s} variant="secondary" className="text-xs">
-                        {SPORTARTEN_LABEL[s] || s}
+                        {sportartLabel(s)}
                       </Badge>
                     ))}
                   </div>
@@ -397,7 +389,7 @@ export default function BeitraegePage() {
                 Fuer welche Sportarten gilt diese Beitragsklasse? (Keine Auswahl = alle)
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {SPORTARTEN.map((s) => (
+                {SPORTARTEN_FALLBACK.map(({ wert: s }) => (
                   <label
                     key={s}
                     className={`flex items-center gap-2 rounded-lg border px-3 py-2 cursor-pointer transition-colors ${
@@ -412,7 +404,7 @@ export default function BeitraegePage() {
                       onChange={() => handleSportartToggle(s)}
                       className="rounded border-gray-300"
                     />
-                    <span className="text-sm">{SPORTARTEN_LABEL[s]}</span>
+                    <span className="text-sm">{sportartLabel(s)}</span>
                   </label>
                 ))}
               </div>

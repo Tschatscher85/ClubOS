@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { apiClient } from '@/lib/api-client';
 import { applyTenantTheme } from '@/lib/theme';
 import { API_BASE_URL } from '@/lib/constants';
+import { sportartLabel, sportartenFallback } from '@/lib/sportarten';
 
 const FARBEN = [
   { name: 'Blau', wert: '#1a56db' },
@@ -24,22 +25,7 @@ const FARBEN = [
   { name: 'Pink', wert: '#db2777' },
 ];
 
-const SPORTARTEN = [
-  'FUSSBALL', 'HANDBALL', 'BASKETBALL', 'FOOTBALL',
-  'TENNIS', 'TURNEN', 'SCHWIMMEN', 'LEICHTATHLETIK', 'SONSTIGES',
-];
-
-const SPORTART_LABEL: Record<string, string> = {
-  FUSSBALL: 'Fussball',
-  HANDBALL: 'Handball',
-  BASKETBALL: 'Basketball',
-  FOOTBALL: 'Football',
-  TENNIS: 'Tennis',
-  TURNEN: 'Turnen',
-  SCHWIMMEN: 'Schwimmen',
-  LEICHTATHLETIK: 'Leichtathletik',
-  SONSTIGES: 'Sonstiges',
-};
+const SPORTARTEN_LISTE = sportartenFallback();
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -206,14 +192,14 @@ export default function OnboardingPage() {
         </p>
       </div>
       <div className="flex flex-wrap justify-center gap-2">
-        {SPORTARTEN.map((s) => (
+        {SPORTARTEN_LISTE.map(({ wert: s }) => (
           <Button
             key={s}
             variant={sportarten.includes(s) ? 'default' : 'outline'}
             onClick={() => handleSportartToggle(s)}
             className="min-w-[120px]"
           >
-            {SPORTART_LABEL[s]}
+            {sportartLabel(s)}
           </Button>
         ))}
       </div>
@@ -228,7 +214,7 @@ export default function OnboardingPage() {
               <Input
                 value={teamName}
                 onChange={(e) => setTeamName(e.target.value)}
-                placeholder={`${tenant?.name} ${SPORTART_LABEL[sportarten[0]]}`}
+                placeholder={`${tenant?.name} ${sportartLabel(sportarten[0])}`}
               />
             </div>
             <div className="space-y-2">

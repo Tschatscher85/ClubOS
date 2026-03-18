@@ -30,6 +30,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { apiClient } from '@/lib/api-client';
+import { sportartLabel } from '@/lib/sportarten';
 import { useBenutzer } from '@/hooks/use-auth';
 import { UnterschriftPad } from '@/components/unterschrift/unterschrift-pad';
 
@@ -129,17 +130,7 @@ const VERANSTALTUNGSTYP_LABEL: Record<string, string> = {
   MEETING: 'Besprechung',
 };
 
-const SPORTARTEN_LABEL: Record<string, string> = {
-  FUSSBALL: 'Fussball',
-  HANDBALL: 'Handball',
-  BASKETBALL: 'Basketball',
-  FOOTBALL: 'Football',
-  TENNIS: 'Tennis',
-  TURNEN: 'Turnen',
-  SCHWIMMEN: 'Schwimmen',
-  LEICHTATHLETIK: 'Leichtathletik',
-  SONSTIGES: 'Sonstiges',
-};
+// Sportarten-Labels dynamisch via sportartLabel()
 
 const STATUS_LABEL: Record<
   string,
@@ -506,7 +497,7 @@ export default function MitgliedDetailPage() {
                   <div className="flex flex-wrap gap-1 mt-1">
                     {mitglied.sport.map((s) => (
                       <Badge key={s} variant="secondary" className="text-xs">
-                        {SPORTARTEN_LABEL[s] || s}
+                        {sportartLabel(s)}
                       </Badge>
                     ))}
                   </div>
@@ -547,7 +538,7 @@ export default function MitgliedDetailPage() {
                     <p className="text-sm font-medium">{tm.team.name}</p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>
-                        {SPORTARTEN_LABEL[tm.team.sport] || tm.team.sport}
+                        {sportartLabel(tm.team.sport)}
                       </span>
                       <span>-</span>
                       <span>{tm.team.ageGroup}</span>
