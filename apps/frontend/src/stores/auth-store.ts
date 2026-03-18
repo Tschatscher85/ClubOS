@@ -29,6 +29,11 @@ interface AnmeldeAntwort {
   refreshToken: string;
 }
 
+interface ZweiFaktorAntwort {
+  requires2FA: true;
+  tempToken: string;
+}
+
 interface ProfilAntwort {
   id: string;
   email: string;
@@ -48,12 +53,23 @@ interface AuthState {
   istAngemeldet: boolean;
   istLadend: boolean;
   fehler: string | null;
+  // 2FA-Zustand
+  benoetigtZweiFaktor: boolean;
+  tempToken: string | null;
 
   anmelden: (email: string, passwort: string) => Promise<void>;
+  zweiFaktorVerifizieren: (code: string) => Promise<void>;
+  zweiFaktorAbbrechen: () => void;
   abmelden: () => void;
   profilLaden: () => Promise<void>;
   themeAnwenden: () => void;
   emailVerifizierungSenden: () => Promise<void>;
+}
+
+function istZweiFaktorAntwort(
+  antwort: AnmeldeAntwort | ZweiFaktorAntwort,
+): antwort is ZweiFaktorAntwort {
+  return 'requires2FA' in antwort && antwort.requires2FA === true;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -73,6 +89,8 @@ export const useAuthStore = create<AuthState>()(
             accessToken: null,
             refreshToken: null,
             istAngemeldet: false,
+            benoetigtZweiFaktor: false,
+            tempToken: null,
           });
         },
       );
@@ -85,14 +103,26 @@ export const useAuthStore = create<AuthState>()(
         istAngemeldet: false,
         istLadend: false,
         fehler: null,
+        benoetigtZweiFaktor: false,
+        tempToken: null,
 
         anmelden: async (email: string, passwort: string) => {
-          set({ istLadend: true, fehler: null });
+          set({ istLadend: true, fehler: null, benoetigtZweiFaktor: false, tempToken: null });
           try {
-            const antwort = await apiClient.post<AnmeldeAntwort>(
+            const antwort = await apiClient.post<AnmeldeAntwort | ZweiFaktorAntwort>(
               '/auth/anmelden',
               { email, passwort },
             );
+
+            if (istZweiFaktorAntwort(antwort)) {
+              // 2FA erforderlich - noch nicht angemeldet
+              set({
+                istLadend: false,
+                benoetigtZweiFaktor: true,
+                tempToken: antwort.tempToken,
+              });
+              return;
+            }
 
             set({
               benutzer: antwort.benutzer,
@@ -118,6 +148,55 @@ export const useAuthStore = create<AuthState>()(
           }
         },
 
+        zweiFaktorVerifizieren: async (code: string) => {
+          const { tempToken } = get();
+          if (!tempToken) {
+            set({ fehler: 'Kein temporaeres Token vorhanden. Bitte erneut anmelden.' });
+            return;
+          }
+
+          set({ istLadend: true, fehler: null });
+          try {
+            const antwort = await apiClient.post<AnmeldeAntwort>(
+              '/auth/2fa/verifizieren',
+              { tempToken, code },
+            );
+
+            set({
+              benutzer: antwort.benutzer,
+              tenant: antwort.tenant,
+              accessToken: antwort.accessToken,
+              refreshToken: antwort.refreshToken,
+              istAngemeldet: true,
+              istLadend: false,
+              benoetigtZweiFaktor: false,
+              tempToken: null,
+            });
+
+            if (antwort.tenant.primaryColor) {
+              applyTenantTheme(antwort.tenant.primaryColor);
+            }
+          } catch (error) {
+            set({
+              istLadend: false,
+              fehler:
+                error instanceof Error
+                  ? error.message
+                  : '2FA-Verifizierung fehlgeschlagen.',
+            });
+            throw error;
+          }
+        },
+
+        zweiFaktorAbbrechen: () => {
+          set({
+            benoetigtZweiFaktor: false,
+            tempToken: null,
+            fehler: null,
+            istLadend: false,
+          });
+        },
+
         abmelden: () => {
           const { accessToken } = get();
           // Fire-and-forget Backend-Abmeldung
@@ -138,6 +217,8 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: null,
             istAngemeldet: false,
             fehler: null,
+            benoetigtZweiFaktor: false,
+            tempToken: null,
           });
         },
 

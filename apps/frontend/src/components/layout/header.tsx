@@ -16,6 +16,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { MobileSidebar } from './mobile-sidebar';
 import { Badge } from '@/components/ui/badge';
 import { DarkModeToggle } from '@/components/dark-mode-toggle';
+import { PushOptIn } from '@/components/push/push-opt-in';
 
 const ROLLEN_LABEL: Record<string, string> = {
   SUPERADMIN: 'Superadmin',
@@ -46,6 +47,7 @@ export function Header() {
         </h2>
       </div>
 
+      <PushOptIn />
       <DarkModeToggle />
 
       {/* User-Dropdown */}

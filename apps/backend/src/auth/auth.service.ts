@@ -143,6 +143,61 @@ export class AuthService {
       );
     }
 
+    // 2FA-Pruefung: Falls aktiviert, temporaeres Token zurueckgeben
+    if (benutzer.twoFactorEnabled) {
+      const tempToken = this.jwtService.sign(
+        { sub: benutzer.id, step: '2fa' },
+        {
+          secret: this.configService.get<string>('jwt.secret'),
+          expiresIn: '5m',
+        },
+      );
+      return { requires2FA: true, tempToken };
+    }
+
+    const tokens = await this.generiereTokens(
+      benutzer.id,
+      benutzer.email,
+      benutzer.role,
+      benutzer.tenantId,
+    );
+
+    await this.aktualisiereRefreshToken(benutzer.id, tokens.refreshToken);
+
+    return {
+      benutzer: {
+        id: benutzer.id,
+        email: benutzer.email,
+        rolle: benutzer.role,
+        tenantId: benutzer.tenantId,
+        emailVerifiziert: benutzer.emailVerifiziert,
+        berechtigungen: benutzer.berechtigungen ?? [],
+        vereinsRollen: benutzer.vereinsRollen ?? [],
+      },
+      tenant: {
+        id: benutzer.tenant.id,
+        name: benutzer.tenant.name,
+        slug: benutzer.tenant.slug,
+        logo: benutzer.tenant.logo ?? null,
+        primaryColor: benutzer.tenant.primaryColor,
+      },
+      ...tokens,
+    };
+  }
+
+  /**
+   * Generiert Tokens fuer einen Benutzer (wird von TwoFactorController nach 2FA-Verifizierung aufgerufen)
+   */
+  async generiereTokensFuerBenutzer(benutzer: {
+    id: string;
+    email: string;
+    role: Role;
+    tenantId: string;
+    emailVerifiziert: boolean;
+    berechtigungen: string[];
+    vereinsRollen: string[];
+    tenant: { id: string; name: string; slug: string; logo: string | null; primaryColor: string };
+  }) {
     const tokens = await this.generiereTokens(
       benutzer.id,
       benutzer.email,
@@ -237,6 +292,7 @@ export class AuthService {
       rolle: benutzer.role,
       tenantId: benutzer.tenantId,
       emailVerifiziert: benutzer.emailVerifiziert,
+      twoFactorEnabled: benutzer.twoFactorEnabled,
       berechtigungen: benutzer.berechtigungen ?? [],
       vereinsRollen: benutzer.vereinsRollen ?? [],
       tenant: {

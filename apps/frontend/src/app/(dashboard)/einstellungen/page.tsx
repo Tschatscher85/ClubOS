@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send, Building2, Trophy, CreditCard, Shield, Users, Gift } from 'lucide-react';
+import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send, Building2, Trophy, CreditCard, Shield, Users, Gift, Layout } from 'lucide-react';
 import Link from 'next/link';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -383,12 +383,34 @@ export default function EinstellungenPage() {
             </Badge>
           </Link>
         )}
+        {istAdmin && (
+          <Link href="/einstellungen/abonnement">
+            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
+              <CreditCard className="h-3 w-3 mr-1" />
+              Abonnement
+            </Badge>
+          </Link>
+        )}
+        {istAdmin && (
+          <Link href="/einstellungen/homepage">
+            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
+              <Layout className="h-3 w-3 mr-1" />
+              Homepage
+            </Badge>
+          </Link>
+        )}
         <a href="#ki-einstellungen">
           <Badge variant="outline" className="cursor-pointer hover:bg-muted">
             <Brain className="h-3 w-3 mr-1" />
             KI
           </Badge>
         </a>
+        <Link href="/einstellungen/sicherheit">
+          <Badge variant="outline" className="cursor-pointer hover:bg-muted">
+            <Lock className="h-3 w-3 mr-1" />
+            Sicherheit
+          </Badge>
+        </Link>
         {istAdminOderTrainer && (
           <a href="#email-einstellungen">
             <Badge variant="outline" className="cursor-pointer hover:bg-muted">

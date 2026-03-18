@@ -45,6 +45,8 @@ import { EntwicklungModule } from './entwicklung/entwicklung.module';
 import { ReferralModule } from './referral/referral.module';
 import { AufstellungModule } from './aufstellung/aufstellung.module';
 import { VerletzungModule } from './verletzung/verletzung.module';
+import { PushModule } from './push/push.module';
+import { BillingModule } from './billing/billing.module';
 import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
 import configuration from './config/configuration';
 
@@ -114,6 +116,8 @@ import configuration from './config/configuration';
     ReferralModule,
     AufstellungModule,
     VerletzungModule,
+    PushModule,
+    BillingModule,
   ],
   providers: [
     {

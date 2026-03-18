@@ -172,7 +172,7 @@ NEXT_PUBLIC_SENTRY_DSN=https://xxx@sentry.io/xxx
 
 ## Test-Zugangsdaten
 
-Passwort fuer alle: `ClubOS2024!`
+Test-Zugangsdaten: Siehe `apps/backend/prisma/seed.ts` und lokal konfigurieren.
 
 | Rolle | E-Mail | Vereinsrollen |
 |-------|--------|---------------|

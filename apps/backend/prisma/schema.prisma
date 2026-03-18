@@ -72,6 +72,10 @@ model Tenant {
   landessportbund              String? // z.B. "WLSB - Wuerttembergischer LSB"
   sportverband                 String? // z.B. "WFV - Wuerttembergischer FV"
   verbandsMitgliedsNr          String? // Mitgliedsnummer beim Verband
+  // Stripe Billing
+  stripeCustomerId             String?
+  stripeSubscriptionId         String?
+  trialEndsAt                  DateTime?
   createdAt                    DateTime  @default(now())
   updatedAt                    DateTime  @updatedAt
 
@@ -132,6 +136,10 @@ model User {
   passwortResetExpiresAt DateTime?
   // Google OAuth
   googleId               String?             @unique
+  // 2-Faktor-Authentifizierung (TOTP)
+  twoFactorSecret        String?
+  twoFactorEnabled       Boolean             @default(false)
+  backupCodes            String[]
   // Vereinsrollen (mehrere moeglich, z.B. ["Trainer","Kassenpruefer"])
   vereinsRollen          String[] // Verweise auf RollenVorlage.name
   // Berechtigungen (berechnet aus Vereinsrollen + individuelle Anpassungen)
@@ -143,6 +151,7 @@ model User {
   profile                Member?
   emailEinstellungen     EmailEinstellungen?
   buchungen              Buchung[]
+  webPushSubscriptions   WebPushSubscription[]
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
 
@@ -1497,4 +1506,18 @@ model Referral {
   ausgezahltAm DateTime?
   erstelltAm   DateTime  @default(now())
   referrer     Tenant    @relation(fields: [referrerId], references: [id], onDelete: Cascade)
+}
+
+// ==================== Web-Push-Abonnements ====================
+
+model WebPushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

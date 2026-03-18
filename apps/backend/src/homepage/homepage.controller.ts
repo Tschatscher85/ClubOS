@@ -147,9 +147,36 @@ export class HomepageController {
 
   // ==================== Oeffentliche Endpoints (ohne Auth) ====================
 
+  @Get('public/:slug')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Oeffentliche Vereinshomepage laden (per Slug)' })
+  @ApiResponse({ status: 200, description: 'Homepage-Daten inkl. Tenant, Sektionen, Events' })
+  @ApiResponse({ status: 404, description: 'Homepage nicht gefunden' })
+  async oeffentlichLadenPerSlug(@Param('slug') slug: string) {
+    return this.homepageService.oeffentlichLaden(slug);
+  }
+
+  @Get('public/:slug/teams')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Oeffentliche Mannschaftsliste laden' })
+  @ApiResponse({ status: 200, description: 'Teams des Vereins' })
+  @ApiResponse({ status: 404, description: 'Verein nicht gefunden' })
+  async oeffentlichTeamsLaden(@Param('slug') slug: string) {
+    return this.homepageService.oeffentlichTeamsLaden(slug);
+  }
+
+  @Get('public/:slug/events')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Oeffentliche Terminliste laden' })
+  @ApiResponse({ status: 200, description: 'Kommende Events des Vereins' })
+  @ApiResponse({ status: 404, description: 'Verein nicht gefunden' })
+  async oeffentlichEventsLaden(@Param('slug') slug: string) {
+    return this.homepageService.oeffentlichEventsLaden(slug);
+  }
+
   @Get('verein/:subdomain')
   @SkipThrottle()
-  @ApiOperation({ summary: 'Oeffentliche Vereinshomepage laden' })
+  @ApiOperation({ summary: 'Oeffentliche Vereinshomepage laden (Legacy)' })
   @ApiResponse({ status: 200, description: 'Homepage-Daten' })
   @ApiResponse({ status: 404, description: 'Homepage nicht gefunden' })
   async oeffentlichLaden(@Param('subdomain') subdomain: string) {

@@ -1,0 +1,23 @@
+name: Deploy to Hetzner
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            cd /opt/clubos
+            git pull origin main
+            npm ci
+            npm run build --workspace=packages/shared
+            npx prisma generate --schema=apps/backend/prisma/schema.prisma
+            npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma
+            cd apps/frontend && npx next build && cd ../..
+            pm2 restart clubos-backend clubos-frontend || true

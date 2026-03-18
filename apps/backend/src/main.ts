@@ -11,7 +11,9 @@ import {
 } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    rawBody: true,
+  });
 
   // Statische Dateien (Uploads) bereitstellen
   app.useStaticAssets(join(process.cwd(), 'uploads'), {

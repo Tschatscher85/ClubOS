@@ -215,6 +215,54 @@ export class HomepageService {
     };
   }
 
+  /**
+   * Oeffentliche Mannschaftsliste per Slug laden
+   */
+  async oeffentlichTeamsLaden(slug: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { slug },
+      select: { id: true, name: true },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Verein nicht gefunden.');
+    }
+
+    const teams = await this.prisma.team.findMany({
+      where: { tenantId: tenant.id },
+      include: { abteilung: { select: { name: true, sport: true } } },
+      orderBy: [{ sport: 'asc' }, { ageGroup: 'asc' }],
+    });
+
+    return { verein: tenant.name, teams };
+  }
+
+  /**
+   * Oeffentliche Terminliste per Slug laden
+   */
+  async oeffentlichEventsLaden(slug: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { slug },
+      select: { id: true, name: true },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Verein nicht gefunden.');
+    }
+
+    const events = await this.prisma.event.findMany({
+      where: {
+        tenantId: tenant.id,
+        date: { gte: new Date() },
+      },
+      orderBy: { date: 'asc' },
+      take: 20,
+      include: { team: { select: { name: true, sport: true } } },
+    });
+
+    return { verein: tenant.name, events };
+  }
+
   // ==================== KI-Generierung ====================
 
   /**
