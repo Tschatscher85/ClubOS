@@ -123,6 +123,12 @@ model User {
   passwortResetExpiresAt DateTime?
   // Google OAuth
   googleId             String?  @unique
+  // Berechtigungen (granulare Freischaltung)
+  berechtigungen    String[]   // z.B. ["MITGLIEDER","TEAMS","KALENDER","TURNIERE","NACHRICHTEN","BUCHHALTUNG","FORMULARE","DOKUMENTE","EINSTELLUNGEN"]
+  istAktiv          Boolean    @default(true)
+  letzterLogin      DateTime?
+  eingeladenVon     String?    // userId des Einladenden
+  notizen           String?    // Admin-Notizen zum Benutzer
   profile              Member?
   emailEinstellungen   EmailEinstellungen?
   createdAt            DateTime @default(now())

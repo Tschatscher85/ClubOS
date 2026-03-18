@@ -19,6 +19,7 @@
     "typescript": "^5.7.0"
   },
   "dependencies": {
-    "@nestjs/throttler": "^6.5.0"
+    "@nestjs/throttler": "^6.5.0",
+    "imapflow": "^1.2.15"
   }
 }

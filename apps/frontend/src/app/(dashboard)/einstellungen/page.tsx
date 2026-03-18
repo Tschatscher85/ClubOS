@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send } from 'lucide-react';
+import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send, Building2, Trophy, CreditCard } from 'lucide-react';
+import Link from 'next/link';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -331,6 +332,49 @@ export default function EinstellungenPage() {
         </div>
       </div>
 
+      {/* Navigation */}
+      <div className="flex flex-wrap gap-2 border-b pb-4">
+        <Badge variant="default" className="cursor-default">Verein</Badge>
+        {istAdmin && (
+          <Link href="/einstellungen/vereinsdaten">
+            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
+              <Building2 className="h-3 w-3 mr-1" />
+              Vereinsdaten
+            </Badge>
+          </Link>
+        )}
+        {istAdmin && (
+          <Link href="/einstellungen/sportarten">
+            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
+              <Trophy className="h-3 w-3 mr-1" />
+              Sportarten
+            </Badge>
+          </Link>
+        )}
+        {istAdmin && (
+          <Link href="/einstellungen/beitraege">
+            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
+              <CreditCard className="h-3 w-3 mr-1" />
+              Beitraege
+            </Badge>
+          </Link>
+        )}
+        <a href="#ki-einstellungen">
+          <Badge variant="outline" className="cursor-pointer hover:bg-muted">
+            <Brain className="h-3 w-3 mr-1" />
+            KI
+          </Badge>
+        </a>
+        {istAdminOderTrainer && (
+          <a href="#email-einstellungen">
+            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
+              <Mail className="h-3 w-3 mr-1" />
+              E-Mail
+            </Badge>
+          </a>
+        )}
+      </div>
+
       {/* Vereinsdaten */}
       <Card>
         <CardHeader>
@@ -503,7 +547,7 @@ export default function EinstellungenPage() {
 
       {/* KI-Einstellungen */}
       {istAdmin && (
-        <Card>
+        <Card id="ki-einstellungen">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Brain className="h-5 w-5" />
@@ -607,7 +651,7 @@ export default function EinstellungenPage() {
 
       {/* E-Mail-Einstellungen */}
       {istAdminOderTrainer && (
-        <Card>
+        <Card id="email-einstellungen">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />

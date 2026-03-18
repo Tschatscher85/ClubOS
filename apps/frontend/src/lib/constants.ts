@@ -26,4 +26,5 @@ export const ROUTEN = {
   DOKUMENTE: '/dokumente',
   DFBNET: '/dfbnet',
   EINSTELLUNGEN: '/einstellungen',
+  POSTEINGANG: '/posteingang',
 } as const;
