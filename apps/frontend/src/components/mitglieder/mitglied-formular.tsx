@@ -173,8 +173,11 @@ export function MitgliedFormular({
       }
       // Rollen laden wenn Mitglied einen User hat
       if (mitglied.userId) {
-        apiClient.get<{ vereinsRollen: string[] }>(`/benutzer/${mitglied.userId}`)
-          .then((user) => setGewaehlteRollen(user.vereinsRollen?.length ? user.vereinsRollen : ['Spieler']))
+        apiClient.get<{ id: string; vereinsRollen: string[] }[]>('/benutzer/verwaltung/liste')
+          .then((benutzerListe) => {
+            const user = benutzerListe.find((b) => b.id === mitglied.userId);
+            setGewaehlteRollen(user?.vereinsRollen?.length ? user.vereinsRollen : ['Spieler']);
+          })
           .catch(() => setGewaehlteRollen(['Spieler']));
       } else {
         setGewaehlteRollen(['Spieler']);
