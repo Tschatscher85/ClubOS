@@ -37,7 +37,7 @@ const NAVIGATION: ReadonlyArray<{
   berechtigung?: string;
 }> = [
   { href: ROUTEN.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard, rollen: null },
-  { href: ROUTEN.MITGLIEDER, label: 'Personen', icon: Users, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'MITGLIEDER' },
+  { href: ROUTEN.MITGLIEDER, label: 'Mitglieder & Mitarbeiter', icon: Users, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'MITGLIEDER' },
   { href: ROUTEN.TEAMS, label: 'Teams & Abteilungen', icon: Shield, rollen: null, berechtigung: 'TEAMS' },
   { href: ROUTEN.KALENDER, label: 'Kalender', icon: Calendar, rollen: null, berechtigung: 'KALENDER' },
   { href: ROUTEN.TURNIERE, label: 'Spielbetrieb', icon: Trophy, rollen: null, berechtigung: 'TURNIERE' },

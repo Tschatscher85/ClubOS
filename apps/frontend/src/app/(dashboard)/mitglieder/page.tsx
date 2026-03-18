@@ -11,9 +11,9 @@ export default function PersonenPage() {
       <div className="flex items-center gap-3">
         <Users className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">Personen</h1>
+          <h1 className="text-2xl font-bold">Mitglieder & Mitarbeiter</h1>
           <p className="text-muted-foreground">
-            Mitglieder und Mitarbeiter des Vereins
+            Vereinsmitglieder und Mitarbeiter verwalten
           </p>
         </div>
       </div>
