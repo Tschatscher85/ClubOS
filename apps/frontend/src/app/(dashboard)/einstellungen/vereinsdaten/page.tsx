@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Building2, Save, Upload, ArrowLeft } from 'lucide-react';
+import { Building2, Save, Upload, ArrowLeft, Globe, Link2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,6 +49,10 @@ interface Vereinsdaten {
   gemeinnuetzigkeitSeit: string;
   // Verbaende
   verbaende: string;
+  // Domain & Online-Praesenz
+  domain: string;
+  subdomain: string;
+  slug: string;
 }
 
 const LEERE_DATEN: Vereinsdaten = {
@@ -81,6 +85,9 @@ const LEERE_DATEN: Vereinsdaten = {
   gemeinnuetzigkeit: false,
   gemeinnuetzigkeitSeit: '',
   verbaende: '',
+  domain: '',
+  subdomain: '',
+  slug: '',
 };
 
 export default function VereinsdatenPage() {
@@ -604,6 +611,131 @@ export default function VereinsdatenPage() {
               placeholder="z.B. Wuerttembergischer Fussballverband (wfv)&#10;Schwaeibscher Turnerbund (STB)"
               rows={4}
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Domain & Online-Praesenz */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            Domain & Online-Praesenz
+          </CardTitle>
+          <CardDescription>
+            Konfigurieren Sie die Webadresse Ihres Vereins. Die ClubOS-Subdomain ist automatisch aktiv.
+            Optional koennen Sie eine eigene Domain verbinden.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* ClubOS Subdomain */}
+          <div className="space-y-3">
+            <h3 className="font-medium flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              ClubOS-Subdomain
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Subdomain</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={daten.subdomain || daten.slug || ''}
+                    onChange={(e) => aendern('subdomain', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                    placeholder="meinverein"
+                    className="flex-1"
+                  />
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">.clubos.de</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Ihre Vereinshomepage ist erreichbar unter:{' '}
+                  <span className="font-medium text-primary">
+                    {daten.subdomain || daten.slug || 'meinverein'}.clubos.de
+                  </span>
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Vereins-Slug (URL-Kuerzel)</Label>
+                <Input
+                  value={daten.slug}
+                  disabled
+                  className="bg-muted"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Wird bei der Registrierung festgelegt und kann nicht geaendert werden.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Eigene Domain */}
+          <div className="space-y-3 border-t pt-4">
+            <h3 className="font-medium flex items-center gap-2">
+              <ExternalLink className="h-4 w-4" />
+              Eigene Domain (optional)
+            </h3>
+            <div className="space-y-2">
+              <Label>Domain</Label>
+              <Input
+                value={daten.domain}
+                onChange={(e) => aendern('domain', e.target.value)}
+                placeholder="www.fc-meinverein.de"
+              />
+              <p className="text-xs text-muted-foreground">
+                Wenn Sie eine eigene Domain verwenden moechten, tragen Sie diese hier ein.
+                Erstellen Sie dann einen CNAME-Eintrag bei Ihrem Domain-Anbieter:
+              </p>
+              <div className="rounded-md bg-muted p-3 font-mono text-xs space-y-1">
+                <div>
+                  <span className="text-muted-foreground">Typ:</span>{' '}
+                  <span className="font-medium">CNAME</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Name:</span>{' '}
+                  <span className="font-medium">{daten.domain || 'www.ihre-domain.de'}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Ziel:</span>{' '}
+                  <span className="font-medium">{daten.subdomain || daten.slug || 'meinverein'}.clubos.de</span>
+                </div>
+              </div>
+              {daten.domain && (
+                <div className="rounded-md border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800">
+                  Nach dem Speichern kann es bis zu 24 Stunden dauern, bis die Domain aktiv ist.
+                  SSL-Zertifikate werden automatisch ueber Traefik/Let&apos;s Encrypt erstellt.
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Vorschau der URLs */}
+          <div className="space-y-3 border-t pt-4">
+            <h3 className="font-medium">Ihre Vereins-URLs</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground w-32">Homepage:</span>
+                <code className="bg-muted px-2 py-0.5 rounded text-xs">
+                  {daten.domain || `${daten.subdomain || daten.slug || 'meinverein'}.clubos.de`}
+                </code>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground w-32">Turniere:</span>
+                <code className="bg-muted px-2 py-0.5 rounded text-xs">
+                  {daten.domain || `${daten.subdomain || daten.slug || 'meinverein'}.clubos.de`}/turnier/...
+                </code>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground w-32">Aufstellungen:</span>
+                <code className="bg-muted px-2 py-0.5 rounded text-xs">
+                  {daten.domain || `${daten.subdomain || daten.slug || 'meinverein'}.clubos.de`}/aufstellung/...
+                </code>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground w-32">Einladungen:</span>
+                <code className="bg-muted px-2 py-0.5 rounded text-xs">
+                  {daten.domain || `${daten.subdomain || daten.slug || 'meinverein'}.clubos.de`}/einladung/...
+                </code>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
