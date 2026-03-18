@@ -101,6 +101,9 @@ export class MemberService {
         }),
         ...(dto.elternEmail !== undefined && { parentEmail: dto.elternEmail }),
         ...(dto.status !== undefined && { status: dto.status }),
+        ...(dto.beitragsklasseId !== undefined && { beitragsklasseId: dto.beitragsklasseId }),
+        ...(dto.beitragBetrag !== undefined && { beitragBetrag: dto.beitragBetrag }),
+        ...(dto.beitragIntervall !== undefined && { beitragIntervall: dto.beitragIntervall }),
       },
     });
   }

@@ -183,4 +183,19 @@ export class AktualisiereMitgliedDto {
   @IsOptional()
   @IsEnum(MemberStatus, { message: 'Ungueltiger Mitgliedsstatus.' })
   status?: MemberStatus;
+
+  @ApiPropertyOptional({ description: 'ID der Beitragsklasse' })
+  @IsOptional()
+  @IsString()
+  beitragsklasseId?: string | null;
+
+  @ApiPropertyOptional({ description: 'Individueller Beitragsbetrag in EUR' })
+  @IsOptional()
+  @IsNumber()
+  beitragBetrag?: number | null;
+
+  @ApiPropertyOptional({ description: 'Beitragsintervall' })
+  @IsOptional()
+  @IsString()
+  beitragIntervall?: string | null;
 }
