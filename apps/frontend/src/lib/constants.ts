@@ -20,5 +20,6 @@ export const ROUTEN = {
   SPONSOREN: '/sponsoren',
   FORMULARE: '/formulare',
   DOKUMENTE: '/dokumente',
+  DFBNET: '/dfbnet',
   EINSTELLUNGEN: '/einstellungen',
 } as const;

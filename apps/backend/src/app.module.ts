@@ -26,6 +26,7 @@ import { SchiedsrichterModule } from './schiedsrichter/schiedsrichter.module';
 import { BuchhaltungModule } from './buchhaltung/buchhaltung.module';
 import { KiModule } from './ki/ki.module';
 import { EmailEinstellungenModule } from './email/email-einstellungen.module';
+import { DfbnetModule } from './dfbnet/dfbnet.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -60,6 +61,7 @@ import configuration from './config/configuration';
     SchiedsrichterModule,
     BuchhaltungModule,
     EmailEinstellungenModule,
+    DfbnetModule,
   ],
 })
 export class AppModule {}

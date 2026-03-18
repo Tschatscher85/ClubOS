@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send } from 'lucide-react';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/use-auth';
@@ -54,6 +55,23 @@ export default function EinstellungenPage() {
   const [kiErfolg, setKiErfolg] = useState('');
   const [kiFehler, setKiFehler] = useState('');
   const [kiGeladen, setKiGeladen] = useState(false);
+
+  // E-Mail-Einstellungen
+  const [emailSmtpHost, setEmailSmtpHost] = useState('');
+  const [emailSmtpPort, setEmailSmtpPort] = useState('587');
+  const [emailSmtpUser, setEmailSmtpUser] = useState('');
+  const [emailSmtpPass, setEmailSmtpPass] = useState('');
+  const [emailSmtpPassAnzeigen, setEmailSmtpPassAnzeigen] = useState(false);
+  const [emailAbsenderEmail, setEmailAbsenderEmail] = useState('');
+  const [emailAbsenderName, setEmailAbsenderName] = useState('');
+  const [emailSignatur, setEmailSignatur] = useState('');
+  const [emailIstAktiv, setEmailIstAktiv] = useState(false);
+  const [emailLadend, setEmailLadend] = useState(false);
+  const [emailLoeschend, setEmailLoeschend] = useState(false);
+  const [emailTestLadend, setEmailTestLadend] = useState(false);
+  const [emailErfolg, setEmailErfolg] = useState('');
+  const [emailFehler, setEmailFehler] = useState('');
+  const [emailGeladen, setEmailGeladen] = useState(false);
 
   // Passwort aendern
   const [altesPasswort, setAltesPasswort] = useState('');
@@ -133,6 +151,112 @@ export default function EinstellungenPage() {
       );
     } finally {
       setKiLadend(false);
+    }
+  };
+
+  // E-Mail-Einstellungen laden
+  const istAdminOderTrainer =
+    benutzer?.rolle === 'ADMIN' ||
+    benutzer?.rolle === 'SUPERADMIN' ||
+    benutzer?.rolle === 'TRAINER';
+
+  useEffect(() => {
+    if (!istAdminOderTrainer || emailGeladen) return;
+    const emailEinstellungenLaden = async () => {
+      try {
+        const daten = await apiClient.get<{
+          smtpHost: string;
+          smtpPort: number;
+          smtpUser: string;
+          smtpPass: string;
+          absenderEmail: string;
+          absenderName: string;
+          signatur: string;
+          istAktiv: boolean;
+        }>('/email-einstellungen');
+        setEmailSmtpHost(daten.smtpHost || '');
+        setEmailSmtpPort(String(daten.smtpPort || 587));
+        setEmailSmtpUser(daten.smtpUser || '');
+        setEmailSmtpPass(daten.smtpPass || '');
+        setEmailAbsenderEmail(daten.absenderEmail || '');
+        setEmailAbsenderName(daten.absenderName || '');
+        setEmailSignatur(daten.signatur || '');
+        setEmailIstAktiv(daten.istAktiv ?? false);
+        setEmailGeladen(true);
+      } catch {
+        // Keine Einstellungen vorhanden
+        setEmailGeladen(true);
+      }
+    };
+    emailEinstellungenLaden();
+  }, [istAdminOderTrainer, emailGeladen]);
+
+  const handleEmailSpeichern = async () => {
+    setEmailLadend(true);
+    setEmailFehler('');
+    setEmailErfolg('');
+    try {
+      await apiClient.put('/email-einstellungen', {
+        smtpHost: emailSmtpHost,
+        smtpPort: Number(emailSmtpPort),
+        smtpUser: emailSmtpUser,
+        smtpPass: emailSmtpPass || undefined,
+        absenderEmail: emailAbsenderEmail,
+        absenderName: emailAbsenderName,
+        signatur: emailSignatur,
+        istAktiv: emailIstAktiv,
+      });
+      setEmailErfolg('E-Mail-Einstellungen gespeichert.');
+      setTimeout(() => setEmailErfolg(''), 5000);
+    } catch (error) {
+      setEmailFehler(
+        error instanceof Error ? error.message : 'Fehler beim Speichern der E-Mail-Einstellungen.',
+      );
+    } finally {
+      setEmailLadend(false);
+    }
+  };
+
+  const handleEmailLoeschen = async () => {
+    if (!confirm('E-Mail-Einstellungen wirklich loeschen?')) return;
+    setEmailLoeschend(true);
+    setEmailFehler('');
+    setEmailErfolg('');
+    try {
+      await apiClient.delete('/email-einstellungen');
+      setEmailSmtpHost('');
+      setEmailSmtpPort('587');
+      setEmailSmtpUser('');
+      setEmailSmtpPass('');
+      setEmailAbsenderEmail('');
+      setEmailAbsenderName('');
+      setEmailSignatur('');
+      setEmailIstAktiv(false);
+      setEmailErfolg('E-Mail-Einstellungen geloescht.');
+      setTimeout(() => setEmailErfolg(''), 5000);
+    } catch (error) {
+      setEmailFehler(
+        error instanceof Error ? error.message : 'Fehler beim Loeschen.',
+      );
+    } finally {
+      setEmailLoeschend(false);
+    }
+  };
+
+  const handleEmailTesten = async () => {
+    setEmailTestLadend(true);
+    setEmailFehler('');
+    setEmailErfolg('');
+    try {
+      await apiClient.post('/email-einstellungen/testen', {});
+      setEmailErfolg('Test-E-Mail wurde gesendet. Bitte pruefen Sie Ihr Postfach.');
+      setTimeout(() => setEmailErfolg(''), 5000);
+    } catch (error) {
+      setEmailFehler(
+        error instanceof Error ? error.message : 'Test-E-Mail konnte nicht gesendet werden.',
+      );
+    } finally {
+      setEmailTestLadend(false);
     }
   };
 
@@ -477,6 +601,161 @@ export default function EinstellungenPage() {
                 <span className="text-sm text-destructive">{kiFehler}</span>
               )}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* E-Mail-Einstellungen */}
+      {istAdminOderTrainer && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              E-Mail-Einstellungen
+            </CardTitle>
+            <CardDescription>
+              Konfigurieren Sie Ihren persoenlichen SMTP-Server fuer den E-Mail-Versand aus ClubOS.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Aktivierung */}
+            <div className="flex items-center gap-3">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={emailIstAktiv}
+                  onChange={(e) => setEmailIstAktiv(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
+              </label>
+              <Label>Persoenlichen E-Mail-Versand aktivieren</Label>
+            </div>
+
+            {/* SMTP Host + Port */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="col-span-2 space-y-2">
+                <Label>SMTP-Host</Label>
+                <Input
+                  value={emailSmtpHost}
+                  onChange={(e) => setEmailSmtpHost(e.target.value)}
+                  placeholder="smtp.beispiel.de"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>SMTP-Port</Label>
+                <Input
+                  type="number"
+                  value={emailSmtpPort}
+                  onChange={(e) => setEmailSmtpPort(e.target.value)}
+                  placeholder="587"
+                />
+              </div>
+            </div>
+
+            {/* SMTP Zugangsdaten */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>SMTP-Benutzername</Label>
+                <Input
+                  value={emailSmtpUser}
+                  onChange={(e) => setEmailSmtpUser(e.target.value)}
+                  placeholder="benutzer@beispiel.de"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>SMTP-Passwort</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type={emailSmtpPassAnzeigen ? 'text' : 'password'}
+                    value={emailSmtpPass}
+                    onChange={(e) => setEmailSmtpPass(e.target.value)}
+                    placeholder="Passwort"
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setEmailSmtpPassAnzeigen(!emailSmtpPassAnzeigen)}
+                  >
+                    {emailSmtpPassAnzeigen ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Absender */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Absender-E-Mail</Label>
+                <Input
+                  type="email"
+                  value={emailAbsenderEmail}
+                  onChange={(e) => setEmailAbsenderEmail(e.target.value)}
+                  placeholder="info@meinverein.de"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Absender-Name</Label>
+                <Input
+                  value={emailAbsenderName}
+                  onChange={(e) => setEmailAbsenderName(e.target.value)}
+                  placeholder="FC Mein Verein"
+                />
+              </div>
+            </div>
+
+            {/* Signatur */}
+            <div className="space-y-2">
+              <Label>E-Mail-Signatur (HTML)</Label>
+              <Textarea
+                value={emailSignatur}
+                onChange={(e) => setEmailSignatur(e.target.value)}
+                placeholder="<p>Mit sportlichen Gruessen<br/>Ihr Vereinsname</p>"
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground">
+                HTML-Formatierung wird unterstuetzt. Die Signatur wird automatisch an jede E-Mail angehaengt.
+              </p>
+            </div>
+
+            {/* Aktionen */}
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                onClick={handleEmailSpeichern}
+                disabled={emailLadend}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {emailLadend ? 'Wird gespeichert...' : 'Speichern'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleEmailTesten}
+                disabled={emailTestLadend || !emailSmtpHost}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {emailTestLadend ? 'Wird gesendet...' : 'Test-E-Mail senden'}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleEmailLoeschen}
+                disabled={emailLoeschend}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {emailLoeschend ? 'Wird geloescht...' : 'Einstellungen loeschen'}
+              </Button>
+            </div>
+
+            {emailErfolg && (
+              <p className="text-sm text-green-600">{emailErfolg}</p>
+            )}
+            {emailFehler && (
+              <p className="text-sm text-destructive">{emailFehler}</p>
+            )}
           </CardContent>
         </Card>
       )}
