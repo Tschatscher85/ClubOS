@@ -17,14 +17,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
+import { Select } from '@/components/ui/select';
 import { apiClient } from '@/lib/api-client';
 import { useBenutzer } from '@/hooks/use-auth';
 
@@ -156,7 +149,7 @@ export default function TrainingsplaeneSeite() {
       setGenerierterPlan(ergebnis);
       // Alle Einheiten aufklappen
       if (Array.isArray(ergebnis.inhalt)) {
-        setExpandierteEinheiten(new Set(ergebnis.inhalt.map((_, i) => i)));
+        setExpandierteEinheiten(new Set(ergebnis.inhalt.map((_: Einheit, i: number) => i)));
       }
       // Gespeicherte Plaene aktualisieren
       plaeneLaden();
@@ -199,9 +192,8 @@ export default function TrainingsplaeneSeite() {
   const planAnzeigen = (plan: TrainingsplanData) => {
     setGenerierterPlan(plan);
     if (Array.isArray(plan.inhalt)) {
-      setExpandierteEinheiten(new Set(plan.inhalt.map((_, i) => i)));
+      setExpandierteEinheiten(new Set(plan.inhalt.map((_: Einheit, i: number) => i)));
     }
-    // Scroll nach oben zum Ergebnis
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -239,17 +231,19 @@ export default function TrainingsplaeneSeite() {
           {/* Team-Auswahl */}
           <div>
             <Label>Team</Label>
-            <Select value={gewaehlterTeamId} onValueChange={setGewaehlterTeamId}>
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Team waehlen..." />
-              </SelectTrigger>
-              <SelectContent>
-                {teams.map((team) => (
-                  <SelectItem key={team.id} value={team.id}>
-                    {team.name} ({team.ageGroup})
-                  </SelectItem>
-                ))}
-              </SelectContent>
+            <Select
+              className="mt-1"
+              value={gewaehlterTeamId}
+              onChange={(e) => setGewaehlterTeamId(e.target.value)}
+            >
+              <option value="" disabled>
+                Team waehlen...
+              </option>
+              {teams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name} ({team.ageGroup})
+                </option>
+              ))}
             </Select>
           </div>
 
@@ -271,13 +265,14 @@ export default function TrainingsplaeneSeite() {
               Anzahl Einheiten:{' '}
               <span className="font-bold text-primary">{anzahlEinheiten}</span>
             </Label>
-            <Slider
-              value={[anzahlEinheiten]}
-              onValueChange={(v) => setAnzahlEinheiten(v[0])}
+            <input
+              type="range"
               min={1}
               max={12}
               step={1}
-              className="mt-2"
+              value={anzahlEinheiten}
+              onChange={(e) => setAnzahlEinheiten(parseInt(e.target.value))}
+              className="mt-2 w-full accent-primary"
             />
             <div className="flex justify-between text-xs text-muted-foreground mt-1">
               <span>1</span>
@@ -289,31 +284,29 @@ export default function TrainingsplaeneSeite() {
           {/* Dauer pro Einheit */}
           <div>
             <Label>Dauer pro Einheit</Label>
-            <Select value={dauerMinuten} onValueChange={setDauerMinuten}>
-              <SelectTrigger className="mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="60">60 Minuten</SelectItem>
-                <SelectItem value="75">75 Minuten</SelectItem>
-                <SelectItem value="90">90 Minuten</SelectItem>
-                <SelectItem value="120">120 Minuten</SelectItem>
-              </SelectContent>
+            <Select
+              className="mt-1"
+              value={dauerMinuten}
+              onChange={(e) => setDauerMinuten(e.target.value)}
+            >
+              <option value="60">60 Minuten</option>
+              <option value="75">75 Minuten</option>
+              <option value="90">90 Minuten</option>
+              <option value="120">120 Minuten</option>
             </Select>
           </div>
 
           {/* Niveau */}
           <div>
             <Label>Niveau</Label>
-            <Select value={niveau} onValueChange={setNiveau}>
-              <SelectTrigger className="mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Anfaenger">Anfaenger</SelectItem>
-                <SelectItem value="Mittel">Mittel</SelectItem>
-                <SelectItem value="Fortgeschritten">Fortgeschritten</SelectItem>
-              </SelectContent>
+            <Select
+              className="mt-1"
+              value={niveau}
+              onChange={(e) => setNiveau(e.target.value)}
+            >
+              <option value="Anfaenger">Anfaenger</option>
+              <option value="Mittel">Mittel</option>
+              <option value="Fortgeschritten">Fortgeschritten</option>
             </Select>
           </div>
 
@@ -371,15 +364,16 @@ export default function TrainingsplaeneSeite() {
           </div>
 
           {/* Einheiten als Rohtext (Fallback) */}
-          {'rohtext' in (generierterPlan.inhalt as Record<string, unknown>) && (
-            <Card>
-              <CardContent className="pt-6">
-                <pre className="whitespace-pre-wrap text-sm">
-                  {(generierterPlan.inhalt as { rohtext: string }).rohtext}
-                </pre>
-              </CardContent>
-            </Card>
-          )}
+          {!Array.isArray(generierterPlan.inhalt) &&
+            'rohtext' in (generierterPlan.inhalt as Record<string, unknown>) && (
+              <Card>
+                <CardContent className="pt-6">
+                  <pre className="whitespace-pre-wrap text-sm">
+                    {(generierterPlan.inhalt as { rohtext: string }).rohtext}
+                  </pre>
+                </CardContent>
+              </Card>
+            )}
 
           {/* Einheiten als strukturierte Karten */}
           {Array.isArray(generierterPlan.inhalt) &&
