@@ -175,14 +175,14 @@ export default function BelegungsplanInhalt() {
           <div>
             <h1 className="text-2xl font-bold">Belegungsplan</h1>
             <p className="text-muted-foreground">
-              Wochenplan fuer Sporthallen und Trainingszeiten
+              Wochenplan für Hallen, Sportplätze und Trainingszeiten
             </p>
           </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setHalleDialogOffen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Neue Halle
+            Neuer Ort
           </Button>
           <Button
             onClick={() => setBelegungDialogOffen(true)}
@@ -246,14 +246,14 @@ export default function BelegungsplanInhalt() {
       {Object.values(wochenplan).every((arr) => arr.length === 0) && (
         <div className="text-center py-12 text-muted-foreground">
           Noch keine Belegungen eingetragen.
-          {hallen.length === 0 && ' Erstellen Sie zuerst eine Halle.'}
+          {hallen.length === 0 && ' Erstellen Sie zuerst einen Ort (Halle, Sportplatz, etc.).'}
         </div>
       )}
 
-      {/* Hallen-Uebersicht */}
+      {/* Orte-Uebersicht */}
       {hallen.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold">Hallen</h2>
+          <h2 className="text-lg font-semibold">Orte</h2>
           <div className="flex flex-wrap gap-2">
             {hallen.map((h) => (
               <Badge key={h.id} variant="secondary" className="text-sm py-1 px-3">
@@ -269,9 +269,9 @@ export default function BelegungsplanInhalt() {
       <Dialog open={halleDialogOffen} onOpenChange={setHalleDialogOffen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Neue Halle</DialogTitle>
+            <DialogTitle>Neuen Ort erfassen</DialogTitle>
             <DialogDescription>
-              Erfassen Sie eine Sporthalle oder einen Trainingsplatz.
+              Halle, Sportplatz, Raum oder anderen Ort für den Belegungsplan anlegen.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -305,7 +305,7 @@ export default function BelegungsplanInhalt() {
                 Abbrechen
               </Button>
               <Button onClick={handleHalleErstellen} disabled={!halleName || halleSpeichernd}>
-                {halleSpeichernd ? 'Wird erstellt...' : 'Halle erstellen'}
+                {halleSpeichernd ? 'Wird erstellt...' : 'Ort erstellen'}
               </Button>
             </div>
           </div>
@@ -323,12 +323,12 @@ export default function BelegungsplanInhalt() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Halle *</Label>
+              <Label>Ort *</Label>
               <Select
                 value={belegungHalleId}
                 onChange={(e) => setBelegungHalleId(e.target.value)}
               >
-                <option value="">Halle waehlen...</option>
+                <option value="">Ort wählen...</option>
                 {hallen.map((h) => (
                   <option key={h.id} value={h.id}>{h.name}</option>
                 ))}
