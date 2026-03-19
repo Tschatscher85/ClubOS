@@ -3,53 +3,81 @@
 import {
   LayoutDashboard,
   Users,
-  UserCog,
-  Building2,
   Shield,
   Calendar,
-  Trophy,
   MessageSquare,
-  Mail,
   Car,
   Heart,
-  Zap,
-  Building,
   UserCheck,
   Receipt,
-  FileText,
+  Zap,
   FolderOpen,
   Database,
   Settings,
-  MapPin,
-  ClipboardList,
 } from 'lucide-react';
 import { useTenant, useBenutzer } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
 import { SidebarNavItem } from './sidebar-nav-item';
 import { ROUTEN, API_BASE_URL } from '@/lib/constants';
 
-const NAVIGATION: ReadonlyArray<{
+interface NavEintrag {
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
   rollen: string[] | null;
   berechtigung?: string;
-}> = [
-  { href: ROUTEN.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard, rollen: null },
-  { href: ROUTEN.MITGLIEDER, label: 'Mitglieder & Mitarbeiter', icon: Users, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'MITGLIEDER' },
-  { href: ROUTEN.TEAMS, label: 'Teams & Abteilungen', icon: Shield, rollen: null, berechtigung: 'TEAMS' },
-  { href: ROUTEN.KALENDER, label: 'Kalender & Spielbetrieb', icon: Calendar, rollen: null, berechtigung: 'KALENDER' },
-  { href: ROUTEN.NACHRICHTEN, label: 'Nachrichten', icon: MessageSquare, rollen: null, berechtigung: 'NACHRICHTEN' },
-  { href: ROUTEN.FAHRGEMEINSCHAFTEN, label: 'Fahrtenbörse', icon: Car, rollen: null, berechtigung: 'FAHRGEMEINSCHAFTEN' },
-  { href: ROUTEN.ELTERN, label: 'Eltern-Portal', icon: Heart, rollen: ['PARENT'] },
-  { href: ROUTEN.SCHIEDSRICHTER, label: 'Schiedsrichter', icon: UserCheck, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'SCHIEDSRICHTER' },
-  { href: ROUTEN.BUCHHALTUNG, label: 'Buchhaltung', icon: Receipt, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'BUCHHALTUNG' },
-  { href: ROUTEN.SPONSOREN, label: 'Sponsoren', icon: Heart, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'SPONSOREN' },
-  { href: ROUTEN.WORKFLOWS, label: 'Workflows', icon: Zap, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'WORKFLOWS' },
-  { href: ROUTEN.DOKUMENTE, label: 'Dokumente & Formulare', icon: FolderOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'DOKUMENTE' },
-  { href: ROUTEN.DFBNET, label: 'DFBnet', icon: Database, rollen: ['SUPERADMIN', 'ADMIN'] },
-  { href: ROUTEN.EINSTELLUNGEN, label: 'Einstellungen', icon: Settings, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'EINSTELLUNGEN' },
+}
+
+interface NavGruppe {
+  titel: string;
+  eintraege: NavEintrag[];
+}
+
+const NAVIGATION_GRUPPEN: NavGruppe[] = [
+  {
+    titel: '',
+    eintraege: [
+      { href: ROUTEN.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard, rollen: null },
+    ],
+  },
+  {
+    titel: 'Verein',
+    eintraege: [
+      { href: ROUTEN.MITGLIEDER, label: 'Mitglieder & Personal', icon: Users, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'MITGLIEDER' },
+      { href: ROUTEN.TEAMS, label: 'Teams & Abteilungen', icon: Shield, rollen: null, berechtigung: 'TEAMS' },
+    ],
+  },
+  {
+    titel: 'Aktivitäten',
+    eintraege: [
+      { href: ROUTEN.KALENDER, label: 'Kalender & Spielbetrieb', icon: Calendar, rollen: null, berechtigung: 'KALENDER' },
+      { href: ROUTEN.NACHRICHTEN, label: 'Nachrichten', icon: MessageSquare, rollen: null, berechtigung: 'NACHRICHTEN' },
+      { href: ROUTEN.FAHRGEMEINSCHAFTEN, label: 'Fahrtenbörse', icon: Car, rollen: null, berechtigung: 'FAHRGEMEINSCHAFTEN' },
+    ],
+  },
+  {
+    titel: 'Verwaltung',
+    eintraege: [
+      { href: ROUTEN.SCHIEDSRICHTER, label: 'Schiedsrichter', icon: UserCheck, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'SCHIEDSRICHTER' },
+      { href: ROUTEN.BUCHHALTUNG, label: 'Buchhaltung & Beiträge', icon: Receipt, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'BUCHHALTUNG' },
+      { href: ROUTEN.SPONSOREN, label: 'Sponsoren', icon: Heart, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'SPONSOREN' },
+      { href: ROUTEN.DOKUMENTE, label: 'Dokumente & Formulare', icon: FolderOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'DOKUMENTE' },
+    ],
+  },
+  {
+    titel: 'System',
+    eintraege: [
+      { href: ROUTEN.WORKFLOWS, label: 'Workflows', icon: Zap, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'WORKFLOWS' },
+      { href: ROUTEN.DFBNET, label: 'DFBnet Import/Export', icon: Database, rollen: ['SUPERADMIN', 'ADMIN'] },
+      { href: ROUTEN.EINSTELLUNGEN, label: 'Einstellungen', icon: Settings, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'EINSTELLUNGEN' },
+    ],
+  },
+  {
+    titel: '',
+    eintraege: [
+      { href: ROUTEN.ELTERN, label: 'Eltern-Portal', icon: Heart, rollen: ['PARENT'] },
+    ],
+  },
 ];
 
 export function Sidebar() {
@@ -65,13 +93,10 @@ export function Sidebar() {
         .toUpperCase()
     : 'CO';
 
-  const sichtbareNavigation = NAVIGATION.filter((item) => {
-    // Rollen-Check
+  const filterEintrag = (item: NavEintrag) => {
     if (item.rollen && (!benutzer || !item.rollen.includes(benutzer.rolle))) {
       return false;
     }
-
-    // Berechtigungs-Check fuer MEMBER und PARENT
     if (
       item.berechtigung &&
       benutzer &&
@@ -79,9 +104,8 @@ export function Sidebar() {
     ) {
       return (benutzer.berechtigungen ?? []).includes(item.berechtigung);
     }
-
     return true;
-  });
+  };
 
   return (
     <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r bg-card">
@@ -101,21 +125,36 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-3">
-        {sichtbareNavigation.map((item) => (
-          <SidebarNavItem
-            key={item.href}
-            href={item.href}
-            label={item.label}
-            icon={item.icon}
-          />
-        ))}
+      <nav className="flex-1 overflow-y-auto p-3 space-y-4">
+        {NAVIGATION_GRUPPEN.map((gruppe) => {
+          const sichtbar = gruppe.eintraege.filter(filterEintrag);
+          if (sichtbar.length === 0) return null;
+
+          return (
+            <div key={gruppe.titel || 'start'}>
+              {gruppe.titel && (
+                <p className="px-3 mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                  {gruppe.titel}
+                </p>
+              )}
+              <div className="space-y-0.5">
+                {sichtbar.map((item) => (
+                  <SidebarNavItem
+                    key={item.href}
+                    href={item.href}
+                    label={item.label}
+                    icon={item.icon}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </nav>
 
       {/* Footer */}
       <div className="border-t p-3">
-        <Separator className="mb-3" />
-        <div className="flex items-center gap-3 px-3">
+        <div className="flex items-center gap-3 px-3 py-1">
           <Avatar className="h-8 w-8">
             <AvatarFallback className="text-xs">
               {benutzer?.email?.charAt(0).toUpperCase() || '?'}

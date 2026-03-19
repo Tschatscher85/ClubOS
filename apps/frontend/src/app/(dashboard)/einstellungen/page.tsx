@@ -1114,6 +1114,7 @@ function SportstaettenCard() {
   const [formKapazitaet, setFormKapazitaet] = useState('');
   const [formUntergruende, setFormUntergruende] = useState<string[]>([]);
   const [speichernd, setSpeichernd] = useState(false);
+  const [neuerUntergrund, setNeuerUntergrund] = useState('');
 
   const laden = async () => {
     try {
@@ -1154,6 +1155,24 @@ function SportstaettenCard() {
       prev.includes(wert) ? prev.filter((u) => u !== wert) : [...prev, wert],
     );
   };
+
+  const handleUntergrundHinzufuegen = () => {
+    const trimmed = neuerUntergrund.trim();
+    if (!trimmed) return;
+    const wert = trimmed.toUpperCase();
+    if (!formUntergruende.includes(wert)) {
+      setFormUntergruende((prev) => [...prev, wert]);
+    }
+    setNeuerUntergrund('');
+  };
+
+  // Alle Untergründe: vordefinierte + bereits gespeicherte eigene
+  const alleUntergruende = [...UNTERGRUND_OPTIONEN];
+  formUntergruende.forEach((ug) => {
+    if (!alleUntergruende.find((o) => o.toUpperCase() === ug)) {
+      alleUntergruende.push(ug.charAt(0).toUpperCase() + ug.slice(1).toLowerCase());
+    }
+  });
 
   const handleSpeichern = async () => {
     if (!formName) return;
@@ -1315,7 +1334,7 @@ function SportstaettenCard() {
                     Bei Veranstaltungen wird der Untergrund dann automatisch vorgeschlagen.
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {UNTERGRUND_OPTIONEN.map((ug) => (
+                    {alleUntergruende.map((ug) => (
                       <button
                         key={ug}
                         type="button"
@@ -1329,6 +1348,30 @@ function SportstaettenCard() {
                         {ug}
                       </button>
                     ))}
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      value={neuerUntergrund}
+                      onChange={(e) => setNeuerUntergrund(e.target.value)}
+                      placeholder="Eigenen Untergrund hinzufügen..."
+                      className="max-w-[250px]"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleUntergrundHinzufuegen();
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleUntergrundHinzufuegen}
+                      disabled={!neuerUntergrund.trim()}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Hinzufügen
+                    </Button>
                   </div>
                 </div>
 

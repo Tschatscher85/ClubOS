@@ -3,23 +3,18 @@
 import {
   LayoutDashboard,
   Users,
-  UserCog,
-  Building2,
   Shield,
   Calendar,
-  Trophy,
   MessageSquare,
-  Mail,
   Car,
   Heart,
-  Building,
   UserCheck,
   Receipt,
   Zap,
-  FileText,
   FolderOpen,
+  Database,
   Settings,
-  ClipboardList,
+  Menu,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -27,35 +22,66 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarNavItem } from './sidebar-nav-item';
 import { useTenant, useBenutzer } from '@/hooks/use-auth';
 import { ROUTEN, API_BASE_URL } from '@/lib/constants';
-import { Menu } from 'lucide-react';
 import { useState } from 'react';
 
-const NAVIGATION: ReadonlyArray<{
+interface NavEintrag {
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
   rollen: string[] | null;
-}> = [
-  { href: ROUTEN.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard, rollen: null },
-  { href: ROUTEN.MITGLIEDER, label: 'Mitglieder', icon: Users, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
-  { href: ROUTEN.MITARBEITER, label: 'Mitarbeiter', icon: UserCog, rollen: ['SUPERADMIN', 'ADMIN'] },
-  { href: ROUTEN.ABTEILUNGEN, label: 'Abteilungen', icon: Building2, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
-  { href: ROUTEN.TEAMS, label: 'Teams', icon: Shield, rollen: null },
-  { href: ROUTEN.KALENDER, label: 'Kalender', icon: Calendar, rollen: null },
-  { href: ROUTEN.TURNIERE, label: 'Turniere', icon: Trophy, rollen: null },
-  { href: ROUTEN.NACHRICHTEN, label: 'Nachrichten', icon: MessageSquare, rollen: null },
-  { href: ROUTEN.POSTEINGANG, label: 'Posteingang', icon: Mail, rollen: null },
-  { href: ROUTEN.FAHRGEMEINSCHAFTEN, label: 'Fahrtenboerse', icon: Car, rollen: null },
-  { href: ROUTEN.ELTERN, label: 'Eltern-Portal', icon: Heart, rollen: ['PARENT'] },
-  { href: ROUTEN.HALLEN, label: 'Hallenbelegung', icon: Building, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
-  { href: ROUTEN.SCHIEDSRICHTER, label: 'Schiedsrichter', icon: UserCheck, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
-  { href: ROUTEN.BUCHHALTUNG, label: 'Buchhaltung', icon: Receipt, rollen: ['SUPERADMIN', 'ADMIN'] },
-  { href: ROUTEN.SPONSOREN, label: 'Sponsoren', icon: Heart, rollen: ['SUPERADMIN', 'ADMIN'] },
-  { href: ROUTEN.WORKFLOWS, label: 'Workflows', icon: Zap, rollen: ['SUPERADMIN', 'ADMIN'] },
-  { href: ROUTEN.FORMULARE, label: 'Formulare', icon: FileText, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
-  { href: ROUTEN.DOKUMENTE, label: 'Dokumente', icon: FolderOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
-  { href: ROUTEN.TRAININGSPLAENE, label: 'Trainingsplaene', icon: ClipboardList, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
-  { href: ROUTEN.EINSTELLUNGEN, label: 'Einstellungen', icon: Settings, rollen: ['SUPERADMIN', 'ADMIN'] },
+  berechtigung?: string;
+}
+
+interface NavGruppe {
+  titel: string;
+  eintraege: NavEintrag[];
+}
+
+const NAVIGATION_GRUPPEN: NavGruppe[] = [
+  {
+    titel: '',
+    eintraege: [
+      { href: ROUTEN.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard, rollen: null },
+    ],
+  },
+  {
+    titel: 'Verein',
+    eintraege: [
+      { href: ROUTEN.MITGLIEDER, label: 'Mitglieder & Personal', icon: Users, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'MITGLIEDER' },
+      { href: ROUTEN.TEAMS, label: 'Teams & Abteilungen', icon: Shield, rollen: null, berechtigung: 'TEAMS' },
+    ],
+  },
+  {
+    titel: 'Aktivitäten',
+    eintraege: [
+      { href: ROUTEN.KALENDER, label: 'Kalender & Spielbetrieb', icon: Calendar, rollen: null, berechtigung: 'KALENDER' },
+      { href: ROUTEN.NACHRICHTEN, label: 'Nachrichten', icon: MessageSquare, rollen: null, berechtigung: 'NACHRICHTEN' },
+      { href: ROUTEN.FAHRGEMEINSCHAFTEN, label: 'Fahrtenbörse', icon: Car, rollen: null, berechtigung: 'FAHRGEMEINSCHAFTEN' },
+    ],
+  },
+  {
+    titel: 'Verwaltung',
+    eintraege: [
+      { href: ROUTEN.SCHIEDSRICHTER, label: 'Schiedsrichter', icon: UserCheck, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'SCHIEDSRICHTER' },
+      { href: ROUTEN.BUCHHALTUNG, label: 'Buchhaltung & Beiträge', icon: Receipt, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'BUCHHALTUNG' },
+      { href: ROUTEN.SPONSOREN, label: 'Sponsoren', icon: Heart, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'SPONSOREN' },
+      { href: ROUTEN.DOKUMENTE, label: 'Dokumente & Formulare', icon: FolderOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'DOKUMENTE' },
+    ],
+  },
+  {
+    titel: 'System',
+    eintraege: [
+      { href: ROUTEN.WORKFLOWS, label: 'Workflows', icon: Zap, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'WORKFLOWS' },
+      { href: ROUTEN.DFBNET, label: 'DFBnet', icon: Database, rollen: ['SUPERADMIN', 'ADMIN'] },
+      { href: ROUTEN.EINSTELLUNGEN, label: 'Einstellungen', icon: Settings, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'EINSTELLUNGEN' },
+    ],
+  },
+  {
+    titel: '',
+    eintraege: [
+      { href: ROUTEN.ELTERN, label: 'Eltern-Portal', icon: Heart, rollen: ['PARENT'] },
+    ],
+  },
 ];
 
 export function MobileSidebar() {
@@ -72,17 +98,26 @@ export function MobileSidebar() {
         .toUpperCase()
     : 'CO';
 
-  const sichtbareNavigation = NAVIGATION.filter(
-    (item) =>
-      !item.rollen || (benutzer && item.rollen.includes(benutzer.rolle)),
-  );
+  const filterEintrag = (item: NavEintrag) => {
+    if (item.rollen && (!benutzer || !item.rollen.includes(benutzer.rolle))) {
+      return false;
+    }
+    if (
+      item.berechtigung &&
+      benutzer &&
+      ['MEMBER', 'PARENT'].includes(benutzer.rolle)
+    ) {
+      return (benutzer.berechtigungen ?? []).includes(item.berechtigung);
+    }
+    return true;
+  };
 
   return (
     <Sheet open={offen} onOpenChange={setOffen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="lg:hidden">
           <Menu className="h-5 w-5" />
-          <span className="sr-only">Menue oeffnen</span>
+          <span className="sr-only">Menü öffnen</span>
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-64 p-0">
@@ -102,15 +137,31 @@ export function MobileSidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="space-y-1 p-3" onClick={() => setOffen(false)}>
-          {sichtbareNavigation.map((item) => (
-            <SidebarNavItem
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              icon={item.icon}
-            />
-          ))}
+        <nav className="overflow-y-auto p-3 space-y-4" onClick={() => setOffen(false)}>
+          {NAVIGATION_GRUPPEN.map((gruppe) => {
+            const sichtbar = gruppe.eintraege.filter(filterEintrag);
+            if (sichtbar.length === 0) return null;
+
+            return (
+              <div key={gruppe.titel || 'start'}>
+                {gruppe.titel && (
+                  <p className="px-3 mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                    {gruppe.titel}
+                  </p>
+                )}
+                <div className="space-y-0.5">
+                  {sichtbar.map((item) => (
+                    <SidebarNavItem
+                      key={item.href}
+                      href={item.href}
+                      label={item.label}
+                      icon={item.icon}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </nav>
       </SheetContent>
     </Sheet>
