@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, MapPin, Clock, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, MapPin, Clock, Users, ChevronLeft, ChevronRight, Building, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select } from '@/components/ui/select';
 import { EventFormular } from '@/components/kalender/event-formular';
 import { apiClient } from '@/lib/api-client';
 import { getEventFarben, EVENT_TYP_LABEL } from '@/lib/event-farben';
@@ -20,7 +21,7 @@ interface EventData {
   untergrund: string | null;
   teamId: string;
   notes: string | null;
-  team: { id: string; name: string; sport: string };
+  team: { id: string; name: string; sport: string; abteilungId?: string };
   attendances: { status: string }[];
   _count: { attendances: number };
 }
@@ -35,10 +36,17 @@ interface BelegungData {
   team: { id: string; name: string };
 }
 
+interface AbteilungData {
+  id: string;
+  name: string;
+  sport: string;
+  teams: { id: string; name: string; ageGroup: string }[];
+}
+
 const WOCHENTAGE = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 const WOCHENTAG_MAP: Record<string, number> = { MO: 0, DI: 1, MI: 2, DO: 3, FR: 4, SA: 5, SO: 6 };
 const MONATSNAMEN = [
-  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Januar', 'Februar', 'Maerz', 'April', 'Mai', 'Juni',
   'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
 ];
 
@@ -50,13 +58,19 @@ export default function KalenderInhalt() {
   const router = useRouter();
   const [events, setEvents] = useState<EventData[]>([]);
   const [belegungen, setBelegungen] = useState<BelegungData[]>([]);
+  const [abteilungen, setAbteilungen] = useState<AbteilungData[]>([]);
   const [ladend, setLadend] = useState(true);
   const [formularOffen, setFormularOffen] = useState(false);
   const [aktuellerMonat, setAktuellerMonat] = useState(new Date());
   const [ansicht, setAnsicht] = useState<'monat' | 'liste' | 'timeline'>('monat');
   const [farben, setFarben] = useState<EventFarben>(getEventFarben());
 
-  // Farben live aktualisieren
+  // Filter
+  const [filterAbteilung, setFilterAbteilung] = useState('');
+  const [filterTeam, setFilterTeam] = useState('');
+  const [filterTyp, setFilterTyp] = useState('');
+  const [belegungenAnzeigen, setBelegungenAnzeigen] = useState(true);
+
   useEffect(() => {
     const handler = (e: Event) => {
       setFarben((e as CustomEvent).detail);
@@ -67,13 +81,13 @@ export default function KalenderInhalt() {
 
   const datenLaden = useCallback(async () => {
     try {
-      const [eventDaten, turnierDaten, wochenplan] = await Promise.all([
+      const [eventDaten, turnierDaten, wochenplan, abteilungenDaten] = await Promise.all([
         apiClient.get<EventData[]>('/veranstaltungen'),
         apiClient.get<{ id: string; name: string; matches: { id: string; team1: string; team2: string; time: string | null; status: string; score1: number | null; score2: number | null }[] }[]>('/turniere').catch(() => []),
         apiClient.get<Record<string, BelegungData[]>>('/hallen/wochenplan').catch(() => ({})),
+        apiClient.get<AbteilungData[]>('/abteilungen').catch(() => []),
       ]);
 
-      // Turnier-Spiele als Events einfuegen
       const turnierEvents: EventData[] = [];
       for (const turnier of turnierDaten) {
         for (const spiel of turnier.matches || []) {
@@ -96,13 +110,12 @@ export default function KalenderInhalt() {
         }
       }
 
-      // Belegungen sammeln
       const alleBelegungen: BelegungData[] = [];
       for (const tagesListe of Object.values(wochenplan)) {
         alleBelegungen.push(...tagesListe);
       }
       setBelegungen(alleBelegungen);
-
+      setAbteilungen(abteilungenDaten);
       setEvents([...eventDaten, ...turnierEvents]);
     } catch (error) {
       console.error('Fehler beim Laden:', error);
@@ -115,9 +128,46 @@ export default function KalenderInhalt() {
     datenLaden();
   }, [datenLaden]);
 
+  // Team-IDs fuer aktuellen Filter
+  const filterTeamIds = useMemo(() => {
+    if (filterTeam) return new Set([filterTeam]);
+    if (filterAbteilung) {
+      const abt = abteilungen.find((a) => a.id === filterAbteilung);
+      return abt ? new Set(abt.teams.map((t) => t.id)) : new Set<string>();
+    }
+    return null; // null = alle anzeigen
+  }, [filterAbteilung, filterTeam, abteilungen]);
+
+  // Gefilterte Events
+  const gefilterteEvents = useMemo(() => {
+    return events.filter((e) => {
+      if (filterTeamIds && e.teamId && !filterTeamIds.has(e.teamId)) return false;
+      if (filterTyp && e.type !== filterTyp) return false;
+      return true;
+    });
+  }, [events, filterTeamIds, filterTyp]);
+
+  // Gefilterte Belegungen
+  const gefilterteBelegungen = useMemo(() => {
+    if (!belegungenAnzeigen) return [];
+    return belegungen.filter((b) => {
+      if (filterTeamIds && !filterTeamIds.has(b.team.id)) return false;
+      return true;
+    });
+  }, [belegungen, filterTeamIds, belegungenAnzeigen]);
+
+  // Teams fuer Team-Filter (abhaengig von Abteilung)
+  const verfuegbareTeams = useMemo(() => {
+    if (filterAbteilung) {
+      const abt = abteilungen.find((a) => a.id === filterAbteilung);
+      return abt?.teams || [];
+    }
+    return abteilungen.flatMap((a) => a.teams);
+  }, [filterAbteilung, abteilungen]);
+
   const handleLoeschen = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Veranstaltung wirklich löschen?')) return;
+    if (!confirm('Veranstaltung wirklich loeschen?')) return;
     try {
       await apiClient.delete(`/veranstaltungen/${id}`);
       datenLaden();
@@ -126,7 +176,6 @@ export default function KalenderInhalt() {
     }
   };
 
-  // Farbe fuer Event-Typ als Hex
   const typFarbe = (typ: string): string => {
     return farben[typ as keyof EventFarben] || farben.MEETING;
   };
@@ -144,8 +193,7 @@ export default function KalenderInhalt() {
     const tage: { datum: Date; istAktuellerMonat: boolean }[] = [];
 
     for (let i = startTag - 1; i >= 0; i--) {
-      const d = new Date(jahr, monat, -i);
-      tage.push({ datum: d, istAktuellerMonat: false });
+      tage.push({ datum: new Date(jahr, monat, -i), istAktuellerMonat: false });
     }
 
     for (let i = 1; i <= letzterTag.getDate(); i++) {
@@ -163,18 +211,18 @@ export default function KalenderInhalt() {
   // Events pro Tag
   const eventsProTag = useMemo(() => {
     const map = new Map<string, EventData[]>();
-    for (const event of events) {
+    for (const event of gefilterteEvents) {
       const key = new Date(event.date).toISOString().split('T')[0];
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(event);
     }
     return map;
-  }, [events]);
+  }, [gefilterteEvents]);
 
-  // Belegungen pro Wochentag-Index (0=Mo, 6=So)
+  // Belegungen pro Wochentag-Index
   const belegungenProTag = useMemo(() => {
     const map = new Map<number, BelegungData[]>();
-    for (const b of belegungen) {
+    for (const b of gefilterteBelegungen) {
       const idx = WOCHENTAG_MAP[b.wochentag];
       if (idx !== undefined) {
         if (!map.has(idx)) map.set(idx, []);
@@ -182,17 +230,20 @@ export default function KalenderInhalt() {
       }
     }
     return map;
-  }, [belegungen]);
+  }, [gefilterteBelegungen]);
 
   const heute = new Date().toISOString().split('T')[0];
 
-  // Kommende Events (sortiert)
+  // Kommende Events (fuer Liste + Timeline)
   const kommendeEvents = useMemo(() => {
-    return events
+    return gefilterteEvents
       .filter((e) => new Date(e.date) >= new Date())
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .slice(0, 20);
-  }, [events]);
+      .slice(0, 30);
+  }, [gefilterteEvents]);
+
+  // Aktiver Filter?
+  const hatFilter = filterAbteilung || filterTeam || filterTyp;
 
   if (ladend) {
     return (
@@ -204,6 +255,66 @@ export default function KalenderInhalt() {
 
   return (
     <div className="space-y-4">
+      {/* Filter-Bar */}
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3 bg-muted/30">
+        <Filter className="h-4 w-4 text-muted-foreground" />
+        <Select
+          value={filterAbteilung}
+          onChange={(e) => {
+            setFilterAbteilung(e.target.value);
+            setFilterTeam('');
+          }}
+          className="w-44 h-8 text-sm"
+        >
+          <option value="">Alle Abteilungen</option>
+          {abteilungen.map((a) => (
+            <option key={a.id} value={a.id}>{a.name}</option>
+          ))}
+        </Select>
+        {verfuegbareTeams.length > 0 && (
+          <Select
+            value={filterTeam}
+            onChange={(e) => setFilterTeam(e.target.value)}
+            className="w-44 h-8 text-sm"
+          >
+            <option value="">Alle Teams</option>
+            {verfuegbareTeams.map((t) => (
+              <option key={t.id} value={t.id}>{t.name} ({t.ageGroup})</option>
+            ))}
+          </Select>
+        )}
+        <Select
+          value={filterTyp}
+          onChange={(e) => setFilterTyp(e.target.value)}
+          className="w-40 h-8 text-sm"
+        >
+          <option value="">Alle Typen</option>
+          {Object.entries(EVENT_TYP_LABEL).map(([key, label]) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
+        </Select>
+        <label className="flex items-center gap-1.5 text-sm cursor-pointer ml-auto">
+          <input
+            type="checkbox"
+            checked={belegungenAnzeigen}
+            onChange={(e) => setBelegungenAnzeigen(e.target.checked)}
+            className="rounded border-gray-300"
+          />
+          <Building className="h-3.5 w-3.5 text-muted-foreground" />
+          Belegungen
+        </label>
+        {hatFilter && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs"
+            onClick={() => { setFilterAbteilung(''); setFilterTeam(''); setFilterTyp(''); }}
+          >
+            Filter zuruecksetzen
+          </Button>
+        )}
+      </div>
+
       {/* Toolbar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -278,15 +389,16 @@ export default function KalenderInhalt() {
               const key = datum.toISOString().split('T')[0];
               const tagesEvents = eventsProTag.get(key) || [];
               const istHeute = key === heute;
-              // Wochentag-Index (0=Mo, 6=So)
               let wtIdx = datum.getDay() - 1;
               if (wtIdx < 0) wtIdx = 6;
               const tagesBelegungen = belegungenProTag.get(wtIdx) || [];
 
+              const alleEintraege = tagesEvents.length + tagesBelegungen.length;
+
               return (
                 <div
                   key={idx}
-                  className={`min-h-[90px] border-r border-b last:border-r-0 p-1 ${
+                  className={`min-h-[100px] border-r border-b last:border-r-0 p-1 ${
                     !istAktuellerMonat ? 'bg-muted/30' : ''
                   }`}
                 >
@@ -298,14 +410,14 @@ export default function KalenderInhalt() {
                     {datum.getDate()}
                   </div>
                   <div className="space-y-0.5">
-                    {/* Belegungen (gedaempft dargestellt) */}
-                    {tagesBelegungen.slice(0, 1).map((b) => (
+                    {/* Belegungen */}
+                    {tagesBelegungen.slice(0, 2).map((b) => (
                       <div
                         key={b.id}
-                        className="w-full text-[10px] leading-tight px-1 py-0.5 rounded truncate bg-muted text-muted-foreground border border-dashed"
+                        className="w-full text-[10px] leading-tight px-1 py-0.5 rounded truncate bg-muted/80 text-muted-foreground border border-dashed"
                         title={`${b.von}–${b.bis} ${b.team.name} @ ${b.halle.name}`}
                       >
-                        {b.von}–{b.bis} {b.team.name}
+                        {b.von} {b.team.name}
                       </div>
                     ))}
                     {/* Events */}
@@ -320,9 +432,9 @@ export default function KalenderInhalt() {
                         {formatUhrzeit(event.date)} {event.title}
                       </button>
                     ))}
-                    {(tagesEvents.length + tagesBelegungen.length) > 4 && (
+                    {alleEintraege > 5 && (
                       <div className="text-[10px] text-muted-foreground px-1">
-                        +{tagesEvents.length + tagesBelegungen.length - 4} weitere
+                        +{alleEintraege - 5} weitere
                       </div>
                     )}
                   </div>
@@ -336,87 +448,105 @@ export default function KalenderInhalt() {
       {/* Listenansicht */}
       {ansicht === 'liste' && (
         <div className="space-y-2">
-          {kommendeEvents.length === 0 ? (
+          {kommendeEvents.length === 0 && gefilterteBelegungen.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              Keine kommenden Veranstaltungen.
+              Keine kommenden Veranstaltungen{hatFilter ? ' fuer diesen Filter' : ''}.
             </div>
           ) : (
-            kommendeEvents.map((event) => (
-              <div
-                key={event.id}
-                onClick={() => router.push(`/kalender/${event.id}`)}
-                className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-accent/50 transition-colors"
-              >
-                {/* Datum-Box */}
-                <div className="flex flex-col items-center justify-center min-w-[50px] rounded-md bg-muted px-2 py-1">
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(event.date).toLocaleDateString('de-DE', { weekday: 'short' })}
-                  </span>
-                  <span className="text-lg font-bold">
-                    {new Date(event.date).getDate()}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(event.date).toLocaleDateString('de-DE', { month: 'short' })}
-                  </span>
-                </div>
-
-                {/* Event-Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: typFarbe(event.type) }}
-                    />
-                    <span className="font-medium truncate">{event.title}</span>
-                    <Badge variant="outline" className="text-xs shrink-0">
-                      {event.team.name}
-                    </Badge>
-                  </div>
-                  <div className="flex gap-3 text-xs text-muted-foreground mt-1">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {formatUhrzeit(event.date)}
-                      {event.endDate && ` – ${formatUhrzeit(event.endDate)}`}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {event.location}
-                    </span>
-                    {event.attendances?.length > 0 && (
-                      <span className="flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        {event.attendances.filter((a) => a.status === 'YES').length}/{event.attendances.length}
-                      </span>
-                    )}
+            <>
+              {/* Belegungen als kompakte Uebersicht */}
+              {gefilterteBelegungen.length > 0 && (
+                <div className="rounded-lg border p-3 bg-muted/30 mb-4">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
+                    <Building className="h-3.5 w-3.5" />
+                    Regelmaessige Belegungen
+                  </p>
+                  <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
+                    {gefilterteBelegungen.map((b) => (
+                      <div key={b.id} className="text-xs flex items-center gap-2 px-2 py-1 rounded border border-dashed">
+                        <span className="font-medium min-w-[24px]">{b.wochentag}</span>
+                        <span className="text-muted-foreground">{b.von}–{b.bis}</span>
+                        <span className="truncate">{b.team.name}</span>
+                        <span className="text-muted-foreground truncate ml-auto">{b.halle.name}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                {/* Typ-Badge + Loeschen */}
-                <Badge
-                  className="text-white shrink-0"
-                  style={{ backgroundColor: typFarbe(event.type) }}
+              )}
+              {kommendeEvents.map((event) => (
+                <div
+                  key={event.id}
+                  onClick={() => router.push(`/kalender/${event.id}`)}
+                  className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-accent/50 transition-colors"
                 >
-                  {EVENT_TYP_LABEL[event.type] || event.type}
-                </Badge>
-                {!event.id.startsWith('turnier-') && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={(e) => handleLoeschen(event.id, e)}
+                  <div className="flex flex-col items-center justify-center min-w-[50px] rounded-md bg-muted px-2 py-1">
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(event.date).toLocaleDateString('de-DE', { weekday: 'short' })}
+                    </span>
+                    <span className="text-lg font-bold">
+                      {new Date(event.date).getDate()}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(event.date).toLocaleDateString('de-DE', { month: 'short' })}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: typFarbe(event.type) }}
+                      />
+                      <span className="font-medium truncate">{event.title}</span>
+                      <Badge variant="outline" className="text-xs shrink-0">
+                        {event.team.name}
+                      </Badge>
+                    </div>
+                    <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatUhrzeit(event.date)}
+                        {event.endDate && ` – ${formatUhrzeit(event.endDate)}`}
+                      </span>
+                      {event.location && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {event.location}
+                        </span>
+                      )}
+                      {event.attendances?.length > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {event.attendances.filter((a) => a.status === 'YES').length}/{event.attendances.length}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Badge
+                    className="text-white shrink-0"
+                    style={{ backgroundColor: typFarbe(event.type) }}
                   >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                )}
-              </div>
-            ))
+                    {EVENT_TYP_LABEL[event.type] || event.type}
+                  </Badge>
+                  {!event.id.startsWith('turnier-') && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0"
+                      onClick={(e) => handleLoeschen(event.id, e)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </>
           )}
         </div>
       )}
 
       {/* Timeline-Ansicht */}
       {ansicht === 'timeline' && (() => {
-        const sortiert = [...events]
+        const sortiert = [...gefilterteEvents]
           .filter((e) => new Date(e.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -435,7 +565,7 @@ export default function KalenderInhalt() {
 
             {nachDatum.size === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                Keine kommenden Termine.
+                Keine kommenden Termine{hatFilter ? ' fuer diesen Filter' : ''}.
               </div>
             ) : (
               <div className="space-y-6">
@@ -464,9 +594,7 @@ export default function KalenderInhalt() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="font-medium text-sm truncate">{event.title}</span>
-                              {event.notes && event.type === 'TOURNAMENT' && (
-                                <Badge variant="outline" className="text-xs">{event.notes}</Badge>
-                              )}
+                              <Badge variant="outline" className="text-xs shrink-0">{event.team.name}</Badge>
                             </div>
                             <div className="flex gap-3 text-xs text-muted-foreground mt-0.5">
                               <span>{formatUhrzeit(event.date)}{event.endDate ? ` – ${formatUhrzeit(event.endDate)}` : ''}</span>
