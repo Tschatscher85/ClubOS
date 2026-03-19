@@ -4,6 +4,7 @@ import {
   ErstelleHalleDto,
   AktualisiereHalleDto,
   ErstelleBelegungDto,
+  AktualisiereBelegungDto,
 } from './dto/erstelle-halle.dto';
 
 /** Wochentage in der richtigen Reihenfolge fuer den Wochenplan */
@@ -129,6 +130,31 @@ export class HalleService {
         von: dto.von,
         bis: dto.bis,
         notiz: dto.notiz,
+      },
+      include: { halle: true, team: true },
+    });
+  }
+
+  /** Belegung aktualisieren */
+  async belegungAktualisieren(tenantId: string, belegungId: string, dto: AktualisiereBelegungDto) {
+    const belegung = await this.prisma.hallenbelegung.findFirst({
+      where: { id: belegungId },
+      include: { halle: true },
+    });
+
+    if (!belegung || belegung.halle.tenantId !== tenantId) {
+      throw new NotFoundException('Belegung nicht gefunden.');
+    }
+
+    return this.prisma.hallenbelegung.update({
+      where: { id: belegungId },
+      data: {
+        ...(dto.teamId !== undefined && { teamId: dto.teamId }),
+        ...(dto.wochentag !== undefined && { wochentag: dto.wochentag }),
+        ...(dto.von !== undefined && { von: dto.von }),
+        ...(dto.bis !== undefined && { bis: dto.bis }),
+        ...(dto.notiz !== undefined && { notiz: dto.notiz }),
+        ...(dto.halleId !== undefined && { halleId: dto.halleId }),
       },
       include: { halle: true, team: true },
     });

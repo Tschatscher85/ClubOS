@@ -18,6 +18,10 @@ export class KiKonvertierungService {
    * Analysiert ein PDF-Formular mit KI und extrahiert die Formularfelder.
    */
   async pdfZuFormular(tenantId: string, pdfBuffer: Buffer, dateiname: string): Promise<FormularFeld[]> {
+    if (!pdfBuffer || pdfBuffer.length === 0) {
+      throw new BadRequestException('PDF-Datei ist leer.');
+    }
+
     const prompt = `Analysiere dieses PDF-Formular (${dateiname}) und extrahiere alle Formularfelder.
 
 Fuer jedes Feld gib zurueck:

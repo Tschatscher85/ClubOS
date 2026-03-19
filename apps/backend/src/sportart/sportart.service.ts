@@ -98,9 +98,11 @@ export class SportartService {
     const vordefinierte = Object.entries(SPORT_LABELS)
       .filter(([key]) => key !== Sport.CUSTOM)
       .map(([key, label]) => ({
-        key,
-        label,
-        istCustom: false,
+        id: key,
+        name: label,
+        beschreibung: '',
+        icon: '',
+        istVordefiniert: true,
       }));
 
     // Eigene Sportarten des Vereins
@@ -110,12 +112,11 @@ export class SportartService {
     });
 
     const eigene = customSportarten.map((cs) => ({
-      key: `CUSTOM_${cs.id}`,
-      label: cs.name,
-      istCustom: true,
       id: cs.id,
-      beschreibung: cs.beschreibung,
-      icon: cs.icon,
+      name: cs.name,
+      beschreibung: cs.beschreibung || '',
+      icon: cs.icon || '',
+      istVordefiniert: false,
     }));
 
     return [...vordefinierte, ...eigene];

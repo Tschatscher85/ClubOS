@@ -6,10 +6,11 @@ import {
   Plus,
   Clock,
   Trash2,
+  Pencil,
   CalendarDays,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -67,15 +68,17 @@ export default function BelegungsplanInhalt() {
   const [wochenplan, setWochenplan] = useState<Wochenplan>({});
   const [ladend, setLadend] = useState(true);
 
-  // Neue Halle
+  // Halle Dialog (Erstellen + Bearbeiten)
   const [halleDialogOffen, setHalleDialogOffen] = useState(false);
+  const [halleBearbeitenId, setHalleBearbeitenId] = useState<string | null>(null);
   const [halleName, setHalleName] = useState('');
   const [halleAdresse, setHalleAdresse] = useState('');
   const [halleKapazitaet, setHalleKapazitaet] = useState('');
   const [halleSpeichernd, setHalleSpeichernd] = useState(false);
 
-  // Neue Belegung
+  // Belegung Dialog (Erstellen + Bearbeiten)
   const [belegungDialogOffen, setBelegungDialogOffen] = useState(false);
+  const [belegungBearbeitenId, setBelegungBearbeitenId] = useState<string | null>(null);
   const [belegungHalleId, setBelegungHalleId] = useState('');
   const [belegungTeamId, setBelegungTeamId] = useState('');
   const [belegungWochentag, setBelegungWochentag] = useState('MO');
@@ -105,19 +108,38 @@ export default function BelegungsplanInhalt() {
     datenLaden();
   }, [datenLaden]);
 
-  const handleHalleErstellen = async () => {
-    if (!halleName) return;
-    setHalleSpeichernd(true);
-    try {
-      await apiClient.post('/hallen', {
-        name: halleName,
-        adresse: halleAdresse || undefined,
-        kapazitaet: halleKapazitaet ? parseInt(halleKapazitaet) : undefined,
-      });
-      setHalleDialogOffen(false);
+  // ==================== Halle erstellen/bearbeiten ====================
+
+  const handleHalleDialogOeffnen = (halle?: Halle) => {
+    if (halle) {
+      setHalleBearbeitenId(halle.id);
+      setHalleName(halle.name);
+      setHalleAdresse(halle.adresse || '');
+      setHalleKapazitaet(halle.kapazitaet?.toString() || '');
+    } else {
+      setHalleBearbeitenId(null);
       setHalleName('');
       setHalleAdresse('');
       setHalleKapazitaet('');
+    }
+    setHalleDialogOffen(true);
+  };
+
+  const handleHalleSpeichern = async () => {
+    if (!halleName) return;
+    setHalleSpeichernd(true);
+    try {
+      const daten = {
+        name: halleName,
+        adresse: halleAdresse || undefined,
+        kapazitaet: halleKapazitaet ? parseInt(halleKapazitaet) : undefined,
+      };
+      if (halleBearbeitenId) {
+        await apiClient.put(`/hallen/${halleBearbeitenId}`, daten);
+      } else {
+        await apiClient.post('/hallen', daten);
+      }
+      setHalleDialogOffen(false);
       datenLaden();
     } catch (error) {
       console.error('Fehler:', error);
@@ -126,17 +148,58 @@ export default function BelegungsplanInhalt() {
     }
   };
 
-  const handleBelegungErstellen = async () => {
+  const handleHalleLoeschen = async (id: string) => {
+    if (!confirm('Ort wirklich loeschen? Alle Belegungen dieses Orts werden ebenfalls geloescht.')) return;
+    try {
+      await apiClient.delete(`/hallen/${id}`);
+      datenLaden();
+    } catch (error) {
+      console.error('Fehler:', error);
+    }
+  };
+
+  // ==================== Belegung erstellen/bearbeiten ====================
+
+  const handleBelegungDialogOeffnen = (belegung?: Belegung) => {
+    if (belegung) {
+      setBelegungBearbeitenId(belegung.id);
+      setBelegungHalleId(belegung.halle.id);
+      setBelegungTeamId(belegung.team.id);
+      setBelegungWochentag(belegung.wochentag);
+      setBelegungVon(belegung.von);
+      setBelegungBis(belegung.bis);
+      setBelegungNotiz(belegung.notiz || '');
+    } else {
+      setBelegungBearbeitenId(null);
+      setBelegungHalleId('');
+      setBelegungTeamId('');
+      setBelegungWochentag('MO');
+      setBelegungVon('18:00');
+      setBelegungBis('20:00');
+      setBelegungNotiz('');
+    }
+    setBelegungDialogOffen(true);
+  };
+
+  const handleBelegungSpeichern = async () => {
     if (!belegungHalleId || !belegungTeamId) return;
     setBelegungSpeichernd(true);
     try {
-      await apiClient.post(`/hallen/${belegungHalleId}/belegung`, {
+      const daten = {
         teamId: belegungTeamId,
         wochentag: belegungWochentag,
         von: belegungVon,
         bis: belegungBis,
         notiz: belegungNotiz || undefined,
-      });
+      };
+      if (belegungBearbeitenId) {
+        await apiClient.put(`/hallen/belegung/${belegungBearbeitenId}`, {
+          ...daten,
+          halleId: belegungHalleId,
+        });
+      } else {
+        await apiClient.post(`/hallen/${belegungHalleId}/belegung`, daten);
+      }
       setBelegungDialogOffen(false);
       datenLaden();
     } catch (error) {
@@ -175,17 +238,17 @@ export default function BelegungsplanInhalt() {
           <div>
             <h1 className="text-2xl font-bold">Belegungsplan</h1>
             <p className="text-muted-foreground">
-              Wochenplan für Hallen, Sportplätze und Trainingszeiten
+              Wochenplan fuer Hallen, Sportplaetze und Trainingszeiten
             </p>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setHalleDialogOffen(true)}>
+          <Button variant="outline" onClick={() => handleHalleDialogOeffnen()}>
             <Plus className="h-4 w-4 mr-2" />
             Neuer Ort
           </Button>
           <Button
-            onClick={() => setBelegungDialogOffen(true)}
+            onClick={() => handleBelegungDialogOeffnen()}
             disabled={hallen.length === 0}
           >
             <CalendarDays className="h-4 w-4 mr-2" />
@@ -226,14 +289,24 @@ export default function BelegungsplanInhalt() {
                             </p>
                           )}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => handleBelegungLoeschen(b.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => handleBelegungDialogOeffnen(b)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => handleBelegungLoeschen(b.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -250,28 +323,60 @@ export default function BelegungsplanInhalt() {
         </div>
       )}
 
-      {/* Orte-Uebersicht */}
+      {/* Orte-Uebersicht mit Bearbeiten/Loeschen */}
       {hallen.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold">Orte</h2>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {hallen.map((h) => (
-              <Badge key={h.id} variant="secondary" className="text-sm py-1 px-3">
-                {h.name}
-                {h.kapazitaet && ` (${h.kapazitaet} Plaetze)`}
-              </Badge>
+              <div
+                key={h.id}
+                className="flex items-center justify-between border rounded-lg px-4 py-3"
+              >
+                <div>
+                  <p className="font-medium text-sm">{h.name}</p>
+                  {h.adresse && (
+                    <p className="text-xs text-muted-foreground">{h.adresse}</p>
+                  )}
+                  {h.kapazitaet && (
+                    <Badge variant="secondary" className="text-xs mt-1">
+                      {h.kapazitaet} Plaetze
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => handleHalleDialogOeffnen(h)}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => handleHalleLoeschen(h.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Dialog: Neue Halle */}
+      {/* Dialog: Halle erstellen/bearbeiten */}
       <Dialog open={halleDialogOffen} onOpenChange={setHalleDialogOffen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Neuen Ort erfassen</DialogTitle>
+            <DialogTitle>
+              {halleBearbeitenId ? 'Ort bearbeiten' : 'Neuen Ort erfassen'}
+            </DialogTitle>
             <DialogDescription>
-              Halle, Sportplatz, Raum oder anderen Ort für den Belegungsplan anlegen.
+              Halle, Sportplatz, Raum oder anderen Ort fuer den Belegungsplan.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -304,21 +409,29 @@ export default function BelegungsplanInhalt() {
               <Button variant="outline" onClick={() => setHalleDialogOffen(false)}>
                 Abbrechen
               </Button>
-              <Button onClick={handleHalleErstellen} disabled={!halleName || halleSpeichernd}>
-                {halleSpeichernd ? 'Wird erstellt...' : 'Ort erstellen'}
+              <Button onClick={handleHalleSpeichern} disabled={!halleName || halleSpeichernd}>
+                {halleSpeichernd
+                  ? 'Wird gespeichert...'
+                  : halleBearbeitenId
+                    ? 'Speichern'
+                    : 'Ort erstellen'}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Belegung eintragen */}
+      {/* Dialog: Belegung erstellen/bearbeiten */}
       <Dialog open={belegungDialogOffen} onOpenChange={setBelegungDialogOffen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Belegung eintragen</DialogTitle>
+            <DialogTitle>
+              {belegungBearbeitenId ? 'Belegung bearbeiten' : 'Belegung eintragen'}
+            </DialogTitle>
             <DialogDescription>
-              Tragen Sie eine regelmaessige Trainingszeit ein.
+              {belegungBearbeitenId
+                ? 'Aendern Sie die Trainingszeit.'
+                : 'Tragen Sie eine regelmaessige Trainingszeit ein.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -328,7 +441,7 @@ export default function BelegungsplanInhalt() {
                 value={belegungHalleId}
                 onChange={(e) => setBelegungHalleId(e.target.value)}
               >
-                <option value="">Ort wählen...</option>
+                <option value="">Ort waehlen...</option>
                 {hallen.map((h) => (
                   <option key={h.id} value={h.id}>{h.name}</option>
                 ))}
@@ -390,10 +503,14 @@ export default function BelegungsplanInhalt() {
                 Abbrechen
               </Button>
               <Button
-                onClick={handleBelegungErstellen}
+                onClick={handleBelegungSpeichern}
                 disabled={!belegungHalleId || !belegungTeamId || belegungSpeichernd}
               >
-                {belegungSpeichernd ? 'Wird gespeichert...' : 'Eintragen'}
+                {belegungSpeichernd
+                  ? 'Wird gespeichert...'
+                  : belegungBearbeitenId
+                    ? 'Speichern'
+                    : 'Eintragen'}
               </Button>
             </div>
           </div>

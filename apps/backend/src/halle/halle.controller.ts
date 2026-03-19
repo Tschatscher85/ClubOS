@@ -15,6 +15,7 @@ import {
   ErstelleHalleDto,
   AktualisiereHalleDto,
   ErstelleBelegungDto,
+  AktualisiereBelegungDto,
 } from './dto/erstelle-halle.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RollenGuard } from '../common/guards/rollen.guard';
@@ -98,6 +99,17 @@ export class HalleController {
     @Body() dto: ErstelleBelegungDto,
   ) {
     return this.halleService.belegungHinzufuegen(tenantId, halleId, dto);
+  }
+
+  @Put('belegung/:id')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
+  @ApiOperation({ summary: 'Belegung aktualisieren' })
+  async belegungAktualisieren(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') belegungId: string,
+    @Body() dto: AktualisiereBelegungDto,
+  ) {
+    return this.halleService.belegungAktualisieren(tenantId, belegungId, dto);
   }
 
   @Delete('belegung/:id')

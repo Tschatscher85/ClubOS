@@ -101,11 +101,23 @@ export class FormController {
     }
 
     // PDF per KI analysieren
-    const felder = await this.kiKonvertierungService.pdfZuFormular(
-      tenantId,
-      datei.buffer,
-      datei.originalname,
-    );
+    let felder;
+    try {
+      felder = await this.kiKonvertierungService.pdfZuFormular(
+        tenantId,
+        datei.buffer,
+        datei.originalname,
+      );
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException(
+        error instanceof Error
+          ? `KI-Analyse fehlgeschlagen: ${error.message}`
+          : 'KI-Analyse fehlgeschlagen. Bitte pruefen Sie die KI-Konfiguration in den Einstellungen.',
+      );
+    }
 
     // Formularvorlage erstellen
     const vorlage = await this.formService.templateErstellen(tenantId, {

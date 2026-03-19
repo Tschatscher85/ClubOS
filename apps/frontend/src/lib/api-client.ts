@@ -87,7 +87,20 @@ async function apiFetch<T>(
     );
   }
 
-  return response.json();
+  // Leere Responses (204 No Content oder leerer Body) behandeln
+  const contentLength = response.headers.get('content-length');
+  if (response.status === 204 || contentLength === '0') {
+    return {} as T;
+  }
+
+  const text = await response.text();
+  if (!text) return {} as T;
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return {} as T;
+  }
 }
 
 export const apiClient = {

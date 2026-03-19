@@ -90,6 +90,39 @@ export class AktualisiereHalleDto {
 
 const WOCHENTAGE = ['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'] as const;
 
+export class AktualisiereBelegungDto {
+  @ApiPropertyOptional({ example: 'team-id-123', description: 'ID der Mannschaft' })
+  @IsOptional()
+  @IsString()
+  teamId?: string;
+
+  @ApiPropertyOptional({ example: 'DI', description: 'Wochentag (MO, DI, MI, DO, FR, SA, SO)' })
+  @IsOptional()
+  @IsString()
+  @IsIn(WOCHENTAGE, { message: 'Wochentag muss MO, DI, MI, DO, FR, SA oder SO sein.' })
+  wochentag?: string;
+
+  @ApiPropertyOptional({ example: '18:00', description: 'Startzeit (HH:MM)' })
+  @IsOptional()
+  @IsString()
+  von?: string;
+
+  @ApiPropertyOptional({ example: '20:00', description: 'Endzeit (HH:MM)' })
+  @IsOptional()
+  @IsString()
+  bis?: string;
+
+  @ApiPropertyOptional({ example: 'Nur Halle A', description: 'Optionale Notiz' })
+  @IsOptional()
+  @IsString()
+  notiz?: string;
+
+  @ApiPropertyOptional({ example: 'halle-id-456', description: 'Neue Halle' })
+  @IsOptional()
+  @IsString()
+  halleId?: string;
+}
+
 export class ErstelleBelegungDto {
   @ApiProperty({ example: 'team-id-123', description: 'ID der Mannschaft' })
   @IsString()
