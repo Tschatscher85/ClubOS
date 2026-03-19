@@ -453,6 +453,7 @@ model Event {
   location       String
   hallName       String?
   hallAddress    String?
+  untergrund     String?
   teamId         String
   team           Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
   tenantId       String

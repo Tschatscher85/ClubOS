@@ -20,6 +20,14 @@ interface Team {
   id: string;
   name: string;
   sport: string;
+  abteilungId?: string;
+}
+
+interface Abteilung {
+  id: string;
+  name: string;
+  sport: string;
+  teams: { id: string; name: string; ageGroup: string }[];
 }
 
 interface Halle {
@@ -38,7 +46,8 @@ interface EventData {
   untergrund: string | null;
   teamId: string;
   notes: string | null;
-  halleId?: string | null;
+  hallName?: string | null;
+  hallAddress?: string | null;
 }
 
 interface EventFormularProps {
@@ -83,10 +92,17 @@ export function EventFormular({
   const [endDatum, setEndDatum] = useState('');
   const [ort, setOrt] = useState('');
   const [untergrund, setUntergrund] = useState('');
-  const [halleId, setHalleId] = useState('');
+  const [hallenName, setHallenName] = useState('');
+  const [hallenAdresse, setHallenAdresse] = useState('');
   const [teamId, setTeamId] = useState('');
   const [notizen, setNotizen] = useState('');
-  const [teams, setTeams] = useState<Team[]>([]);
+
+  // Abteilung -> Team Filter
+  const [abteilungen, setAbteilungen] = useState<Abteilung[]>([]);
+  const [abteilungId, setAbteilungId] = useState('');
+  const [gefilterteTeams, setGefilterteTeams] = useState<{ id: string; name: string }[]>([]);
+
+  // Sportstaetten (Hallen/Plaetze aus Vereins-Einstellungen)
   const [hallen, setHallen] = useState<Halle[]>([]);
 
   // Wiederholung
@@ -95,7 +111,7 @@ export function EventFormular({
   const [wiederholungTage, setWiederholungTage] = useState<string[]>([]);
   const [wiederholungEnde, setWiederholungEnde] = useState('');
 
-  // Turnier-spezifische Felder
+  // Turnier-spezifisch
   const [turnierSportart, setTurnierSportart] = useState('FUSSBALL');
   const [turnierFormat, setTurnierFormat] = useState('GRUPPE');
   const [sportartenOptionen, setSportartenOptionen] = useState(sportartenFallback());
@@ -110,13 +126,26 @@ export function EventFormular({
     if (!offen) return;
 
     Promise.all([
-      apiClient.get<Team[]>('/teams').catch(() => []),
+      apiClient.get<Abteilung[]>('/abteilungen').catch(() => []),
       apiClient.get<Halle[]>('/hallen').catch(() => []),
-    ]).then(([teamDaten, hallenDaten]) => {
-      setTeams(teamDaten);
+    ]).then(([abtDaten, hallenDaten]) => {
+      setAbteilungen(abtDaten);
       setHallen(hallenDaten);
-      if (!teamId && teamDaten.length > 0) {
-        setTeamId(teamDaten[0].id);
+
+      // Alle Teams aus Abteilungen flach machen
+      const alleTeams = abtDaten.flatMap((a) =>
+        (a.teams || []).map((t) => ({ ...t, abteilungId: a.id })),
+      );
+      if (!abteilungId && abtDaten.length > 0) {
+        setAbteilungId(abtDaten[0].id);
+        const teams = abtDaten[0].teams || [];
+        setGefilterteTeams(teams);
+        if (!teamId && teams.length > 0) {
+          setTeamId(teams[0].id);
+        }
+      } else if (alleTeams.length > 0 && !teamId) {
+        setGefilterteTeams(alleTeams);
+        setTeamId(alleTeams[0].id);
       }
     });
 
@@ -139,7 +168,8 @@ export function EventFormular({
       setUntergrund(event.untergrund || '');
       setTeamId(event.teamId || '');
       setNotizen(event.notes || '');
-      setHalleId(event.halleId || '');
+      setHallenName(event.hallName || '');
+      setHallenAdresse(event.hallAddress || '');
     } else {
       setTitel('');
       setTyp('TRAINING');
@@ -148,7 +178,8 @@ export function EventFormular({
       setOrt('');
       setUntergrund('');
       setNotizen('');
-      setHalleId('');
+      setHallenName('');
+      setHallenAdresse('');
       setIstWiederkehrend(false);
       setWiederholung('WEEKLY');
       setWiederholungTage([]);
@@ -159,15 +190,35 @@ export function EventFormular({
     setFehler('');
   }, [offen, event]);
 
-  // Wenn Halle ausgewaehlt wird, Adresse und Untergrund uebernehmen
-  const handleHalleAendern = (id: string) => {
-    setHalleId(id);
-    if (id) {
-      const halle = hallen.find((h) => h.id === id);
-      if (halle) {
-        setOrt(halle.adresse || halle.name);
-        if (!untergrund) setUntergrund('HALLE');
-      }
+  // Abteilung wechseln -> Teams filtern
+  const handleAbteilungWechsel = (neuId: string) => {
+    setAbteilungId(neuId);
+    if (!neuId) {
+      // Alle Teams zeigen
+      const alle = abteilungen.flatMap((a) => a.teams || []);
+      setGefilterteTeams(alle);
+      return;
+    }
+    const abt = abteilungen.find((a) => a.id === neuId);
+    const teams = abt?.teams || [];
+    setGefilterteTeams(teams);
+    if (teams.length > 0 && !teams.find((t) => t.id === teamId)) {
+      setTeamId(teams[0].id);
+    }
+  };
+
+  // Sportstaette auswaehlen -> Adresse uebernehmen
+  const handleSportstaetteAendern = (halleId: string) => {
+    if (!halleId) {
+      setHallenName('');
+      setHallenAdresse('');
+      return;
+    }
+    const halle = hallen.find((h) => h.id === halleId);
+    if (halle) {
+      setHallenName(halle.name);
+      setHallenAdresse(halle.adresse || '');
+      setOrt(halle.adresse || halle.name);
     }
   };
 
@@ -177,7 +228,7 @@ export function EventFormular({
     setFehler('');
 
     try {
-      // Bei Turnier: erst Turnier anlegen (mit Spielplan, Livescoring, oeffentlicher URL)
+      // Bei Turnier: erst Turnier anlegen
       if (istTurnier && !istBearbeitung) {
         await apiClient.post('/turniere', {
           name: titel,
@@ -186,15 +237,15 @@ export function EventFormular({
         });
       }
 
-      // Event/Veranstaltung anlegen (auch fuer Turniere als Kalender-Eintrag)
       const daten = {
         titel,
         typ,
         datum: new Date(datum).toISOString(),
         ...(endDatum && { endDatum: new Date(endDatum).toISOString() }),
         ort,
+        ...(hallenName && { hallenName }),
+        ...(hallenAdresse && { hallenAdresse }),
         ...(untergrund && { untergrund }),
-        ...(halleId && { halleId }),
         teamId,
         ...(notizen && { notizen }),
         ...(istWiederkehrend && {
@@ -228,12 +279,10 @@ export function EventFormular({
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {istBearbeitung
-              ? 'Veranstaltung bearbeiten'
-              : 'Neue Veranstaltung'}
+            {istBearbeitung ? 'Veranstaltung bearbeiten' : 'Neue Veranstaltung'}
           </DialogTitle>
           <DialogDescription>
-            Training, Spiel oder andere Veranstaltung planen
+            Training, Spiel, Turnier oder andere Veranstaltung planen
           </DialogDescription>
         </DialogHeader>
 
@@ -245,41 +294,19 @@ export function EventFormular({
               id="titel"
               value={titel}
               onChange={(e) => setTitel(e.target.value)}
-              placeholder="z.B. Training Dienstag"
+              placeholder="z.B. Training Dienstag, Sommerfest, Heimspiel vs. TSV"
               required
             />
           </div>
 
-          {/* Typ + Team */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="typ">Typ</Label>
-              <Select
-                id="typ"
-                value={typ}
-                onChange={(e) => setTyp(e.target.value)}
-              >
-                {EVENT_TYPEN.map((t) => (
-                  <option key={t.wert} value={t.wert}>
-                    {t.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="team">Team *</Label>
-              <Select
-                id="team"
-                value={teamId}
-                onChange={(e) => setTeamId(e.target.value)}
-              >
-                {teams.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
+          {/* Typ */}
+          <div className="space-y-2">
+            <Label htmlFor="typ">Art der Veranstaltung</Label>
+            <Select id="typ" value={typ} onChange={(e) => setTyp(e.target.value)}>
+              {EVENT_TYPEN.map((t) => (
+                <option key={t.wert} value={t.wert}>{t.label}</option>
+              ))}
+            </Select>
           </div>
 
           {/* Turnier-spezifische Felder */}
@@ -309,6 +336,39 @@ export function EventFormular({
               </div>
             </div>
           )}
+
+          {/* Abteilung -> Team */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="abteilung">Abteilung</Label>
+              <Select
+                id="abteilung"
+                value={abteilungId}
+                onChange={(e) => handleAbteilungWechsel(e.target.value)}
+              >
+                <option value="">Alle Abteilungen</option>
+                {abteilungen.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="team">Team *</Label>
+              <Select
+                id="team"
+                value={teamId}
+                onChange={(e) => setTeamId(e.target.value)}
+              >
+                {gefilterteTeams.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
 
           {/* Datum & Uhrzeit */}
           <div className="grid grid-cols-2 gap-4">
@@ -342,9 +402,7 @@ export function EventFormular({
                 onChange={(e) => setIstWiederkehrend(e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300"
               />
-              <span className="text-sm font-medium">
-                Wiederkehrendes Event
-              </span>
+              <span className="text-sm font-medium">Wiederkehrendes Event</span>
             </label>
           </div>
 
@@ -390,14 +448,9 @@ export function EventFormular({
                           checked={wiederholungTage.includes(tag.wert)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setWiederholungTage([
-                                ...wiederholungTage,
-                                tag.wert,
-                              ]);
+                              setWiederholungTage([...wiederholungTage, tag.wert]);
                             } else {
-                              setWiederholungTage(
-                                wiederholungTage.filter((t) => t !== tag.wert),
-                              );
+                              setWiederholungTage(wiederholungTage.filter((t) => t !== tag.wert));
                             }
                           }}
                           className="sr-only"
@@ -421,23 +474,24 @@ export function EventFormular({
             </div>
           )}
 
-          {/* Ort aus Belegung oder freie Eingabe */}
+          {/* Sportstaette (aus Vereins-Einstellungen) oder freie Eingabe */}
           {hallen.length > 0 && (
             <div className="space-y-2">
-              <Label htmlFor="halleId">Ort (aus Belegung)</Label>
+              <Label>Sportstaette / Halle</Label>
               <Select
-                id="halleId"
-                value={halleId}
-                onChange={(e) => handleHalleAendern(e.target.value)}
+                value=""
+                onChange={(e) => handleSportstaetteAendern(e.target.value)}
               >
                 <option value="">-- Freie Adresseingabe --</option>
                 {hallen.map((h) => (
                   <option key={h.id} value={h.id}>
-                    {h.name}
-                    {h.adresse ? ` (${h.adresse})` : ''}
+                    {h.name}{h.adresse ? ` (${h.adresse})` : ''}
                   </option>
                 ))}
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Sportstaetten koennen unter Einstellungen &gt; Sportstaetten verwaltet werden.
+              </p>
             </div>
           )}
 
@@ -462,9 +516,7 @@ export function EventFormular({
               onChange={(e) => setUntergrund(e.target.value)}
             >
               {UNTERGRUND_TYPEN.map((u) => (
-                <option key={u.wert} value={u.wert}>
-                  {u.label}
-                </option>
+                <option key={u.wert} value={u.wert}>{u.label}</option>
               ))}
             </Select>
           </div>

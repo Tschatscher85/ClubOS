@@ -48,17 +48,22 @@ export class ErstelleEventDto {
   @IsString()
   teamId!: string;
 
+  @ApiPropertyOptional({ description: 'Untergrund (Halle, Rasen, Kunstrasen etc.)' })
+  @IsOptional()
+  @IsString()
+  untergrund?: string;
+
   @ApiPropertyOptional({ description: 'Notizen' })
   @IsOptional()
   @IsString()
   notizen?: string;
 
   @ApiPropertyOptional({
-    description: 'Wiederholungsregel: WEEKLY oder BIWEEKLY',
+    description: 'Wiederholungsregel: DAILY, WEEKLY, BIWEEKLY oder MONTHLY',
     example: 'WEEKLY',
   })
   @IsOptional()
-  @IsIn(['WEEKLY', 'BIWEEKLY'], { message: 'Wiederholung muss WEEKLY oder BIWEEKLY sein.' })
+  @IsIn(['DAILY', 'WEEKLY', 'BIWEEKLY', 'MONTHLY'], { message: 'Wiederholung muss DAILY, WEEKLY, BIWEEKLY oder MONTHLY sein.' })
   wiederholung?: string;
 
   @ApiPropertyOptional({

@@ -930,6 +930,9 @@ export default function EinstellungenPage() {
         </Card>
       )}
 
+      {/* Sportstaetten / Hallen / Plaetze */}
+      {istAdmin && <SportstaettenCard />}
+
       {/* Passwort aendern */}
       <Card>
         <CardHeader>
@@ -1004,5 +1007,202 @@ export default function EinstellungenPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// ==================== Sportstaetten-Verwaltung ====================
+
+interface Sportstaette {
+  id: string;
+  name: string;
+  adresse: string | null;
+  kapazitaet: number | null;
+}
+
+function SportstaettenCard() {
+  const [sportstaetten, setSportstaetten] = useState<Sportstaette[]>([]);
+  const [ladend, setLadend] = useState(true);
+  const [formOffen, setFormOffen] = useState(false);
+  const [bearbeitenId, setBearbeitenId] = useState<string | null>(null);
+  const [formName, setFormName] = useState('');
+  const [formAdresse, setFormAdresse] = useState('');
+  const [formKapazitaet, setFormKapazitaet] = useState('');
+  const [speichern, setSpeichern] = useState(false);
+
+  const laden = async () => {
+    try {
+      const daten = await apiClient.get<Sportstaette[]>('/hallen');
+      setSportstaetten(daten);
+    } catch {
+      console.error('Fehler beim Laden der Sportstaetten');
+    } finally {
+      setLadend(false);
+    }
+  };
+
+  useEffect(() => {
+    laden();
+  }, []);
+
+  const handleNeu = () => {
+    setBearbeitenId(null);
+    setFormName('');
+    setFormAdresse('');
+    setFormKapazitaet('');
+    setFormOffen(true);
+  };
+
+  const handleBearbeiten = (s: Sportstaette) => {
+    setBearbeitenId(s.id);
+    setFormName(s.name);
+    setFormAdresse(s.adresse || '');
+    setFormKapazitaet(s.kapazitaet ? String(s.kapazitaet) : '');
+    setFormOffen(true);
+  };
+
+  const handleSpeichern = async () => {
+    if (!formName) return;
+    setSpeichern(true);
+    try {
+      const daten = {
+        name: formName,
+        adresse: formAdresse || undefined,
+        kapazitaet: formKapazitaet ? parseInt(formKapazitaet) : undefined,
+      };
+      if (bearbeitenId) {
+        await apiClient.put(`/hallen/${bearbeitenId}`, daten);
+      } else {
+        await apiClient.post('/hallen', daten);
+      }
+      setFormOffen(false);
+      laden();
+    } catch (error) {
+      console.error('Fehler:', error);
+    } finally {
+      setSpeichern(false);
+    }
+  };
+
+  const handleLoeschen = async (id: string) => {
+    if (!confirm('Sportstaette wirklich loeschen?')) return;
+    try {
+      await apiClient.delete(`/hallen/${id}`);
+      laden();
+    } catch (error) {
+      console.error('Fehler:', error);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Building2 className="h-5 w-5" />
+          Sportstaetten & Hallen
+        </CardTitle>
+        <CardDescription>
+          Hinterlegen Sie die Hallen und Sportplaetze Ihres Vereins einmalig.
+          Diese koennen dann bei jeder Veranstaltung direkt ausgewaehlt werden.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {ladend ? (
+          <p className="text-sm text-muted-foreground">Laden...</p>
+        ) : (
+          <>
+            {sportstaetten.length === 0 && !formOffen && (
+              <p className="text-sm text-muted-foreground">
+                Noch keine Sportstaetten hinterlegt.
+              </p>
+            )}
+
+            {/* Liste */}
+            <div className="space-y-2">
+              {sportstaetten.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex items-center justify-between rounded-lg border p-3"
+                >
+                  <div>
+                    <p className="font-medium text-sm">{s.name}</p>
+                    {s.adresse && (
+                      <p className="text-xs text-muted-foreground">{s.adresse}</p>
+                    )}
+                    {s.kapazitaet && (
+                      <p className="text-xs text-muted-foreground">
+                        Kapazitaet: {s.kapazitaet} Personen
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleBearbeiten(s)}
+                    >
+                      Bearbeiten
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      onClick={() => handleLoeschen(s.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Formular */}
+            {formOffen && (
+              <div className="space-y-3 rounded-lg border p-4 bg-muted/30">
+                <div className="space-y-2">
+                  <Label>Name *</Label>
+                  <Input
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    placeholder="z.B. Ankenhalle, Sportplatz am Bach"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Adresse</Label>
+                  <Input
+                    value={formAdresse}
+                    onChange={(e) => setFormAdresse(e.target.value)}
+                    placeholder="z.B. Jahnstr. 30, 73340 Kuchen"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Kapazitaet (Personen)</Label>
+                  <Input
+                    type="number"
+                    value={formKapazitaet}
+                    onChange={(e) => setFormKapazitaet(e.target.value)}
+                    placeholder="z.B. 200"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleSpeichern} disabled={!formName || speichern} size="sm">
+                    {speichern ? 'Speichern...' : bearbeitenId ? 'Aktualisieren' : 'Hinzufuegen'}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setFormOffen(false)}>
+                    Abbrechen
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {!formOffen && (
+              <Button variant="outline" onClick={handleNeu}>
+                <Building2 className="h-4 w-4 mr-2" />
+                Neue Sportstaette hinzufuegen
+              </Button>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }

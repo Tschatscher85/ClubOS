@@ -32,6 +32,7 @@ export class EventService {
         location: dto.ort,
         hallName: dto.hallenName,
         hallAddress: dto.hallenAdresse,
+        untergrund: dto.untergrund,
         teamId: dto.teamId,
         tenantId,
         notes: dto.notizen,
