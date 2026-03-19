@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { apiClient } from '@/lib/api-client';
 import {
-  Settings, Building2, Trophy, CreditCard, Users, Gift, Brain, Mail, Lock, ArrowLeft,
+  Settings, ArrowLeft,
 } from 'lucide-react';
 
 interface EinrichtungsAntwort {
@@ -158,65 +158,6 @@ export default function SicherheitPage() {
           <h1 className="text-2xl font-bold">Sicherheit</h1>
           <p className="text-muted-foreground">2-Faktor-Authentifizierung verwalten</p>
         </div>
-      </div>
-
-      {/* Navigation */}
-      <div className="flex flex-wrap gap-2 border-b pb-4">
-        <Link href="/einstellungen">
-          <Badge variant="outline" className="cursor-pointer hover:bg-muted">Verein</Badge>
-        </Link>
-        {istAdmin && (
-          <Link href="/einstellungen/vereinsdaten">
-            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-              <Building2 className="h-3 w-3 mr-1" />
-              Vereinsdaten
-            </Badge>
-          </Link>
-        )}
-        {istAdmin && (
-          <Link href="/einstellungen/sportarten">
-            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-              <Trophy className="h-3 w-3 mr-1" />
-              Sportarten
-            </Badge>
-          </Link>
-        )}
-        {istAdmin && (
-          <Link href="/einstellungen/beitraege">
-            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-              <CreditCard className="h-3 w-3 mr-1" />
-              Beitraege
-            </Badge>
-          </Link>
-        )}
-        {istAdmin && (
-          <Link href="/einstellungen/rollen">
-            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-              <Shield className="h-3 w-3 mr-1" />
-              Rollen
-            </Badge>
-          </Link>
-        )}
-        {istAdmin && (
-          <Link href="/einstellungen/benutzer">
-            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-              <Users className="h-3 w-3 mr-1" />
-              Benutzer
-            </Badge>
-          </Link>
-        )}
-        {istAdmin && (
-          <Link href="/einstellungen/empfehlen">
-            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-              <Gift className="h-3 w-3 mr-1" />
-              Empfehlen
-            </Badge>
-          </Link>
-        )}
-        <Badge variant="default" className="cursor-default">
-          <Lock className="h-3 w-3 mr-1" />
-          Sicherheit
-        </Badge>
       </div>
 
       {/* 2FA Status & Einrichtung */}

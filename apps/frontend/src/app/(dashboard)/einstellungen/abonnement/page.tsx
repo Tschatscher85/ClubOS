@@ -9,13 +9,7 @@ import {
   Zap,
   Building2,
   ExternalLink,
-  Trophy,
   Shield,
-  Users,
-  Gift,
-  Settings,
-  Brain,
-  Mail,
   ArrowLeft,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -207,68 +201,6 @@ export default function AbonnementPage() {
             Tarif verwalten und Zahlungsdetails einsehen
           </p>
         </div>
-      </div>
-
-      {/* Navigation */}
-      <div className="flex flex-wrap gap-2 border-b pb-4">
-        <Link href="/einstellungen">
-          <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-            <Settings className="h-3 w-3 mr-1" />
-            Verein
-          </Badge>
-        </Link>
-        <Link href="/einstellungen/vereinsdaten">
-          <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-            <Building2 className="h-3 w-3 mr-1" />
-            Vereinsdaten
-          </Badge>
-        </Link>
-        <Link href="/einstellungen/sportarten">
-          <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-            <Trophy className="h-3 w-3 mr-1" />
-            Sportarten
-          </Badge>
-        </Link>
-        <Badge variant="default" className="cursor-default">
-          <CreditCard className="h-3 w-3 mr-1" />
-          Abonnement
-        </Badge>
-        <Link href="/einstellungen/beitraege">
-          <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-            <CreditCard className="h-3 w-3 mr-1" />
-            Beitraege
-          </Badge>
-        </Link>
-        <Link href="/einstellungen/rollen">
-          <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-            <Shield className="h-3 w-3 mr-1" />
-            Rollen
-          </Badge>
-        </Link>
-        <Link href="/einstellungen/benutzer">
-          <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-            <Users className="h-3 w-3 mr-1" />
-            Benutzer
-          </Badge>
-        </Link>
-        <Link href="/einstellungen/empfehlen">
-          <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-            <Gift className="h-3 w-3 mr-1" />
-            Empfehlen
-          </Badge>
-        </Link>
-        <a href="/einstellungen#ki-einstellungen">
-          <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-            <Brain className="h-3 w-3 mr-1" />
-            KI
-          </Badge>
-        </a>
-        <a href="/einstellungen#email-einstellungen">
-          <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-            <Mail className="h-3 w-3 mr-1" />
-            E-Mail
-          </Badge>
-        </a>
       </div>
 
       {/* Erfolgsmeldung */}
