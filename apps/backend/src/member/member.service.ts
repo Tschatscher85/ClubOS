@@ -510,6 +510,334 @@ export class MemberService {
     });
   }
 
+  // ==================== DSGVO-Export (Art. 15 + Art. 20) ====================
+
+  /**
+   * Exportiert alle personenbezogenen Daten eines Mitglieds (DSGVO Art. 15 + Art. 20).
+   * Sammelt Daten aus allen relevanten Tabellen und gibt sie als strukturiertes JSON zurueck.
+   */
+  async dsgvoExport(tenantId: string, mitgliedId: string) {
+    const mitglied = await this.prisma.member.findFirst({
+      where: { id: mitgliedId, tenantId },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!mitglied) {
+      throw new NotFoundException('Mitglied nicht gefunden.');
+    }
+
+    // Alle Daten parallel abfragen fuer bessere Performance
+    const [
+      anwesenheiten,
+      teamMitgliedschaften,
+      kasseBuchungen,
+      trikotVergaben,
+      verletzungen,
+      entwicklungsboegen,
+      formularEinreichungen,
+      nachrichten,
+      fahrgemeinschaften,
+      mitfahrten,
+    ] = await Promise.all([
+      // Anwesenheiten
+      this.prisma.attendance.findMany({
+        where: { memberId: mitgliedId },
+        include: {
+          event: {
+            select: {
+              id: true,
+              title: true,
+              type: true,
+              date: true,
+              location: true,
+            },
+          },
+        },
+        orderBy: { event: { date: 'desc' } },
+      }),
+
+      // Team-Zugehoerigkeiten
+      this.prisma.teamMember.findMany({
+        where: { memberId: mitgliedId },
+        include: {
+          team: {
+            select: {
+              id: true,
+              name: true,
+              sport: true,
+              ageGroup: true,
+            },
+          },
+        },
+      }),
+
+      // Kasse-Buchungen
+      this.prisma.kasseBuchung.findMany({
+        where: { memberId: mitgliedId },
+        orderBy: { erstelltAm: 'desc' },
+      }),
+
+      // Trikot-Vergaben
+      this.prisma.trikotVergabe.findMany({
+        where: { memberId: mitgliedId },
+        include: {
+          trikot: {
+            select: {
+              nummer: true,
+              groesse: true,
+              farbe: true,
+            },
+          },
+        },
+        orderBy: { vergabenAm: 'desc' },
+      }),
+
+      // Verletzungen
+      this.prisma.verletzung.findMany({
+        where: { memberId: mitgliedId, tenantId },
+        orderBy: { datum: 'desc' },
+      }),
+
+      // Entwicklungsboegen
+      this.prisma.entwicklungsbogen.findMany({
+        where: { memberId: mitgliedId, tenantId },
+        orderBy: { datum: 'desc' },
+      }),
+
+      // Formular-Einreichungen (ueber E-Mail)
+      mitglied.email
+        ? this.prisma.formSubmission.findMany({
+            where: { tenantId, email: mitglied.email },
+            include: {
+              template: { select: { name: true, type: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+          })
+        : Promise.resolve([]),
+
+      // Nachrichten (gesendet vom verknuepften User)
+      mitglied.userId
+        ? this.prisma.message.findMany({
+            where: { tenantId, senderId: mitglied.userId },
+            select: {
+              id: true,
+              content: true,
+              type: true,
+              createdAt: true,
+              teamId: true,
+            },
+            orderBy: { createdAt: 'desc' },
+          })
+        : Promise.resolve([]),
+
+      // Fahrgemeinschaften (als Fahrer)
+      mitglied.userId
+        ? this.prisma.fahrgemeinschaft.findMany({
+            where: { tenantId, fahrerId: mitglied.userId },
+            include: {
+              mitfahrer: { select: { userId: true, createdAt: true } },
+            },
+            orderBy: { abfahrt: 'desc' },
+          })
+        : Promise.resolve([]),
+
+      // Mitfahrten (als Mitfahrer)
+      mitglied.userId
+        ? this.prisma.mitfahrer.findMany({
+            where: { userId: mitglied.userId },
+            include: {
+              fahrgemeinschaft: {
+                select: {
+                  id: true,
+                  startort: true,
+                  zielort: true,
+                  abfahrt: true,
+                },
+              },
+            },
+            orderBy: { createdAt: 'desc' },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    // Strukturiertes Export-Objekt zusammenbauen
+    const exportDaten = {
+      _meta: {
+        exportDatum: new Date().toISOString(),
+        rechtsgrundlage: 'DSGVO Art. 15 (Auskunftsrecht) + Art. 20 (Datenportabilitaet)',
+        format: 'JSON',
+        hinweis:
+          'Dieser Export enthaelt alle personenbezogenen Daten, die zu diesem Mitglied gespeichert sind.',
+      },
+      stammdaten: {
+        id: mitglied.id,
+        mitgliedsnummer: mitglied.memberNumber,
+        vorname: mitglied.firstName,
+        nachname: mitglied.lastName,
+        email: mitglied.email,
+        geburtsdatum: mitglied.birthDate,
+        telefon: mitglied.phone,
+        adresse: mitglied.address,
+        beitrittsdatum: mitglied.joinDate,
+        austrittsdatum: mitglied.exitDate,
+        status: mitglied.status,
+        sportarten: mitglied.sport,
+        elternEmail: mitglied.parentEmail,
+        unterschriftUrl: mitglied.signatureUrl,
+        qrCode: mitglied.qrCode,
+        erstelltAm: mitglied.createdAt,
+        aktualisiertAm: mitglied.updatedAt,
+      },
+      beitragsdaten: {
+        beitragsArt: mitglied.beitragsArt,
+        beitragBetrag: mitglied.beitragBetrag,
+        beitragIntervall: mitglied.beitragIntervall,
+        ermaessigung: mitglied.ermaessigung,
+        ermaessigungProzent: mitglied.ermaessigungProzent,
+        ermaessigungBis: mitglied.ermaessigungBis,
+        nachweisStatus: mitglied.nachweisStatus,
+      },
+      loginDaten: mitglied.user
+        ? {
+            id: mitglied.user.id,
+            email: mitglied.user.email,
+            rolle: mitglied.user.role,
+            emailVerifiziert: mitglied.user.emailVerifiziert,
+            vereinsRollen: mitglied.user.vereinsRollen,
+            berechtigungen: mitglied.user.berechtigungen,
+            istAktiv: mitglied.user.istAktiv,
+            letzterLogin: mitglied.user.letzterLogin,
+            erstelltAm: mitglied.user.createdAt,
+            // passwordHash wird bewusst NICHT exportiert
+          }
+        : null,
+      anwesenheiten: anwesenheiten.map((a) => ({
+        id: a.id,
+        veranstaltung: a.event
+          ? {
+              id: a.event.id,
+              titel: a.event.title,
+              typ: a.event.type,
+              datum: a.event.date,
+              ort: a.event.location,
+            }
+          : null,
+        status: a.status,
+        grund: a.reason,
+        beantwortetAm: a.answeredAt,
+      })),
+      teamZugehoerigkeiten: teamMitgliedschaften.map((tm) => ({
+        id: tm.id,
+        rolle: tm.rolle,
+        beigetretenAm: tm.createdAt,
+        team: {
+          id: tm.team.id,
+          name: tm.team.name,
+          sportart: tm.team.sport,
+          altersklasse: tm.team.ageGroup,
+        },
+      })),
+      kasseBuchungen: kasseBuchungen.map((kb) => ({
+        id: kb.id,
+        betrag: kb.betrag,
+        grund: kb.grund,
+        typ: kb.typ,
+        erstelltAm: kb.erstelltAm,
+      })),
+      trikotVergaben: trikotVergaben.map((tv) => ({
+        id: tv.id,
+        trikot: {
+          nummer: tv.trikot.nummer,
+          groesse: tv.trikot.groesse,
+          farbe: tv.trikot.farbe,
+        },
+        vergabenAm: tv.vergabenAm,
+        zurueckAm: tv.zurueckAm,
+        notiz: tv.notiz,
+      })),
+      verletzungen: verletzungen.map((v) => ({
+        id: v.id,
+        art: v.art,
+        koerperteil: v.koerperteil,
+        datum: v.datum,
+        pauseVorausTage: v.pauseVoraus,
+        zurueckAm: v.zurueckAm,
+        notiz: v.notiz,
+        status: v.status,
+        erstelltAm: v.erstelltAm,
+      })),
+      entwicklungsboegen: entwicklungsboegen.map((eb) => ({
+        id: eb.id,
+        datum: eb.datum,
+        saison: eb.saison,
+        bewertungen: {
+          ball: eb.ball,
+          passen: eb.passen,
+          schuss: eb.schuss,
+          zweikampf: eb.zweikampf,
+          kopfball: eb.kopfball,
+          spielverstaendnis: eb.spielverstaendnis,
+          positionsspiel: eb.positionsspiel,
+          defensivverhalten: eb.defensivverhalten,
+          schnelligkeit: eb.schnelligkeit,
+          ausdauer: eb.ausdauer,
+          sprungkraft: eb.sprungkraft,
+          teamgeist: eb.teamgeist,
+          einstellung: eb.einstellung,
+          coaching: eb.coaching,
+        },
+        staerken: eb.staerken,
+        entwicklungsfelder: eb.entwicklungsfelder,
+        ziele: eb.ziele,
+        trainerEmpfehlung: eb.trainerEmpfehlung,
+      })),
+      formularEinreichungen: formularEinreichungen.map((fe) => ({
+        id: fe.id,
+        formular: fe.template
+          ? { name: fe.template.name, typ: fe.template.type }
+          : null,
+        email: fe.email,
+        daten: fe.daten,
+        status: fe.status,
+        kommentar: fe.kommentar,
+        erstelltAm: fe.createdAt,
+      })),
+      nachrichten: nachrichten.map((n) => ({
+        id: n.id,
+        inhalt: n.content,
+        typ: n.type,
+        teamId: n.teamId,
+        erstelltAm: n.createdAt,
+      })),
+      fahrgemeinschaften: fahrgemeinschaften.map((fg) => ({
+        id: fg.id,
+        startort: fg.startort,
+        zielort: fg.zielort,
+        abfahrt: fg.abfahrt,
+        plaetze: fg.plaetze,
+        kommentar: fg.kommentar,
+        anzahlMitfahrer: fg.mitfahrer.length,
+        erstelltAm: fg.createdAt,
+      })),
+      mitfahrten: mitfahrten.map((mf) => ({
+        id: mf.id,
+        fahrgemeinschaft: mf.fahrgemeinschaft
+          ? {
+              id: mf.fahrgemeinschaft.id,
+              startort: mf.fahrgemeinschaft.startort,
+              zielort: mf.fahrgemeinschaft.zielort,
+              abfahrt: mf.fahrgemeinschaft.abfahrt,
+            }
+          : null,
+        beigetretenAm: mf.createdAt,
+      })),
+    };
+
+    return exportDaten;
+  }
+
   // ==================== CSV Import/Export ====================
 
   /**

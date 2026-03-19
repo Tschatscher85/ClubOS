@@ -14,6 +14,7 @@ import {
   MaxFileSizeValidator,
   Res,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -199,6 +200,47 @@ export class MemberController {
   @ApiOperation({ summary: 'Mitglieder-Statistik abrufen' })
   async statistik(@AktuellerBenutzer('tenantId') tenantId: string) {
     return this.memberService.statistik(tenantId);
+  }
+
+  // ==================== DSGVO-Export (Art. 15 Auskunftsrecht + Art. 20 Datenportabilitaet) ====================
+
+  @Get(':id/dsgvo-export')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER, Role.MEMBER, Role.PARENT)
+  @ApiOperation({
+    summary: 'DSGVO-Datenexport fuer ein Mitglied (Art. 15 + Art. 20)',
+    description:
+      'Exportiert alle personenbezogenen Daten eines Mitglieds als JSON. ' +
+      'Nur ADMIN/SUPERADMIN oder das Mitglied selbst darf die eigenen Daten exportieren.',
+  })
+  async dsgvoExport(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @AktuellerBenutzer('id') aktuellerUserId: string,
+    @AktuellerBenutzer('rolle') rolle: Role,
+    @Param('id') mitgliedId: string,
+    @Res() res: Response,
+  ) {
+    // Berechtigungspruefung: ADMIN/SUPERADMIN duerfen alle exportieren,
+    // alle anderen nur ihre eigenen Daten
+    if (rolle !== Role.SUPERADMIN && rolle !== Role.ADMIN) {
+      // Pruefen ob das Mitglied dem aktuellen Benutzer gehoert
+      const mitglied = await this.memberService.nachIdAbrufen(tenantId, mitgliedId);
+      if (mitglied.userId !== aktuellerUserId) {
+        throw new ForbiddenException(
+          'Sie duerfen nur Ihre eigenen personenbezogenen Daten exportieren.',
+        );
+      }
+    }
+
+    const daten = await this.memberService.dsgvoExport(tenantId, mitgliedId);
+
+    const dateiname = `dsgvo-export-${daten.stammdaten.vorname}-${daten.stammdaten.nachname}-${new Date().toISOString().split('T')[0]}.json`;
+
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${dateiname}"`,
+    );
+    res.send(JSON.stringify(daten, null, 2));
   }
 
   // ==================== Login-Verwaltung ====================

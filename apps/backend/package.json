@@ -12,7 +12,9 @@
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "test": "jest --config jest.config.ts",
+    "test:isolation": "jest --config jest.config.ts --testPathPatterns=tenant-isolation"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.79.0",
@@ -55,11 +57,14 @@
     "@nestjs/cli": "^10.4.0",
     "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.0",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.0.0",
     "@types/passport-jwt": "^4.0.1",
     "@types/qrcode": "^1.5.6",
     "@types/web-push": "^3.6.4",
+    "jest": "^30.3.0",
     "prisma": "^6.4.0",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.0"
   },
