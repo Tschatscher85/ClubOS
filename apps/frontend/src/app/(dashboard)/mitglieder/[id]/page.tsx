@@ -714,28 +714,36 @@ export default function MitgliedDetailPage() {
                         try {
                           const authState = JSON.parse(localStorage.getItem('clubos-auth') || '{}');
                           const token = authState?.state?.accessToken;
-                          // Versuche zuerst ausgefuelltes Original-PDF
-                          const pdfRes = await fetch(`/api/formulare/einreichungen/${f.id}/ausgefuellt-pdf`, {
-                            headers: token ? { Authorization: `Bearer ${token}` } : {},
-                          });
-                          if (pdfRes.ok) {
+                          const headers: Record<string, string> = {};
+                          if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                          // Versuche ausgefuelltes Original-PDF
+                          const pdfRes = await fetch(`/api/formulare/einreichungen/${f.id}/ausgefuellt-pdf`, { headers });
+                          if (pdfRes.ok && pdfRes.headers.get('content-type')?.includes('pdf')) {
                             const blob = await pdfRes.blob();
-                            const url = URL.createObjectURL(blob);
-                            window.open(url, '_blank');
+                            const url = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.target = '_blank';
+                            a.rel = 'noopener';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            setTimeout(() => URL.revokeObjectURL(url), 5000);
                             return;
                           }
+
                           // Fallback: HTML-Export
-                          const res = await fetch(`/api/formulare/einreichungen/${f.id}/export`, {
-                            headers: token ? { Authorization: `Bearer ${token}` } : {},
-                          });
+                          const res = await fetch(`/api/formulare/einreichungen/${f.id}/export`, { headers });
+                          if (!res.ok) throw new Error('Export fehlgeschlagen');
                           const html = await res.text();
-                          const fenster = window.open('', '_blank');
-                          if (fenster) {
-                            fenster.document.write(html);
-                            fenster.document.close();
-                          }
+                          const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                          const url = URL.createObjectURL(blob);
+                          window.open(url, '_blank');
+                          setTimeout(() => URL.revokeObjectURL(url), 5000);
                         } catch (error) {
-                          console.error('Fehler beim PDF-Export:', error);
+                          alert('Fehler beim Oeffnen des Formulars. Bitte laden Sie die Vorlage neu hoch.');
+                          console.error('PDF-Export Fehler:', error);
                         }
                       }}
                     >
