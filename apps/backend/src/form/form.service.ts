@@ -212,19 +212,46 @@ export class FormService {
 
   // ==================== Hilfsmethoden ====================
 
+  /**
+   * Sucht einen Wert in den Formulardaten per Fuzzy-Matching der Feldnamen.
+   * Die KI-extrahierten Feldnamen koennen beliebig heissen, daher pruefen wir
+   * ob der normalisierte Feldname eines der Muster enthaelt.
+   */
+  private feldWertSuchen(daten: Record<string, unknown>, muster: string[]): string | undefined {
+    for (const [key, value] of Object.entries(daten)) {
+      if (!value || typeof value !== 'string') continue;
+      const normKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+      for (const m of muster) {
+        if (normKey.includes(m)) return value;
+      }
+    }
+    return undefined;
+  }
+
   private async mitgliedAusDatenErstellen(
     tenantId: string,
     daten: Record<string, unknown>,
-    email: string,
+    einreicherEmail: string,
   ) {
-    const vorname =
-      (daten['vorname'] as string) ||
-      (daten['firstName'] as string) ||
-      'Unbekannt';
-    const nachname =
-      (daten['nachname'] as string) ||
-      (daten['lastName'] as string) ||
-      'Unbekannt';
+    // Fuzzy-Matching fuer Feldnamen (KI-Felder koennen beliebig heissen)
+    const vorname = this.feldWertSuchen(daten, ['vorname', 'firstname', 'vname']) || 'Unbekannt';
+    const nachname = this.feldWertSuchen(daten, ['nachname', 'lastname', 'familienname', 'zuname']) || 'Unbekannt';
+    const telefon = this.feldWertSuchen(daten, ['telefon', 'phone', 'mobil', 'handy']);
+    const adresse = this.feldWertSuchen(daten, ['adresse', 'address', 'strasse', 'anschrift']);
+    const plz = this.feldWertSuchen(daten, ['plz', 'postleitzahl']);
+    const ort = this.feldWertSuchen(daten, ['ort', 'wohnort', 'stadt', 'city']);
+    const gebDatumStr = this.feldWertSuchen(daten, ['geburtsdatum', 'geburtstag', 'birthdate', 'gebdatum']);
+    const elternEmail = this.feldWertSuchen(daten, ['elternemail', 'parentemail', 'erziehungsberechtigte']);
+
+    // E-Mail aus Formulardaten verwenden (nicht die Admin-E-Mail)
+    const mitgliedEmail = this.feldWertSuchen(daten, ['email', 'emailadresse', 'mailadresse']) || einreicherEmail;
+
+    // Vollstaendige Adresse zusammenbauen
+    let volleAdresse = adresse || '';
+    if (plz || ort) {
+      const plzOrt = [plz, ort].filter(Boolean).join(' ');
+      volleAdresse = volleAdresse ? `${volleAdresse}, ${plzOrt}` : plzOrt;
+    }
 
     // Mitgliedsnummer generieren
     const anzahl = await this.prisma.member.count({ where: { tenantId } });
@@ -235,8 +262,8 @@ export class FormService {
       where: {
         tenantId,
         OR: [
-          { email },
-          { user: { email } },
+          { email: mitgliedEmail },
+          { user: { email: mitgliedEmail } },
         ],
       },
     });
@@ -253,15 +280,15 @@ export class FormService {
         tenantId,
         firstName: vorname,
         lastName: nachname,
-        email,
+        email: mitgliedEmail,
         memberNumber: mitgliedsnummer,
-        phone: (daten['telefon'] as string) || (daten['phone'] as string),
-        address: (daten['adresse'] as string) || (daten['address'] as string),
-        birthDate: daten['geburtsdatum']
-          ? new Date(daten['geburtsdatum'] as string)
+        phone: telefon,
+        address: volleAdresse || undefined,
+        birthDate: gebDatumStr
+          ? new Date(gebDatumStr)
           : undefined,
         sport: sportarten,
-        parentEmail: (daten['elternEmail'] as string) || undefined,
+        parentEmail: elternEmail,
         status: 'ACTIVE',
       },
     });

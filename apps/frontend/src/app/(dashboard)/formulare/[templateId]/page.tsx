@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FileText, ArrowLeft, CheckCircle } from 'lucide-react';
+import { FileText, ArrowLeft, CheckCircle, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,9 +10,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { UnterschriftPad } from '@/components/unterschrift/unterschrift-pad';
+import { AdressSuche } from '@/components/ui/adress-suche';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
+
+interface MitgliedKurz {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  birthDate: string | null;
+  joinDate: string;
+  sport: string[];
+  memberNumber: string;
+}
 
 interface FormularFeld {
   name: string;
@@ -47,6 +61,10 @@ export default function FormularAusfuellenPage() {
   const [absenden, setAbsenden] = useState(false);
   const [erfolg, setErfolg] = useState(false);
 
+  // Mitglieder fuer Vorauswahl
+  const [mitglieder, setMitglieder] = useState<MitgliedKurz[]>([]);
+  const [gewaehltesMitglied, setGewaehltesMitglied] = useState('');
+
   // Formular-Daten
   const [email, setEmail] = useState('');
   const [formDaten, setFormDaten] = useState<Record<string, string | boolean>>({});
@@ -54,8 +72,12 @@ export default function FormularAusfuellenPage() {
 
   const vorlageLaden = useCallback(async () => {
     try {
-      const daten = await apiClient.get<Vorlage>(`/formulare/vorlagen/${templateId}`);
+      const [daten, mitgliederDaten] = await Promise.all([
+        apiClient.get<Vorlage>(`/formulare/vorlagen/${templateId}`),
+        apiClient.get<MitgliedKurz[]>('/mitglieder').catch(() => []),
+      ]);
       setVorlage(daten);
+      setMitglieder(mitgliederDaten);
     } catch (error) {
       console.error('Fehler beim Laden der Vorlage:', error);
     } finally {
@@ -72,6 +94,89 @@ export default function FormularAusfuellenPage() {
       setEmail(benutzer.email);
     }
   }, [benutzer]);
+
+  // Mitglied vorauswählen -> Felder ausfüllen
+  const handleMitgliedVorauswahl = useCallback((mitgliedId: string) => {
+    setGewaehltesMitglied(mitgliedId);
+    if (!mitgliedId) return;
+    const m = mitglieder.find((mg) => mg.id === mitgliedId);
+    if (!m) return;
+
+    // E-Mail setzen
+    if (m.email) setEmail(m.email);
+
+    // Adresse aufteilen (Format: "Strasse, PLZ Ort" oder "Strasse")
+    let strasse = '';
+    let plz = '';
+    let ort = '';
+    if (m.address) {
+      const teile = m.address.split(',').map((t) => t.trim());
+      strasse = teile[0] || '';
+      if (teile[1]) {
+        const plzOrt = teile[1].match(/^(\d{4,5})\s*(.*)$/);
+        if (plzOrt) {
+          plz = plzOrt[1];
+          ort = plzOrt[2] || '';
+        } else {
+          ort = teile[1];
+        }
+      }
+    }
+
+    // Geburtsdatum formatieren
+    let gebDatum = '';
+    if (m.birthDate) {
+      gebDatum = m.birthDate.split('T')[0];
+    }
+
+    // Felder intelligent mappen (verschiedene Feldnamen beruecksichtigen)
+    const neueFormDaten: Record<string, string | boolean> = { ...formDaten };
+    const feldMap: Record<string, string> = {
+      // Name-Felder
+      name: m.lastName,
+      nachname: m.lastName,
+      lastname: m.lastName,
+      last_name: m.lastName,
+      vorname: m.firstName,
+      firstname: m.firstName,
+      first_name: m.firstName,
+      // Kontakt
+      email: m.email || '',
+      email_adresse: m.email || '',
+      e_mail_adresse: m.email || '',
+      telefon: m.phone || '',
+      phone: m.phone || '',
+      // Adresse
+      strasse: strasse,
+      strasse_hausnummer: strasse,
+      str: strasse,
+      plz: plz,
+      postleitzahl: plz,
+      ort: ort,
+      wohnort: ort,
+      stadt: ort,
+      // Datum
+      geb_datum: gebDatum,
+      geburtsdatum: gebDatum,
+      geburtstag: gebDatum,
+      birth_date: gebDatum,
+      eintrittsdatum: m.joinDate ? m.joinDate.split('T')[0] : '',
+    };
+
+    if (vorlage) {
+      for (const feld of vorlage.fields) {
+        const key = feld.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        for (const [pattern, wert] of Object.entries(feldMap)) {
+          if (key.includes(pattern) && wert) {
+            neueFormDaten[feld.name] = wert;
+            break;
+          }
+        }
+      }
+    }
+
+    setFormDaten(neueFormDaten);
+  }, [mitglieder, formDaten, vorlage]);
 
   const handleFeldAendern = useCallback((name: string, value: string | boolean) => {
     setFormDaten((prev) => ({ ...prev, [name]: value }));
@@ -192,6 +297,30 @@ export default function FormularAusfuellenPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Mitglied vorauswählen */}
+          {mitglieder.length > 0 && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2">
+              <Label className="flex items-center gap-2 text-primary font-medium">
+                <UserCheck className="h-4 w-4" />
+                Mitglied vorauswählen (optional)
+              </Label>
+              <Select
+                value={gewaehltesMitglied}
+                onChange={(e) => handleMitgliedVorauswahl(e.target.value)}
+              >
+                <option value="">-- Manuell ausfuellen --</option>
+                {mitglieder.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.firstName} {m.lastName} ({m.email || m.memberNumber})
+                  </option>
+                ))}
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Waehlen Sie ein bestehendes Mitglied um die Felder automatisch auszufuellen.
+              </p>
+            </div>
+          )}
+
           {/* E-Mail (immer erforderlich) */}
           <div className="space-y-2">
             <Label>
@@ -244,6 +373,12 @@ export default function FormularAusfuellenPage() {
                         <option key={opt} value={opt}>{opt}</option>
                       ))}
                     </Select>
+                  ) : /strasse|adresse|street|address/i.test(feld.name) ? (
+                    <AdressSuche
+                      value={(formDaten[feld.name] as string) || ''}
+                      onChange={(val) => handleFeldAendern(feld.name, val)}
+                      placeholder={feld.label}
+                    />
                   ) : (
                     <Input
                       type={feld.typ === 'email' ? 'email' : feld.typ === 'date' ? 'date' : 'text'}
