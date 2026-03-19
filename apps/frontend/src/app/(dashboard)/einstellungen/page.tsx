@@ -1378,11 +1378,23 @@ function AltersklassenCard() {
 
 // ==================== Veranstaltungstypen-Verwaltung ====================
 
+const VORDEFINIERTE_VERANSTALTUNGSTYPEN: VeranstaltungsTyp[] = [
+  { wert: 'TRAINING', label: 'Training' },
+  { wert: 'MATCH', label: 'Spiel' },
+  { wert: 'TOURNAMENT', label: 'Turnier' },
+  { wert: 'EVENT', label: 'Veranstaltung (Fest, Jubilaeum etc.)' },
+  { wert: 'VOLUNTEER', label: 'Helfereinsatz (Aufbau, Abbau etc.)' },
+  { wert: 'TRIP', label: 'Ausflug' },
+  { wert: 'MEETING', label: 'Besprechung' },
+];
+
 function VeranstaltungstypenCard() {
   const [typen, setTypen] = useState<VeranstaltungsTyp[]>([]);
   const [ladend, setLadend] = useState(true);
   const [neuesLabel, setNeuesLabel] = useState('');
   const [gespeichert, setGespeichert] = useState(false);
+  const [bearbeitenWert, setBearbeitenWert] = useState<string | null>(null);
+  const [bearbeitenLabel, setBearbeitenLabel] = useState('');
 
   useEffect(() => {
     veranstaltungstypenLaden().then((daten) => {
@@ -1391,25 +1403,31 @@ function VeranstaltungstypenCard() {
     });
   }, []);
 
-  const handleHinzufuegen = () => {
-    if (!neuesLabel.trim()) return;
-    const wert = neuesLabel.trim().toUpperCase().replace(/[^A-Z0-9]/g, '_');
-    if (typen.find((t) => t.wert === wert)) return;
-    setTypen([...typen, { wert, label: neuesLabel.trim() }]);
-    setNeuesLabel('');
-  };
+  // Vordefinierte: Welche sind aktiv?
+  const vordefinierteWerte = new Set(VORDEFINIERTE_VERANSTALTUNGSTYPEN.map((v) => v.wert));
+  const aktiveWerte = new Set(typen.map((t) => t.wert));
+  const eigeneTypen = typen.filter((t) => !vordefinierteWerte.has(t.wert));
 
-  const handleEntfernen = (index: number) => {
-    setTypen(typen.filter((_, i) => i !== index));
-  };
-
-  const handleLabelAendern = (index: number, label: string) => {
-    setTypen(typen.map((t, i) => i === index ? { ...t, label } : t));
-  };
-
-  const handleSpeichern = async () => {
+  const handleVordefinierteToggle = async (typ: VeranstaltungsTyp) => {
+    let neueTypen: VeranstaltungsTyp[];
+    if (aktiveWerte.has(typ.wert)) {
+      // Deaktivieren
+      neueTypen = typen.filter((t) => t.wert !== typ.wert);
+    } else {
+      // Aktivieren - an der richtigen Position einfuegen
+      const vordefinierteReihenfolge = VORDEFINIERTE_VERANSTALTUNGSTYPEN.map((v) => v.wert);
+      neueTypen = [...typen, typ].sort((a, b) => {
+        const idxA = vordefinierteReihenfolge.indexOf(a.wert);
+        const idxB = vordefinierteReihenfolge.indexOf(b.wert);
+        if (idxA === -1 && idxB === -1) return 0;
+        if (idxA === -1) return 1;
+        if (idxB === -1) return 1;
+        return idxA - idxB;
+      });
+    }
+    setTypen(neueTypen);
     try {
-      await veranstaltungstypenSpeichern(typen);
+      await veranstaltungstypenSpeichern(neueTypen);
       setGespeichert(true);
       setTimeout(() => setGespeichert(false), 3000);
     } catch (error) {
@@ -1417,8 +1435,48 @@ function VeranstaltungstypenCard() {
     }
   };
 
-  const handleZuruecksetzen = () => {
-    setTypen(veranstaltungstypenFallback());
+  const handleHinzufuegen = async () => {
+    if (!neuesLabel.trim()) return;
+    const wert = 'CUSTOM_' + neuesLabel.trim().toUpperCase().replace(/[^A-Z0-9]/g, '_');
+    if (typen.find((t) => t.wert === wert)) return;
+    const neueTypen = [...typen, { wert, label: neuesLabel.trim() }];
+    setTypen(neueTypen);
+    setNeuesLabel('');
+    try {
+      await veranstaltungstypenSpeichern(neueTypen);
+      setGespeichert(true);
+      setTimeout(() => setGespeichert(false), 3000);
+    } catch (error) {
+      console.error('Fehler:', error);
+    }
+  };
+
+  const handleEntfernen = async (wert: string) => {
+    const neueTypen = typen.filter((t) => t.wert !== wert);
+    setTypen(neueTypen);
+    try {
+      await veranstaltungstypenSpeichern(neueTypen);
+      setGespeichert(true);
+      setTimeout(() => setGespeichert(false), 3000);
+    } catch (error) {
+      console.error('Fehler:', error);
+    }
+  };
+
+  const handleLabelSpeichern = async () => {
+    if (!bearbeitenWert || !bearbeitenLabel.trim()) return;
+    const neueTypen = typen.map((t) =>
+      t.wert === bearbeitenWert ? { ...t, label: bearbeitenLabel.trim() } : t,
+    );
+    setTypen(neueTypen);
+    setBearbeitenWert(null);
+    try {
+      await veranstaltungstypenSpeichern(neueTypen);
+      setGespeichert(true);
+      setTimeout(() => setGespeichert(false), 3000);
+    } catch (error) {
+      console.error('Fehler:', error);
+    }
   };
 
   return (
@@ -1429,64 +1487,110 @@ function VeranstaltungstypenCard() {
           Veranstaltungstypen
         </CardTitle>
         <CardDescription>
-          Passen Sie die Veranstaltungstypen an. Labels können umbenannt, neue Typen hinzugefügt oder bestehende entfernt werden.
+          Aktivieren/deaktivieren Sie Veranstaltungstypen fuer Ihren Verein.
+          Nur aktive Typen erscheinen im Event-Formular.
+          {typen.length > 0 && (
+            <span className="block mt-1 font-medium text-foreground">
+              {typen.length} aktiv
+            </span>
+          )}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {ladend ? (
           <p className="text-sm text-muted-foreground">Laden...</p>
         ) : (
           <>
-            <div className="space-y-2">
-              {typen.map((typ, index) => (
-                <div
-                  key={typ.wert}
-                  className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2"
-                >
-                  <Badge variant="outline" className="text-xs shrink-0 font-mono">
-                    {typ.wert}
-                  </Badge>
-                  <Input
-                    value={typ.label}
-                    onChange={(e) => handleLabelAendern(index, e.target.value)}
-                    className="flex-1 h-8"
-                  />
+            {/* Vordefinierte Typen - Toggle */}
+            <div>
+              <Label className="text-sm font-medium mb-3 block">Standard-Typen</Label>
+              <div className="flex flex-wrap gap-2">
+                {VORDEFINIERTE_VERANSTALTUNGSTYPEN.map((typ) => (
                   <button
-                    onClick={() => handleEntfernen(index)}
-                    className="text-xs text-destructive hover:text-destructive/80"
-                    title="Entfernen"
+                    key={typ.wert}
+                    onClick={() => handleVordefinierteToggle(typ)}
+                    className={`text-sm py-1.5 px-3 rounded-full border transition-colors ${
+                      aktiveWerte.has(typ.wert)
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                    }`}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    {typ.label}
                   </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Eigene Typen */}
+            <div>
+              <Label className="text-sm font-medium mb-3 block">Eigene Typen</Label>
+              {eigeneTypen.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  {eigeneTypen.map((typ) => (
+                    <div
+                      key={typ.wert}
+                      className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2"
+                    >
+                      {bearbeitenWert === typ.wert ? (
+                        <>
+                          <Input
+                            value={bearbeitenLabel}
+                            onChange={(e) => setBearbeitenLabel(e.target.value)}
+                            className="flex-1 h-8"
+                            onKeyDown={(e) => e.key === 'Enter' && handleLabelSpeichern()}
+                            autoFocus
+                          />
+                          <Button size="sm" variant="outline" onClick={handleLabelSpeichern}>
+                            <Save className="h-3 w-3" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setBearbeitenWert(null)}>
+                            Abbrechen
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="flex-1 text-sm">{typ.label}</span>
+                          <button
+                            onClick={() => {
+                              setBearbeitenWert(typ.wert);
+                              setBearbeitenLabel(typ.label);
+                            }}
+                            className="text-xs text-muted-foreground hover:text-foreground"
+                            title="Umbenennen"
+                          >
+                            Bearbeiten
+                          </button>
+                          <button
+                            onClick={() => handleEntfernen(typ.wert)}
+                            className="text-xs text-destructive hover:text-destructive/80"
+                            title="Entfernen"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-
-            <div className="flex gap-2">
-              <Input
-                value={neuesLabel}
-                onChange={(e) => setNeuesLabel(e.target.value)}
-                placeholder="z.B. Vereinsfest, Generalversammlung..."
-                className="flex-1"
-                onKeyDown={(e) => e.key === 'Enter' && handleHinzufuegen()}
-              />
-              <Button variant="outline" size="sm" onClick={handleHinzufuegen} disabled={!neuesLabel.trim()}>
-                Hinzufügen
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={handleSpeichern}>
-                <Save className="h-4 w-4 mr-2" />
-                Typen speichern
-              </Button>
-              <Button variant="ghost" onClick={handleZuruecksetzen}>
-                Zurücksetzen
-              </Button>
-              {gespeichert && (
-                <span className="text-sm text-green-600">Gespeichert!</span>
               )}
+
+              <div className="flex gap-2">
+                <Input
+                  value={neuesLabel}
+                  onChange={(e) => setNeuesLabel(e.target.value)}
+                  placeholder="z.B. Vereinsfest, Generalversammlung..."
+                  className="flex-1"
+                  onKeyDown={(e) => e.key === 'Enter' && handleHinzufuegen()}
+                />
+                <Button variant="outline" size="sm" onClick={handleHinzufuegen} disabled={!neuesLabel.trim()}>
+                  Hinzufuegen
+                </Button>
+              </div>
             </div>
+
+            {gespeichert && (
+              <span className="text-sm text-green-600">Gespeichert!</span>
+            )}
           </>
         )}
       </CardContent>

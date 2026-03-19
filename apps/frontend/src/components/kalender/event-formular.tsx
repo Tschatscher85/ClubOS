@@ -206,11 +206,15 @@ export function EventFormular({
     }
   };
 
+  // Ausgewaehlte Sportstaette (fuer Untergrund-Filterung)
+  const [ausgewaehlteHalle, setAusgewaehlteHalle] = useState<Halle | null>(null);
+
   // Sportstaette auswaehlen -> Adresse + Untergrund uebernehmen
   const handleSportstaetteAendern = (halleId: string) => {
     if (!halleId) {
       setHallenName('');
       setHallenAdresse('');
+      setAusgewaehlteHalle(null);
       return;
     }
     const halle = hallen.find((h) => h.id === halleId);
@@ -218,9 +222,12 @@ export function EventFormular({
       setHallenName(halle.name);
       setHallenAdresse(halle.adresse || '');
       setOrt(halle.adresse || halle.name);
-      // Ersten Untergrund vorauswählen wenn vorhanden
-      if (halle.untergruende && halle.untergruende.length > 0 && !untergrund) {
+      setAusgewaehlteHalle(halle);
+      // Ersten Untergrund der Sportstaette vorauswaehlen
+      if (halle.untergruende && halle.untergruende.length > 0) {
         setUntergrund(halle.untergruende[0]);
+      } else {
+        setUntergrund('');
       }
     }
   };
@@ -518,9 +525,19 @@ export function EventFormular({
               value={untergrund}
               onChange={(e) => setUntergrund(e.target.value)}
             >
-              {UNTERGRUND_TYPEN.map((u) => (
-                <option key={u.wert} value={u.wert}>{u.label}</option>
-              ))}
+              {ausgewaehlteHalle && ausgewaehlteHalle.untergruende && ausgewaehlteHalle.untergruende.length > 0 ? (
+                <>
+                  <option value="">-- Kein Untergrund --</option>
+                  {ausgewaehlteHalle.untergruende.map((ug) => {
+                    const label = UNTERGRUND_TYPEN.find((u) => u.wert === ug)?.label || ug;
+                    return <option key={ug} value={ug}>{label}</option>;
+                  })}
+                </>
+              ) : (
+                UNTERGRUND_TYPEN.map((u) => (
+                  <option key={u.wert} value={u.wert}>{u.label}</option>
+                ))
+              )}
             </Select>
           </div>
 
