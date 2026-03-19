@@ -48,7 +48,9 @@ import { VerletzungModule } from './verletzung/verletzung.module';
 import { PushModule } from './push/push.module';
 import { BillingModule } from './billing/billing.module';
 import { BeitragModule } from './beitrag/beitrag.module';
+import { AdminModule } from './admin/admin.module';
 import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
+import { TenantStatusMiddleware } from './common/middleware/tenant-status.middleware';
 import configuration from './config/configuration';
 
 @Module({
@@ -120,6 +122,7 @@ import configuration from './config/configuration';
     PushModule,
     BillingModule,
     BeitragModule,
+    AdminModule,
   ],
   providers: [
     {
@@ -131,5 +134,6 @@ import configuration from './config/configuration';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(SubdomainMiddleware).forRoutes('*');
+    consumer.apply(TenantStatusMiddleware).forRoutes('*');
   }
 }

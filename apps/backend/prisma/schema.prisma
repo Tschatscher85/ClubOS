@@ -82,6 +82,10 @@ model Tenant {
   stripeCustomerId             String?
   stripeSubscriptionId         String?
   trialEndsAt                  DateTime?
+  // Tenant-Status (Superadmin-Verwaltung)
+  istAktiv                     Boolean   @default(true)
+  gesperrtAm                   DateTime?
+  gesperrtGrund                String?
   createdAt                    DateTime  @default(now())
   updatedAt                    DateTime  @updatedAt
 

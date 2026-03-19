@@ -14,6 +14,7 @@ import {
   FolderOpen,
   Database,
   Settings,
+  ShieldCheck,
 } from 'lucide-react';
 import { useTenant, useBenutzer } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -76,6 +77,12 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
     titel: '',
     eintraege: [
       { href: ROUTEN.ELTERN, label: 'Eltern-Portal', icon: Heart, rollen: ['PARENT'] },
+    ],
+  },
+  {
+    titel: '',
+    eintraege: [
+      { href: '/admin', label: 'Admin-Dashboard', icon: ShieldCheck, rollen: ['SUPERADMIN'] },
     ],
   },
 ];

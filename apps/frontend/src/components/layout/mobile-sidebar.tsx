@@ -15,6 +15,7 @@ import {
   Database,
   Settings,
   Menu,
+  ShieldCheck,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -80,6 +81,12 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
     titel: '',
     eintraege: [
       { href: ROUTEN.ELTERN, label: 'Eltern-Portal', icon: Heart, rollen: ['PARENT'] },
+    ],
+  },
+  {
+    titel: '',
+    eintraege: [
+      { href: '/admin', label: 'Admin-Dashboard', icon: ShieldCheck, rollen: ['SUPERADMIN'] },
     ],
   },
 ];
