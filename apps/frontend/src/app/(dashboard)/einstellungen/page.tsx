@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send, Building2, Trophy, CreditCard, Shield, Users, Gift, Layout, Calendar } from 'lucide-react';
 import Link from 'next/link';
+import { AdressSuche } from '@/components/kalender/adress-suche';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1168,10 +1169,10 @@ function SportstaettenCard() {
                 </div>
                 <div className="space-y-2">
                   <Label>Adresse</Label>
-                  <Input
+                  <AdressSuche
                     value={formAdresse}
-                    onChange={(e) => setFormAdresse(e.target.value)}
-                    placeholder="z.B. Jahnstr. 30, 73340 Kuchen"
+                    onChange={setFormAdresse}
+                    placeholder="Adresse suchen (z.B. Jahnhalle, Kuchen)"
                   />
                 </div>
                 <div className="space-y-2">

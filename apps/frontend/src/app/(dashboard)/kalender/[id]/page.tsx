@@ -16,6 +16,8 @@ import {
   Zap,
   FileText,
   CloudSun,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -25,6 +27,7 @@ import { apiClient } from '@/lib/api-client';
 import { API_BASE_URL } from '@/lib/constants';
 import { useBenutzer } from '@/hooks/use-auth';
 import WetterBadge from '@/components/wetter/wetter-badge';
+import { EventFormular } from '@/components/kalender/event-formular';
 
 interface MitgliedKurz {
   id: string;
@@ -99,6 +102,8 @@ const TYP_LABEL: Record<string, { text: string; variant: 'default' | 'secondary'
   TRAINING: { text: 'Training', variant: 'secondary' },
   MATCH: { text: 'Spiel', variant: 'default' },
   TOURNAMENT: { text: 'Turnier', variant: 'default' },
+  EVENT: { text: 'Veranstaltung', variant: 'default' },
+  VOLUNTEER: { text: 'Helfereinsatz', variant: 'secondary' },
   TRIP: { text: 'Ausflug', variant: 'outline' },
   MEETING: { text: 'Besprechung', variant: 'outline' },
 };
@@ -155,6 +160,7 @@ export default function EventDetailPage() {
   const [absageGrund, setAbsageGrund] = useState('');
   const [zeigeAbsageGrund, setZeigeAbsageGrund] = useState(false);
   const [anmeldungLadend, setAnmeldungLadend] = useState(false);
+  const [bearbeitenOffen, setBearbeitenOffen] = useState(false);
 
   const datenLaden = useCallback(async () => {
     try {
@@ -236,6 +242,18 @@ export default function EventDetailPage() {
     }
   };
 
+  const handleLoeschen = async () => {
+    if (!confirm('Veranstaltung wirklich loeschen?')) return;
+    try {
+      await apiClient.delete(`/veranstaltungen/${eventId}`);
+      router.push('/kalender');
+    } catch (error) {
+      console.error('Fehler:', error);
+    }
+  };
+
+  const istAdmin = benutzer && ['TRAINER', 'ADMIN', 'SUPERADMIN'].includes(benutzer.rolle);
+
   if (ladend) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -284,7 +302,27 @@ export default function EventDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {event.type === 'MATCH' && benutzer && (benutzer.rolle === 'TRAINER' || benutzer.rolle === 'ADMIN' || benutzer.rolle === 'SUPERADMIN') && (
+          {istAdmin && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setBearbeitenOffen(true)}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Bearbeiten
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={handleLoeschen}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+          {event.type === 'MATCH' && istAdmin && (
             <Button
               variant="outline"
               size="sm"
@@ -297,7 +335,7 @@ export default function EventDetailPage() {
           <Button variant="outline" size="icon" onClick={handleCsvExport} title="CSV Export">
             <Download className="h-4 w-4" />
           </Button>
-          {benutzer && (benutzer.rolle === 'TRAINER' || benutzer.rolle === 'ADMIN' || benutzer.rolle === 'SUPERADMIN') && (
+          {istAdmin && (
             <Button
               variant="outline"
               size="sm"
@@ -502,7 +540,7 @@ export default function EventDetailPage() {
       </Card>
 
       {/* Schnell-Anmeldung Buttons fuer Trainer */}
-      {benutzer && (benutzer.rolle === 'TRAINER' || benutzer.rolle === 'ADMIN' || benutzer.rolle === 'SUPERADMIN') && anmeldungen.some((a) => a.status === 'PENDING') && (
+      {istAdmin && anmeldungen.some((a) => a.status === 'PENDING') && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Schnell-Anmeldung</CardTitle>
@@ -557,6 +595,28 @@ export default function EventDetailPage() {
               ))}
           </CardContent>
         </Card>
+      )}
+
+      {/* Bearbeiten-Dialog */}
+      {event && (
+        <EventFormular
+          offen={bearbeitenOffen}
+          onSchliessen={() => setBearbeitenOffen(false)}
+          onGespeichert={datenLaden}
+          event={{
+            id: event.id,
+            title: event.title,
+            type: event.type,
+            date: event.date,
+            endDate: event.endDate,
+            location: event.location,
+            untergrund: event.untergrund,
+            teamId: event.team.id,
+            notes: event.notes,
+            hallName: event.hallName,
+            hallAddress: event.hallAddress,
+          }}
+        />
       )}
 
       {/* Kommentare */}
