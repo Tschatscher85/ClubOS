@@ -33,11 +33,11 @@ import type { EventFarben } from '@/lib/event-farben';
 const FARBEN = [
   { name: 'Blau', wert: '#1a56db' },
   { name: 'Rot', wert: '#dc2626' },
-  { name: 'Gruen', wert: '#16a34a' },
+  { name: 'Grün', wert: '#16a34a' },
   { name: 'Lila', wert: '#7c3aed' },
   { name: 'Orange', wert: '#ea580c' },
   { name: 'Pink', wert: '#db2777' },
-  { name: 'Tuerkis', wert: '#0891b2' },
+  { name: 'Türkis', wert: '#0891b2' },
   { name: 'Schwarz', wert: '#171717' },
 ];
 
@@ -103,7 +103,7 @@ export default function EinstellungenPage() {
   const [emailFehler, setEmailFehler] = useState('');
   const [emailGeladen, setEmailGeladen] = useState(false);
 
-  // Passwort aendern
+  // Passwort ändern
   const [altesPasswort, setAltesPasswort] = useState('');
   const [neuesPasswort, setNeuesPasswort] = useState('');
   const [passwortBestaetigung, setPasswortBestaetigung] = useState('');
@@ -145,7 +145,7 @@ export default function EinstellungenPage() {
     }
 
     if (neuesPasswort !== passwortBestaetigung) {
-      setPwFehler('Die Passwoerter stimmen nicht ueberein.');
+      setPwFehler('Die Passwörter stimmen nicht überein.');
       return;
     }
 
@@ -156,14 +156,14 @@ export default function EinstellungenPage() {
         altesPasswort,
         neuesPasswort,
       });
-      setPwErfolg('Passwort wurde erfolgreich geaendert.');
+      setPwErfolg('Passwort wurde erfolgreich geändert.');
       setAltesPasswort('');
       setNeuesPasswort('');
       setPasswortBestaetigung('');
       setTimeout(() => setPwErfolg(''), 5000);
     } catch (error) {
       setPwFehler(
-        error instanceof Error ? error.message : 'Fehler beim Aendern des Passworts.',
+        error instanceof Error ? error.message : 'Fehler beim Ändern des Passworts.',
       );
     } finally {
       setPwLadend(false);
@@ -271,7 +271,7 @@ export default function EinstellungenPage() {
   };
 
   const handleEmailLoeschen = async () => {
-    if (!confirm('E-Mail-Einstellungen wirklich loeschen?')) return;
+    if (!confirm('E-Mail-Einstellungen wirklich löschen?')) return;
     setEmailLoeschend(true);
     setEmailFehler('');
     setEmailErfolg('');
@@ -285,11 +285,11 @@ export default function EinstellungenPage() {
       setEmailAbsenderName('');
       setEmailSignatur('');
       setEmailIstAktiv(false);
-      setEmailErfolg('E-Mail-Einstellungen geloescht.');
+      setEmailErfolg('E-Mail-Einstellungen gelöscht.');
       setTimeout(() => setEmailErfolg(''), 5000);
     } catch (error) {
       setEmailFehler(
-        error instanceof Error ? error.message : 'Fehler beim Loeschen.',
+        error instanceof Error ? error.message : 'Fehler beim Löschen.',
       );
     } finally {
       setEmailLoeschend(false);
@@ -302,7 +302,7 @@ export default function EinstellungenPage() {
     setEmailErfolg('');
     try {
       await apiClient.post('/email-einstellungen/testen', {});
-      setEmailErfolg('Test-E-Mail wurde gesendet. Bitte pruefen Sie Ihr Postfach.');
+      setEmailErfolg('Test-E-Mail wurde gesendet. Bitte prüfen Sie Ihr Postfach.');
       setTimeout(() => setEmailErfolg(''), 5000);
     } catch (error) {
       setEmailFehler(
@@ -382,76 +382,65 @@ export default function EinstellungenPage() {
         <div>
           <h1 className="text-2xl font-bold">Einstellungen</h1>
           <p className="text-muted-foreground">
-            Hier koennen Sie alles rund um Ihren Verein anpassen.
+            Hier können Sie alles rund um Ihren Verein anpassen.
           </p>
         </div>
       </div>
 
       {/* Schnellnavigation */}
-      <div className="flex flex-wrap gap-2 border-b pb-4">
-        <Badge variant="default" className="cursor-default">Verein</Badge>
-        {istAdmin && (
-          <Link href="/einstellungen/vereinsdaten">
-            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-              <Building2 className="h-3 w-3 mr-1" />
+      <div className="rounded-xl border bg-card p-2">
+        <div className="flex flex-wrap gap-1.5">
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm">
+            <Settings className="h-4 w-4" />
+            Verein
+          </span>
+          {istAdmin && (
+            <Link href="/einstellungen/vereinsdaten" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
+              <Building2 className="h-4 w-4" />
               Vereinsdaten
-            </Badge>
-          </Link>
-        )}
-        {istAdmin && (
-          <Link href="/einstellungen/sportarten">
-            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-              <Trophy className="h-3 w-3 mr-1" />
+            </Link>
+          )}
+          {istAdmin && (
+            <Link href="/einstellungen/sportarten" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
+              <Trophy className="h-4 w-4" />
               Sportarten
-            </Badge>
-          </Link>
-        )}
-        {istAdmin && (
-          <Link href="/einstellungen/beitraege">
-            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-              <CreditCard className="h-3 w-3 mr-1" />
-              Beitraege
-            </Badge>
-          </Link>
-        )}
-        {istAdmin && (
-          <Link href="/einstellungen/rollen">
-            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-              <Shield className="h-3 w-3 mr-1" />
+            </Link>
+          )}
+          {istAdmin && (
+            <Link href="/einstellungen/beitraege" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
+              <CreditCard className="h-4 w-4" />
+              Beiträge
+            </Link>
+          )}
+          {istAdmin && (
+            <Link href="/einstellungen/rollen" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
+              <Shield className="h-4 w-4" />
               Rollen
-            </Badge>
-          </Link>
-        )}
-        {istAdmin && (
-          <Link href="/einstellungen/empfehlen">
-            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-              <Gift className="h-3 w-3 mr-1" />
+            </Link>
+          )}
+          {istAdmin && (
+            <Link href="/einstellungen/empfehlen" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
+              <Gift className="h-4 w-4" />
               Empfehlen
-            </Badge>
-          </Link>
-        )}
-        {istAdmin && (
-          <Link href="/einstellungen/abonnement">
-            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-              <CreditCard className="h-3 w-3 mr-1" />
+            </Link>
+          )}
+          {istAdmin && (
+            <Link href="/einstellungen/abonnement" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
+              <CreditCard className="h-4 w-4" />
               Abonnement
-            </Badge>
-          </Link>
-        )}
-        {istAdmin && (
-          <Link href="/einstellungen/homepage">
-            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-              <Layout className="h-3 w-3 mr-1" />
+            </Link>
+          )}
+          {istAdmin && (
+            <Link href="/einstellungen/homepage" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
+              <Layout className="h-4 w-4" />
               Homepage
-            </Badge>
-          </Link>
-        )}
-        <Link href="/einstellungen/sicherheit">
-          <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-            <Lock className="h-3 w-3 mr-1" />
+            </Link>
+          )}
+          <Link href="/einstellungen/sicherheit" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
+            <Lock className="h-4 w-4" />
             Sicherheit
-          </Badge>
-        </Link>
+          </Link>
+        </div>
       </div>
 
       {/* ================================================================ */}
@@ -467,7 +456,7 @@ export default function EinstellungenPage() {
               <CardHeader>
                 <CardTitle>Vereinsname & Logo</CardTitle>
                 <CardDescription>
-                  Der Name und das Logo erscheinen ueberall in ClubOS, z.B. im Menue, in E-Mails und auf der Vereinshomepage.
+                  Der Name und das Logo erscheinen überall in ClubOS, z.B. im Menü, in E-Mails und auf der Vereinshomepage.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -488,7 +477,7 @@ export default function EinstellungenPage() {
                     <Label>Vereins-URL</Label>
                     <Input value={tenant?.slug || ''} disabled />
                     <p className="text-xs text-muted-foreground">
-                      Wird automatisch aus dem Namen erstellt und kann nicht geaendert werden.
+                      Wird automatisch aus dem Namen erstellt und kann nicht geändert werden.
                     </p>
                   </div>
                   <div className="space-y-2">
@@ -558,7 +547,7 @@ export default function EinstellungenPage() {
                   Vereinsfarbe
                 </CardTitle>
                 <CardDescription>
-                  Waehlen Sie die Farbe Ihres Vereins. Alle Buttons, Links und Hervorhebungen in ClubOS passen sich automatisch an.
+                  Wählen Sie die Farbe Ihres Vereins. Alle Buttons, Links und Hervorhebungen in ClubOS passen sich automatisch an.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -604,16 +593,21 @@ export default function EinstellungenPage() {
 
                 <div className="rounded-lg border p-4 space-y-3">
                   <p className="text-sm font-medium">Vorschau:</p>
-                  <div className="flex gap-3">
-                    <Button>Primaer-Button</Button>
-                    <Button variant="outline">Outline-Button</Button>
+                  <div className="flex gap-3 items-center">
+                    <Button>Primär-Button</Button>
+                    <button
+                      className="inline-flex items-center justify-center rounded-md border-2 px-4 py-2 text-sm font-medium transition-colors hover:opacity-80"
+                      style={{ borderColor: farbe, color: farbe }}
+                    >
+                      Outline-Button
+                    </button>
                     <Badge>Badge</Badge>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Speichern fuer Verein */}
+            {/* Speichern für Verein */}
             {istAdmin && (
               <div className="flex items-center gap-3">
                 <Button onClick={handleSpeichern} disabled={ladend}>
@@ -683,7 +677,7 @@ export default function EinstellungenPage() {
                       Farben speichern
                     </Button>
                     <Button variant="ghost" onClick={handleEventFarbenZuruecksetzen}>
-                      Zuruecksetzen
+                      Zurücksetzen
                     </Button>
                     {eventFarbenGespeichert && (
                       <span className="text-sm text-green-600">Gespeichert!</span>
@@ -702,7 +696,7 @@ export default function EinstellungenPage() {
       {istAdmin && (
         <Abschnitt
           titel="Teams & Mannschaften"
-          beschreibung="Einstellungen fuer die Mannschaftsverwaltung."
+          beschreibung="Einstellungen für die Mannschaftsverwaltung."
           kinder={<AltersklassenCard />}
         />
       )}
@@ -712,7 +706,7 @@ export default function EinstellungenPage() {
       {/* ================================================================ */}
       <Abschnitt
         titel="Mein Konto"
-        beschreibung="Ihre persoenlichen Kontodaten und Sicherheitseinstellungen."
+        beschreibung="Ihre persönlichen Kontodaten und Sicherheitseinstellungen."
         kinder={
           <>
             {/* Kontoinformationen */}
@@ -736,22 +730,22 @@ export default function EinstellungenPage() {
                     <Label>Ihre Rolle</Label>
                     <Input value={benutzer?.rolle || ''} disabled />
                     <p className="text-xs text-muted-foreground">
-                      Die Rolle bestimmt, was Sie in ClubOS sehen und tun koennen.
+                      Die Rolle bestimmt, was Sie in ClubOS sehen und tun können.
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Passwort aendern */}
+            {/* Passwort ändern */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Lock className="h-5 w-5" />
-                  Passwort aendern
+                  Passwort ändern
                 </CardTitle>
                 <CardDescription>
-                  Aendern Sie Ihr Passwort regelmaessig, um Ihr Konto zu schuetzen.
+                  Ändern Sie Ihr Passwort regelmäßig, um Ihr Konto zu schützen.
                   Das neue Passwort muss mindestens 8 Zeichen lang sein.
                 </CardDescription>
               </CardHeader>
@@ -790,7 +784,7 @@ export default function EinstellungenPage() {
                     variant="outline"
                   >
                     <Lock className="h-4 w-4 mr-2" />
-                    {pwLadend ? 'Wird geaendert...' : 'Passwort aendern'}
+                    {pwLadend ? 'Wird geändert...' : 'Passwort ändern'}
                   </Button>
                   {pwErfolg && (
                     <span className="text-sm text-green-600">{pwErfolg}</span>
@@ -811,7 +805,7 @@ export default function EinstellungenPage() {
       {(istAdmin || istAdminOderTrainer) && (
         <Abschnitt
           titel="Erweiterte Einstellungen"
-          beschreibung="Technische Einstellungen fuer KI-Funktionen und E-Mail-Versand. Diese Bereiche sind nur fuer Administratoren und Trainer sichtbar."
+          beschreibung="Technische Einstellungen für KI-Funktionen und E-Mail-Versand. Diese Bereiche sind nur für Administratoren und Trainer sichtbar."
           kinder={
             <>
               {/* KI-Einstellungen */}
@@ -823,9 +817,9 @@ export default function EinstellungenPage() {
                       KI-Einstellungen
                     </CardTitle>
                     <CardDescription>
-                      ClubOS nutzt kuenstliche Intelligenz fuer automatische Antworten auf Elternfragen,
+                      ClubOS nutzt künstliche Intelligenz für automatische Antworten auf Elternfragen,
                       das Erkennen von Formularfeldern und die Erstellung von Trainingsplaenen.
-                      Hier koennen Sie den KI-Anbieter und den API-Schluessel konfigurieren.
+                      Hier können Sie den KI-Anbieter und den API-Schlüssel konfigurieren.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4" onClick={handleKiLaden}>
@@ -851,7 +845,7 @@ export default function EinstellungenPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>API-Schluessel</Label>
+                      <Label>API-Schlüssel</Label>
                       <div className="flex gap-2">
                         <Input
                           type={kiAnzeigen ? 'text' : 'password'}
@@ -878,8 +872,8 @@ export default function EinstellungenPage() {
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Leer lassen, um den voreingestellten Schluessel des Servers zu verwenden.
-                        Nur noetig, wenn Sie einen eigenen API-Zugang haben.
+                        Leer lassen, um den voreingestellten Schlüssel des Servers zu verwenden.
+                        Nur nötig, wenn Sie einen eigenen API-Zugang haben.
                       </p>
                     </div>
 
@@ -892,12 +886,12 @@ export default function EinstellungenPage() {
                         {kiProvider === 'anthropic' ? (
                           <>
                             <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (empfohlen)</option>
-                            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (schneller, guenstiger)</option>
+                            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (schneller, günstiger)</option>
                           </>
                         ) : (
                           <>
                             <option value="gpt-4o">GPT-4o (empfohlen)</option>
-                            <option value="gpt-4o-mini">GPT-4o Mini (schneller, guenstiger)</option>
+                            <option value="gpt-4o-mini">GPT-4o Mini (schneller, günstiger)</option>
                             <option value="gpt-4.1">GPT-4.1</option>
                           </>
                         )}
@@ -934,8 +928,8 @@ export default function EinstellungenPage() {
                     </CardTitle>
                     <CardDescription>
                       Konfigurieren Sie hier Ihren eigenen E-Mail-Server (SMTP), damit E-Mails
-                      von Ihrer persoenlichen Adresse versendet werden. Ohne diese Einstellung
-                      werden E-Mails ueber den ClubOS-Server verschickt.
+                      von Ihrer persönlichen Adresse versendet werden. Ohne diese Einstellung
+                      werden E-Mails über den ClubOS-Server verschickt.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -1024,7 +1018,7 @@ export default function EinstellungenPage() {
                           placeholder="info@meinverein.de"
                         />
                         <p className="text-xs text-muted-foreground">
-                          Diese Adresse sehen die Empfaenger.
+                          Diese Adresse sehen die Empfänger.
                         </p>
                       </div>
                       <div className="space-y-2">
@@ -1043,11 +1037,11 @@ export default function EinstellungenPage() {
                       <Textarea
                         value={emailSignatur}
                         onChange={(e) => setEmailSignatur(e.target.value)}
-                        placeholder="Mit sportlichen Gruessen&#10;Ihr Vereinsname"
+                        placeholder="Mit sportlichen Grüßen&#10;Ihr Vereinsname"
                         rows={3}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Wird automatisch unter jede E-Mail gesetzt. HTML-Formatierung moeglich.
+                        Wird automatisch unter jede E-Mail gesetzt. HTML-Formatierung möglich.
                       </p>
                     </div>
 
@@ -1074,7 +1068,7 @@ export default function EinstellungenPage() {
                         disabled={emailLoeschend}
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
-                        {emailLoeschend ? 'Wird geloescht...' : 'Einstellungen loeschen'}
+                        {emailLoeschend ? 'Wird gelöscht...' : 'Einstellungen löschen'}
                       </Button>
                     </div>
 
@@ -1097,7 +1091,7 @@ export default function EinstellungenPage() {
 
 // ==================== Sportstaetten-Verwaltung ====================
 
-interface Sportstaette {
+interface Sportstätte {
   id: string;
   name: string;
   adresse: string | null;
@@ -1111,7 +1105,7 @@ const UNTERGRUND_OPTIONEN = [
 ];
 
 function SportstaettenCard() {
-  const [sportstaetten, setSportstaetten] = useState<Sportstaette[]>([]);
+  const [sportstaetten, setSportstaetten] = useState<Sportstätte[]>([]);
   const [ladend, setLadend] = useState(true);
   const [formOffen, setFormOffen] = useState(false);
   const [bearbeitenId, setBearbeitenId] = useState<string | null>(null);
@@ -1123,10 +1117,10 @@ function SportstaettenCard() {
 
   const laden = async () => {
     try {
-      const daten = await apiClient.get<Sportstaette[]>('/hallen');
+      const daten = await apiClient.get<Sportstätte[]>('/hallen');
       setSportstaetten(daten.map((s) => ({ ...s, untergruende: s.untergruende ?? [] })));
     } catch {
-      console.error('Fehler beim Laden der Sportstaetten');
+      console.error('Fehler beim Laden der Sportstätten');
     } finally {
       setLadend(false);
     }
@@ -1145,7 +1139,7 @@ function SportstaettenCard() {
     setFormOffen(true);
   };
 
-  const handleBearbeiten = (s: Sportstaette) => {
+  const handleBearbeiten = (s: Sportstätte) => {
     setBearbeitenId(s.id);
     setFormName(s.name);
     setFormAdresse(s.adresse || '');
@@ -1186,7 +1180,7 @@ function SportstaettenCard() {
   };
 
   const handleLoeschen = async (id: string) => {
-    if (!confirm('Sportstaette wirklich loeschen? Bestehende Veranstaltungen bleiben erhalten.')) return;
+    if (!confirm('Sportstätte wirklich löschen? Bestehende Veranstaltungen bleiben erhalten.')) return;
     try {
       await apiClient.delete(`/hallen/${id}`);
       laden();
@@ -1200,12 +1194,12 @@ function SportstaettenCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MapPin className="h-5 w-5" />
-          Sportstaetten & Hallen
+          Sportstätten & Hallen
         </CardTitle>
         <CardDescription>
-          Hinterlegen Sie hier die Hallen und Sportplaetze, in denen Ihr Verein trainiert und spielt.
-          Wenn Sie spaeter eine Veranstaltung erstellen, koennen Sie die Sportstaette einfach
-          aus einer Liste auswaehlen - Adresse und Untergrund werden automatisch eingetragen.
+          Hinterlegen Sie hier die Hallen und Sportplätze, in denen Ihr Verein trainiert und spielt.
+          Wenn Sie spaeter eine Veranstaltung erstellen, können Sie die Sportstätte einfach
+          aus einer Liste auswählen - Adresse und Untergrund werden automatisch eingetragen.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1217,11 +1211,11 @@ function SportstaettenCard() {
               <div className="rounded-lg border border-dashed p-6 text-center">
                 <MapPin className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground mb-3">
-                  Noch keine Sportstaetten hinterlegt.
+                  Noch keine Sportstätten hinterlegt.
                 </p>
                 <Button variant="outline" onClick={handleNeu} size="sm">
                   <Plus className="h-4 w-4 mr-2" />
-                  Erste Sportstaette hinzufuegen
+                  Erste Sportstätte hinzufügen
                 </Button>
               </div>
             )}
@@ -1278,7 +1272,7 @@ function SportstaettenCard() {
             {formOffen && (
               <div className="space-y-3 rounded-lg border p-4 bg-muted/30">
                 <p className="text-sm font-medium">
-                  {bearbeitenId ? 'Sportstaette bearbeiten' : 'Neue Sportstaette'}
+                  {bearbeitenId ? 'Sportstätte bearbeiten' : 'Neue Sportstätte'}
                 </p>
                 <div className="space-y-2">
                   <Label>Name *</Label>
@@ -1288,7 +1282,7 @@ function SportstaettenCard() {
                     placeholder="z.B. Ankenhalle, Sportplatz am Bach"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Der Name, unter dem die Sportstaette in der Auswahl erscheint.
+                    Der Name, unter dem die Sportstätte in der Auswahl erscheint.
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -1299,11 +1293,11 @@ function SportstaettenCard() {
                     placeholder="Adresse suchen (z.B. Jahnhalle, Kuchen)"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Tippen Sie die Adresse ein - Vorschlaege erscheinen automatisch.
+                    Tippen Sie die Adresse ein - Vorschläge erscheinen automatisch.
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Kapazitaet (optional)</Label>
+                  <Label>Kapazität (optional)</Label>
                   <Input
                     type="number"
                     value={formKapazitaet}
@@ -1315,9 +1309,9 @@ function SportstaettenCard() {
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Untergruende</Label>
+                  <Label>Untergründe</Label>
                   <p className="text-xs text-muted-foreground mb-2">
-                    Waehlen Sie alle Bodenarten aus, die an dieser Sportstaette verfuegbar sind.
+                    Wählen Sie alle Bodenarten aus, die an dieser Sportstätte verfügbar sind.
                     Bei Veranstaltungen wird der Untergrund dann automatisch vorgeschlagen.
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -1341,7 +1335,7 @@ function SportstaettenCard() {
                 <div className="flex gap-2 pt-2">
                   <Button onClick={handleSpeichern} disabled={!formName || speichernd} size="sm">
                     <Save className="h-4 w-4 mr-2" />
-                    {speichernd ? 'Speichern...' : bearbeitenId ? 'Aktualisieren' : 'Hinzufuegen'}
+                    {speichernd ? 'Speichern...' : bearbeitenId ? 'Aktualisieren' : 'Hinzufügen'}
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => setFormOffen(false)}>
                     Abbrechen
@@ -1353,7 +1347,7 @@ function SportstaettenCard() {
             {sportstaetten.length > 0 && !formOffen && (
               <Button variant="outline" onClick={handleNeu}>
                 <Plus className="h-4 w-4 mr-2" />
-                Weitere Sportstaette hinzufuegen
+                Weitere Sportstätte hinzufügen
               </Button>
             )}
           </>
@@ -1412,7 +1406,7 @@ function AltersklassenCard() {
         <CardDescription>
           Legen Sie fest, welche Altersklassen bei der Team-Erstellung zur Auswahl stehen.
           Die Standard-Einteilung (Bambini bis AH) ist voreingestellt.
-          Sie koennen eigene Klassen hinzufuegen (z.B. Damen, Herren 2, U21).
+          Sie können eigene Klassen hinzufügen (z.B. Damen, Herren 2, U21).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1447,7 +1441,7 @@ function AltersklassenCard() {
                 onKeyDown={(e) => e.key === 'Enter' && handleHinzufuegen()}
               />
               <Button variant="outline" size="sm" onClick={handleHinzufuegen} disabled={!neueKlasse.trim()}>
-                Hinzufuegen
+                Hinzufügen
               </Button>
             </div>
 
@@ -1457,7 +1451,7 @@ function AltersklassenCard() {
                 Altersklassen speichern
               </Button>
               <Button variant="ghost" onClick={handleZuruecksetzen}>
-                Zuruecksetzen
+                Zurücksetzen
               </Button>
               {gespeichert && (
                 <span className="text-sm text-green-600">Gespeichert!</span>
@@ -1565,7 +1559,7 @@ function VeranstaltungstypenCard() {
           Veranstaltungstypen
         </CardTitle>
         <CardDescription>
-          Bestimmen Sie, welche Arten von Veranstaltungen in Ihrem Verein moeglich sind.
+          Bestimmen Sie, welche Arten von Veranstaltungen in Ihrem Verein möglich sind.
           Klicken Sie auf einen Typ, um ihn zu aktivieren oder zu deaktivieren.
           Nur aktive Typen erscheinen beim Erstellen einer neuen Veranstaltung.
         </CardDescription>
@@ -1579,7 +1573,7 @@ function VeranstaltungstypenCard() {
             <div>
               <Label className="text-sm font-medium mb-2 block">Standard-Typen</Label>
               <p className="text-xs text-muted-foreground mb-3">
-                Klicken Sie auf einen Typ, um ihn fuer Ihren Verein ein- oder auszuschalten.
+                Klicken Sie auf einen Typ, um ihn für Ihren Verein ein- oder auszuschalten.
               </p>
               <div className="flex flex-wrap gap-2">
                 {VORDEFINIERTE_VERANSTALTUNGSTYPEN.map((typ) => (
@@ -1665,7 +1659,7 @@ function VeranstaltungstypenCard() {
                 />
                 <Button variant="outline" size="sm" onClick={handleHinzufuegen} disabled={!neuesLabel.trim()}>
                   <Plus className="h-4 w-4 mr-1" />
-                  Hinzufuegen
+                  Hinzufügen
                 </Button>
               </div>
             </div>
