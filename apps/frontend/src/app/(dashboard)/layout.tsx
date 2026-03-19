@@ -1,27 +1,11 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { EmailVerifizierungBanner } from '@/components/auth/email-verifizierung-banner';
-
-/**
- * Wartet auf Zustand persist-Hydration, bevor Auth-Entscheidungen getroffen werden.
- * Verhindert Race Condition bei F5-Refresh (accessToken ist initial null
- * bevor localStorage geladen wird).
- */
-function useHydrated() {
-  return useSyncExternalStore(
-    (cb) => {
-      const unsub = useAuthStore.persist.onFinishHydration(cb);
-      return () => unsub();
-    },
-    () => useAuthStore.persist.hasHydrated(),
-    () => false, // SSR: immer false
-  );
-}
 
 export default function DashboardLayout({
   children,
@@ -29,14 +13,20 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const hydrated = useHydrated();
   const { istAngemeldet, accessToken, profilLaden, themeAnwenden } =
     useAuthStore();
   const [bereit, setBereit] = useState(false);
+  // Client-Mount-Flag: erst nach dem ersten Render auf dem Client
+  // ist Zustand aus localStorage hydriert
+  const [aufClient, setAufClient] = useState(false);
 
   useEffect(() => {
-    // Erst nach Hydration Auth-Entscheidungen treffen
-    if (!hydrated) return;
+    setAufClient(true);
+  }, []);
+
+  useEffect(() => {
+    // Erst nach Client-Mount Auth pruefen (Zustand muss erst aus localStorage laden)
+    if (!aufClient) return;
 
     if (!accessToken) {
       router.replace('/anmelden');
@@ -46,7 +36,7 @@ export default function DashboardLayout({
     // Theme anwenden und Profil laden
     themeAnwenden();
     profilLaden().finally(() => setBereit(true));
-  }, [hydrated, accessToken, router, profilLaden, themeAnwenden]);
+  }, [aufClient, accessToken, router, profilLaden, themeAnwenden]);
 
   // Nach Profil-Check: nicht angemeldet → zur Anmeldeseite
   useEffect(() => {
@@ -55,8 +45,8 @@ export default function DashboardLayout({
     }
   }, [bereit, istAngemeldet, router]);
 
-  // Waehrend Hydration oder Auth-Check nichts anzeigen
-  if (!hydrated || !bereit || !istAngemeldet) {
+  // Waehrend Auth-Check nichts anzeigen
+  if (!bereit || !istAngemeldet) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Laden...</div>
