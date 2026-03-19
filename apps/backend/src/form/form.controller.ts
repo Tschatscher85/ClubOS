@@ -142,7 +142,7 @@ export class FormController {
       );
     }
 
-    // Formularvorlage erstellen
+    // Formularvorlage erstellen (mit Positionen fuer PDF-Ausfuellung)
     const vorlage = await this.formService.templateErstellen(tenantId, {
       name: name.trim(),
       typ: FormType.MITGLIEDSANTRAG,
@@ -152,11 +152,18 @@ export class FormController {
         typ: feld.typ,
         pflicht: feld.pflicht,
         optionen: feld.optionen,
+        seite: feld.seite,
+        x: feld.x,
+        y: feld.y,
       })),
     });
 
+    // Original-PDF speichern
+    const pdfUrl = this.kiKonvertierungService.speicherePdf(tenantId, vorlage.id, datei.buffer);
+    await this.formService.templatePdfUrlSetzen(vorlage.id, pdfUrl);
+
     return {
-      vorlage,
+      vorlage: { ...vorlage, fileUrl: pdfUrl },
       erkannteFelder: felder.length,
       felder,
     };
@@ -219,6 +226,45 @@ export class FormController {
     @Param('id') id: string,
   ) {
     return this.formService.einreichungAlsPdf(tenantId, id);
+  }
+
+  @Get('einreichungen/:id/ausgefuellt-pdf')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
+  @ApiOperation({ summary: 'Ausgefuelltes Original-PDF herunterladen' })
+  async ausgefuelltesPdf(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
+    const einreichung = await this.formService.einreichungAbrufen(tenantId, id);
+    const template = einreichung.template;
+
+    if (!template.fileUrl) {
+      throw new BadRequestException('Kein Original-PDF fuer diese Vorlage gespeichert.');
+    }
+
+    const felder = ((template.fields as unknown as Array<Record<string, unknown>>) || []).map((f) => ({
+      name: f.name as string,
+      label: f.label as string,
+      typ: (f.typ as 'text' | 'email' | 'date' | 'select' | 'checkbox') || 'text',
+      pflicht: (f.pflicht as boolean) || false,
+      seite: f.seite as number | undefined,
+      x: f.x as number | undefined,
+      y: f.y as number | undefined,
+    }));
+
+    const daten = (einreichung.daten as Record<string, unknown>) || {};
+
+    const pdfBuffer = await this.kiKonvertierungService.ausgefuelltesPdfGenerieren(
+      template.fileUrl,
+      felder,
+      daten,
+      einreichung.signatureUrl || undefined,
+    );
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${template.name}_ausgefuellt.pdf"`);
+    res.send(pdfBuffer);
   }
 
   @Get('einreichungen/:id/export')

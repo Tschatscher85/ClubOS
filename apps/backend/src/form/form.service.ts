@@ -203,6 +203,13 @@ export class FormService {
     return pdfDaten;
   }
 
+  async templatePdfUrlSetzen(templateId: string, pdfUrl: string) {
+    return this.prisma.formTemplate.update({
+      where: { id: templateId },
+      data: { fileUrl: pdfUrl },
+    });
+  }
+
   // ==================== Hilfsmethoden ====================
 
   private async mitgliedAusDatenErstellen(

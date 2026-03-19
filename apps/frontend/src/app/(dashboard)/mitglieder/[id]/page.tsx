@@ -714,6 +714,17 @@ export default function MitgliedDetailPage() {
                         try {
                           const authState = JSON.parse(localStorage.getItem('clubos-auth') || '{}');
                           const token = authState?.state?.accessToken;
+                          // Versuche zuerst ausgefuelltes Original-PDF
+                          const pdfRes = await fetch(`/api/formulare/einreichungen/${f.id}/ausgefuellt-pdf`, {
+                            headers: token ? { Authorization: `Bearer ${token}` } : {},
+                          });
+                          if (pdfRes.ok) {
+                            const blob = await pdfRes.blob();
+                            const url = URL.createObjectURL(blob);
+                            window.open(url, '_blank');
+                            return;
+                          }
+                          // Fallback: HTML-Export
                           const res = await fetch(`/api/formulare/einreichungen/${f.id}/export`, {
                             headers: token ? { Authorization: `Bearer ${token}` } : {},
                           });
@@ -729,7 +740,7 @@ export default function MitgliedDetailPage() {
                       }}
                     >
                       <Download className="h-3.5 w-3.5 mr-1" />
-                      Ansehen
+                      PDF
                     </Button>
                   </div>
                 </div>
