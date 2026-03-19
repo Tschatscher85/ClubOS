@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { PDFParse } = require('pdf-parse');
 
 /** Ergebnis einer KI-Anfrage */
 export interface KiAntwort {
@@ -216,27 +218,34 @@ export class KiService {
     prompt: string,
   ): Promise<KiAntwort> {
     const client = new OpenAI({ apiKey });
-    const base64 = pdfBuffer.toString('base64');
 
-    // OpenAI unterstuetzt PDFs als base64-Bilder nicht direkt,
-    // daher wird der Inhalt als Data-URL im image_url-Format gesendet.
-    // Fuer echte PDF-Analyse sollte das PDF vorher in Bilder konvertiert werden.
-    // Als Workaround senden wir das PDF als base64-Bild (funktioniert mit gpt-4o fuer Bilder).
+    // PDF-Text extrahieren (OpenAI unterstuetzt keine PDFs als Bild)
+    let pdfText = '';
+    try {
+      const uint8 = new Uint8Array(pdfBuffer);
+      const parser = new PDFParse(uint8);
+      await parser.load();
+      const result = await parser.getText();
+      pdfText = result.text || '';
+    } catch {
+      throw new BadRequestException(
+        'PDF konnte nicht gelesen werden. Bitte pruefen Sie, ob die Datei ein gueltiges PDF ist.',
+      );
+    }
+
+    if (!pdfText.trim()) {
+      throw new BadRequestException(
+        'Das PDF enthaelt keinen lesbaren Text (z.B. nur gescannte Bilder). Bitte verwenden Sie ein PDF mit echtem Text.',
+      );
+    }
+
     const response = await client.chat.completions.create({
       model: modell,
       max_tokens: 4096,
       messages: [
         {
           role: 'user',
-          content: [
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:application/pdf;base64,${base64}`,
-              },
-            },
-            { type: 'text', text: prompt },
-          ],
+          content: `Hier ist der extrahierte Text eines PDF-Formulars:\n\n---\n${pdfText.slice(0, 8000)}\n---\n\n${prompt}`,
         },
       ],
     });

@@ -267,7 +267,7 @@ export default function FormulareInhalt() {
       if (!response.ok) {
         const fehlerDaten = await response.json().catch(() => null);
         throw new Error(
-          fehlerDaten?.message || `Fehler ${response.status}: Analyse fehlgeschlagen.`,
+          fehlerDaten?.nachricht || fehlerDaten?.message || `Fehler ${response.status}: Analyse fehlgeschlagen.`,
         );
       }
 
