@@ -13,6 +13,7 @@ import {
   Upload,
   Loader2,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -424,13 +425,29 @@ export default function FormulareInhalt() {
                         {vorlage._count.submissions} Einreichungen
                       </p>
                     )}
-                    <div className="mt-3">
-                      <Link href={`/formulare/${vorlage.id}`}>
+                    <div className="mt-3 flex gap-2">
+                      <Link href={`/formulare/${vorlage.id}`} className="flex-1">
                         <Button variant="outline" size="sm" className="w-full">
                           <Eye className="h-4 w-4 mr-2" />
-                          Formular oeffnen
+                          Oeffnen
                         </Button>
                       </Link>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={async () => {
+                          if (!confirm(`Vorlage "${vorlage.name}" wirklich loeschen?`)) return;
+                          try {
+                            await apiClient.delete(`/formulare/vorlagen/${vorlage.id}`);
+                            datenLaden();
+                          } catch (error) {
+                            console.error('Fehler:', error);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

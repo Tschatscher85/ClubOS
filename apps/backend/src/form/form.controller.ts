@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Body,
   Param,
   Query,
@@ -70,6 +71,28 @@ export class FormController {
     @Param('id') id: string,
   ) {
     return this.formService.templateAbrufen(tenantId, id);
+  }
+
+  @Put('vorlagen/:id')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Formularvorlage aktualisieren' })
+  async vorlageAktualisieren(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: ErstelleTemplateDto,
+  ) {
+    return this.formService.templateAktualisieren(tenantId, id, dto);
+  }
+
+  @Delete('vorlagen/:id')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Formularvorlage deaktivieren (Soft-Delete)' })
+  async vorlageLoeschen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+  ) {
+    await this.formService.templateLoeschen(tenantId, id);
+    return { nachricht: 'Formularvorlage deaktiviert.' };
   }
 
   // ==================== KI-Konvertierung ====================

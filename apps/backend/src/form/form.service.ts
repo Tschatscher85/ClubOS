@@ -46,6 +46,39 @@ export class FormService {
     });
   }
 
+  async templateAktualisieren(tenantId: string, templateId: string, dto: Partial<ErstelleTemplateDto>) {
+    const template = await this.prisma.formTemplate.findFirst({
+      where: { id: templateId, tenantId },
+    });
+    if (!template) {
+      throw new NotFoundException('Formularvorlage nicht gefunden.');
+    }
+
+    return this.prisma.formTemplate.update({
+      where: { id: templateId },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.typ !== undefined && { type: dto.typ }),
+        ...(dto.felder !== undefined && { fields: dto.felder as unknown as Prisma.InputJsonValue }),
+      },
+    });
+  }
+
+  async templateLoeschen(tenantId: string, templateId: string) {
+    const template = await this.prisma.formTemplate.findFirst({
+      where: { id: templateId, tenantId },
+    });
+    if (!template) {
+      throw new NotFoundException('Formularvorlage nicht gefunden.');
+    }
+
+    // Soft delete - deaktivieren statt loeschen (Einreichungen bleiben erhalten)
+    return this.prisma.formTemplate.update({
+      where: { id: templateId },
+      data: { isActive: false },
+    });
+  }
+
   // ==================== Einreichungen ====================
 
   async einreichen(
