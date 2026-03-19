@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -199,5 +200,19 @@ export class HomepageController {
   @ApiResponse({ status: 404, description: 'Event nicht gefunden' })
   async eventLandingpageOeffentlich(@Param('slug') slug: string) {
     return this.homepageService.eventLandingpageOeffentlich(slug);
+  }
+
+  // ==================== Oeffentlicher Vereinskalender ====================
+
+  @Get('public/:slug/kalender')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Oeffentlicher Vereinskalender (alle Events eines Monats)' })
+  @ApiResponse({ status: 200, description: 'Events des Vereins fuer den angegebenen Monat' })
+  @ApiResponse({ status: 404, description: 'Verein nicht gefunden' })
+  async oeffentlicherKalender(
+    @Param('slug') slug: string,
+    @Query('monat') monat?: string,
+  ) {
+    return this.homepageService.oeffentlicherKalender(slug, monat);
   }
 }

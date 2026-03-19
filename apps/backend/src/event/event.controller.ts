@@ -44,20 +44,32 @@ export class EventController {
 
   @Get()
   @ApiOperation({ summary: 'Alle Veranstaltungen abrufen (inkl. Anmeldestatus)' })
-  async alleAbrufen(@AktuellerBenutzer('tenantId') tenantId: string) {
-    return this.eventService.alleAbrufen(tenantId);
+  async alleAbrufen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @AktuellerBenutzer('id') userId: string,
+    @AktuellerBenutzer('rolle') rolle: string,
+  ) {
+    return this.eventService.alleAbrufen(tenantId, userId, rolle);
   }
 
   @Get('kommende')
   @ApiOperation({ summary: 'Kommende Veranstaltungen abrufen (inkl. Anmeldestatus)' })
-  async kommendeAbrufen(@AktuellerBenutzer('tenantId') tenantId: string) {
-    return this.eventService.kommendeAbrufen(tenantId);
+  async kommendeAbrufen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @AktuellerBenutzer('id') userId: string,
+    @AktuellerBenutzer('rolle') rolle: string,
+  ) {
+    return this.eventService.kommendeAbrufen(tenantId, userId, rolle);
   }
 
   @Get('naechstes')
   @ApiOperation({ summary: 'Naechste Veranstaltung abrufen' })
-  async naechstesEvent(@AktuellerBenutzer('tenantId') tenantId: string) {
-    return this.eventService.naechstesEvent(tenantId);
+  async naechstesEvent(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @AktuellerBenutzer('id') userId: string,
+    @AktuellerBenutzer('rolle') rolle: string,
+  ) {
+    return this.eventService.naechstesEvent(tenantId, userId, rolle);
   }
 
   // ==================== Eltern-Portal ====================

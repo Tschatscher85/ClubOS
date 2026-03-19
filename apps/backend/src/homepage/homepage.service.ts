@@ -263,6 +263,82 @@ export class HomepageService {
     return { verein: tenant.name, events };
   }
 
+  // ==================== Oeffentlicher Vereinskalender ====================
+
+  /**
+   * Gibt alle Events eines Vereins fuer einen bestimmten Monat zurueck.
+   * Oeffentlich zugaenglich, kein Auth noetig.
+   * Nur oeffentliche Felder: title, type, date, endDate, location, hallName, teamName.
+   */
+  async oeffentlicherKalender(slug: string, monat?: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { slug },
+      select: { id: true, name: true, slug: true, logo: true, primaryColor: true },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Verein nicht gefunden.');
+    }
+
+    // Monat parsen (Format: YYYY-MM) oder aktuellen Monat verwenden
+    let startDatum: Date;
+    let endDatum: Date;
+
+    if (monat && /^\d{4}-\d{2}$/.test(monat)) {
+      const [jahr, mon] = monat.split('-').map(Number);
+      startDatum = new Date(jahr, mon - 1, 1);
+      endDatum = new Date(jahr, mon, 0, 23, 59, 59, 999);
+    } else {
+      const jetzt = new Date();
+      startDatum = new Date(jetzt.getFullYear(), jetzt.getMonth(), 1);
+      endDatum = new Date(jetzt.getFullYear(), jetzt.getMonth() + 1, 0, 23, 59, 59, 999);
+    }
+
+    const events = await this.prisma.event.findMany({
+      where: {
+        tenantId: tenant.id,
+        date: {
+          gte: startDatum,
+          lte: endDatum,
+        },
+      },
+      orderBy: { date: 'asc' },
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        date: true,
+        endDate: true,
+        location: true,
+        hallName: true,
+        team: { select: { name: true } },
+      },
+    });
+
+    return {
+      verein: {
+        name: tenant.name,
+        slug: tenant.slug,
+        logo: tenant.logo,
+        primaryColor: tenant.primaryColor,
+      },
+      monat: {
+        start: startDatum.toISOString(),
+        ende: endDatum.toISOString(),
+      },
+      events: events.map((e) => ({
+        id: e.id,
+        titel: e.title,
+        typ: e.type,
+        datum: e.date,
+        endDatum: e.endDate,
+        ort: e.location,
+        hallenName: e.hallName,
+        teamName: e.team?.name || null,
+      })),
+    };
+  }
+
   // ==================== KI-Generierung ====================
 
   /**

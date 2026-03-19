@@ -3,8 +3,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ErstelleEventDto, AktualisiereEventDto } from './dto/erstelle-event.dto';
 import { AnmeldungDto } from './dto/anmeldung.dto';
 import { KommentarDto } from './dto/kommentar.dto';
-import { AttendanceStatus } from '@prisma/client';
+import { AttendanceStatus, Role } from '@prisma/client';
 import { ReminderService } from './reminder.service';
+import { PushService } from '../push/push.service';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class EventService {
   constructor(
     private prisma: PrismaService,
     private reminderService: ReminderService,
+    private pushService: PushService,
   ) {}
 
   async erstellen(tenantId: string, dto: ErstelleEventDto) {
@@ -61,6 +63,9 @@ export class EventService {
 
     // Erinnerungen fuer das Hauptevent erstellen
     await this.reminderService.erinnerungenErstellen(event.id, event.date);
+
+    // Push-Benachrichtigung an Team-Mitglieder senden
+    this.pushAnTeamSenden(dto.teamId, event.title, event.type, event.date);
 
     // Wiederkehrende Events generieren
     if (dto.wiederholung && recurrenceEnd) {
@@ -184,9 +189,47 @@ export class EventService {
     }
   }
 
-  async alleAbrufen(tenantId: string) {
+  /**
+   * Ermittelt die Team-IDs eines Users ueber Member -> TeamMember.
+   * Gibt null zurueck wenn der User kein MEMBER/PARENT ist (= alle sehen).
+   */
+  private async teamIdsFuerUser(tenantId: string, userId: string, rolle: string): Promise<string[] | null> {
+    // ADMIN, SUPERADMIN, TRAINER sehen alle Events
+    if (rolle !== Role.MEMBER && rolle !== Role.PARENT) {
+      return null;
+    }
+
+    // Member des Users finden
+    const member = await this.prisma.member.findFirst({
+      where: { userId, tenantId },
+      select: { id: true },
+    });
+
+    if (!member) {
+      return [];
+    }
+
+    // Teams des Members finden
+    const teamMitgliedschaften = await this.prisma.teamMember.findMany({
+      where: { memberId: member.id },
+      select: { teamId: true },
+    });
+
+    return teamMitgliedschaften.map((tm) => tm.teamId);
+  }
+
+  async alleAbrufen(tenantId: string, userId?: string, rolle?: string) {
+    // Team-Filter fuer MEMBER/PARENT
+    let teamFilter: { teamId?: { in: string[] } } = {};
+    if (userId && rolle) {
+      const teamIds = await this.teamIdsFuerUser(tenantId, userId, rolle);
+      if (teamIds !== null) {
+        teamFilter = { teamId: { in: teamIds } };
+      }
+    }
+
     return this.prisma.event.findMany({
-      where: { tenantId },
+      where: { tenantId, ...teamFilter },
       include: {
         team: { select: { id: true, name: true, sport: true } },
         _count: { select: { attendances: true } },
@@ -198,11 +241,21 @@ export class EventService {
     });
   }
 
-  async kommendeAbrufen(tenantId: string) {
+  async kommendeAbrufen(tenantId: string, userId?: string, rolle?: string) {
+    // Team-Filter fuer MEMBER/PARENT
+    let teamFilter: { teamId?: { in: string[] } } = {};
+    if (userId && rolle) {
+      const teamIds = await this.teamIdsFuerUser(tenantId, userId, rolle);
+      if (teamIds !== null) {
+        teamFilter = { teamId: { in: teamIds } };
+      }
+    }
+
     return this.prisma.event.findMany({
       where: {
         tenantId,
         date: { gte: new Date() },
+        ...teamFilter,
       },
       include: {
         team: { select: { id: true, name: true, sport: true } },
@@ -272,11 +325,21 @@ export class EventService {
     return this.prisma.event.delete({ where: { id } });
   }
 
-  async naechstesEvent(tenantId: string) {
+  async naechstesEvent(tenantId: string, userId?: string, rolle?: string) {
+    // Team-Filter fuer MEMBER/PARENT
+    let teamFilter: { teamId?: { in: string[] } } = {};
+    if (userId && rolle) {
+      const teamIds = await this.teamIdsFuerUser(tenantId, userId, rolle);
+      if (teamIds !== null) {
+        teamFilter = { teamId: { in: teamIds } };
+      }
+    }
+
     return this.prisma.event.findFirst({
       where: {
         tenantId,
         date: { gte: new Date() },
+        ...teamFilter,
       },
       include: {
         team: { select: { name: true } },
@@ -679,5 +742,35 @@ export class EventService {
       where: { eventId },
       orderBy: { createdAt: 'asc' },
     });
+  }
+
+  /**
+   * Push-Benachrichtigung an alle Mitglieder eines Teams senden (async, nicht blockierend)
+   */
+  private async pushAnTeamSenden(teamId: string, titel: string, typ: string, datum: Date) {
+    try {
+      const mitglieder = await this.prisma.teamMember.findMany({
+        where: { teamId },
+        include: { member: { select: { userId: true } } },
+      });
+
+      const userIds = mitglieder
+        .map((m) => m.member.userId)
+        .filter((id): id is string => !!id);
+
+      if (userIds.length === 0) return;
+
+      const datumStr = datum.toLocaleDateString('de-DE', {
+        weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+      });
+
+      await this.pushService.sendePushAnMehrere(userIds, {
+        title: `Neues ${typ === 'TRAINING' ? 'Training' : typ === 'MATCH' ? 'Spiel' : 'Event'}: ${titel}`,
+        body: datumStr,
+        url: '/kalender',
+      });
+    } catch {
+      // Push-Fehler nicht propagieren — Event wurde bereits erstellt
+    }
   }
 }

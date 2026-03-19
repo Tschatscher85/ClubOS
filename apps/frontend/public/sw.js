@@ -1,5 +1,5 @@
 /**
- * ClubOS Service Worker fuer Web-Push-Benachrichtigungen
+ * Vereinbase Service Worker fuer Web-Push-Benachrichtigungen
  */
 
 self.addEventListener('push', function (event) {
@@ -11,11 +11,11 @@ self.addEventListener('push', function (event) {
     badge: '/favicon.ico',
     data: { url: data.url || '/' },
     vibrate: [200, 100, 200],
-    tag: data.tag || 'clubos-benachrichtigung',
+    tag: data.tag || 'vereinbase-benachrichtigung',
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'ClubOS', optionen),
+    self.registration.showNotification(data.title || 'Vereinbase', optionen),
   );
 });
 

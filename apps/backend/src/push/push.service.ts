@@ -119,6 +119,36 @@ export class PushService implements OnModuleInit {
   }
 
   /**
+   * Pruefen ob Push an einen Benutzer gesendet werden darf
+   * (Stille-Stunden und Einstellungen beachten)
+   */
+  async darfPushSenden(userId: string): Promise<boolean> {
+    // Benachrichtigungs-Einstellungen pruefen
+    const einstellung = await this.prisma.benachrichtigungsEinstellung.findUnique({
+      where: { userId },
+    });
+
+    if (einstellung && !einstellung.pushAktiv) {
+      return false;
+    }
+
+    // Stille-Stunden pruefen
+    const jetzt = new Date();
+    const stunde = jetzt.getHours();
+    const von = einstellung?.stilleStundenVon ?? 22;
+    const bis = einstellung?.stilleStundenBis ?? 7;
+
+    if (von > bis) {
+      // Ueber Mitternacht (z.B. 22-7)
+      if (stunde >= von || stunde < bis) return false;
+    } else if (von < bis) {
+      if (stunde >= von && stunde < bis) return false;
+    }
+
+    return true;
+  }
+
+  /**
    * Push-Nachricht an mehrere Benutzer senden
    */
   async sendePushAnMehrere(

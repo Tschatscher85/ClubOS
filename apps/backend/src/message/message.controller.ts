@@ -48,9 +48,11 @@ export class MessageController {
   @ApiOperation({ summary: 'Nachrichten abrufen (optional nach Team filtern)' })
   async alleAbrufen(
     @AktuellerBenutzer('tenantId') tenantId: string,
+    @AktuellerBenutzer('id') userId: string,
+    @AktuellerBenutzer('rolle') rolle: string,
     @Query('teamId') teamId?: string,
   ) {
-    return this.messageService.alleAbrufen(tenantId, teamId);
+    return this.messageService.alleAbrufen(tenantId, userId, rolle, teamId);
   }
 
   @Get('ungelesen')
@@ -58,8 +60,9 @@ export class MessageController {
   async ungeleseneAnzahl(
     @AktuellerBenutzer('tenantId') tenantId: string,
     @AktuellerBenutzer('id') userId: string,
+    @AktuellerBenutzer('rolle') rolle: string,
   ) {
-    return this.messageService.ungeleseneAnzahl(tenantId, userId);
+    return this.messageService.ungeleseneAnzahl(tenantId, userId, rolle);
   }
 
   @Post('notfall')

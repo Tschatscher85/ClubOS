@@ -6,12 +6,42 @@ import { ReaktionDto } from './dto/reaktion.dto';
 import { AktualisiereBenachrichtigungsEinstellungDto } from './dto/benachrichtigungs-einstellung.dto';
 import { MessageType, Role, ReaktionTyp } from '@prisma/client';
 import { STILLE_STUNDEN_START, STILLE_STUNDEN_ENDE } from '@vereinbase/shared';
+import { PushService } from '../push/push.service';
 
 @Injectable()
 export class MessageService {
   private readonly logger = new Logger(MessageService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private pushService: PushService,
+  ) {}
+
+  /**
+   * Ermittelt die Team-IDs eines Users ueber Member -> TeamMember.
+   * Gibt null zurueck wenn der User kein MEMBER/PARENT ist (= alle sehen).
+   */
+  private async teamIdsFuerUser(tenantId: string, userId: string, rolle: string): Promise<string[] | null> {
+    if (rolle !== Role.MEMBER && rolle !== Role.PARENT) {
+      return null;
+    }
+
+    const member = await this.prisma.member.findFirst({
+      where: { userId, tenantId },
+      select: { id: true },
+    });
+
+    if (!member) {
+      return [];
+    }
+
+    const teamMitgliedschaften = await this.prisma.teamMember.findMany({
+      where: { memberId: member.id },
+      select: { teamId: true },
+    });
+
+    return teamMitgliedschaften.map((tm) => tm.teamId);
+  }
 
   async senden(tenantId: string, senderId: string, senderRolle: string, dto: ErstelleNachrichtDto) {
     // Eltern duerfen keine freien Nachrichten senden
@@ -28,7 +58,7 @@ export class MessageService {
       );
     }
 
-    return this.prisma.message.create({
+    const nachricht = await this.prisma.message.create({
       data: {
         tenantId,
         senderId,
@@ -42,13 +72,80 @@ export class MessageService {
         team: { select: { id: true, name: true } },
       },
     });
+
+    // Push-Benachrichtigung an Empfaenger senden (async, nicht blockierend)
+    this.pushAnEmpfaengerSenden(tenantId, senderId, nachricht).catch(() => {});
+
+    return nachricht;
   }
 
-  async alleAbrufen(tenantId: string, teamId?: string) {
+  /**
+   * Push an alle relevanten Empfaenger einer Nachricht senden
+   */
+  private async pushAnEmpfaengerSenden(tenantId: string, senderId: string, nachricht: { content: string; teamId: string | null; team: { name: string } | null; type: string }) {
+    try {
+      let userIds: string[];
+
+      if (nachricht.teamId) {
+        // Team-Nachricht: Alle User im Team
+        const mitglieder = await this.prisma.teamMember.findMany({
+          where: { teamId: nachricht.teamId },
+          include: { member: { select: { userId: true } } },
+        });
+        userIds = mitglieder.map((m) => m.member.userId).filter((id): id is string => !!id);
+      } else {
+        // Allgemeine Nachricht: Alle User des Vereins
+        const users = await this.prisma.user.findMany({
+          where: { tenantId },
+          select: { id: true },
+        });
+        userIds = users.map((u) => u.id);
+      }
+
+      // Sender ausschliessen
+      userIds = userIds.filter((id) => id !== senderId);
+      if (userIds.length === 0) return;
+
+      const titel = nachricht.team
+        ? `Neue Nachricht in ${nachricht.team.name}`
+        : 'Neue Nachricht';
+
+      const vorschau = nachricht.content.length > 80
+        ? nachricht.content.substring(0, 80) + '...'
+        : nachricht.content;
+
+      await this.pushService.sendePushAnMehrere(userIds, {
+        title: titel,
+        body: vorschau,
+        url: '/nachrichten',
+      });
+    } catch {
+      // Push-Fehler nicht propagieren
+    }
+  }
+
+  async alleAbrufen(tenantId: string, userId: string, rolle: string, teamId?: string) {
+    // Team-Filter fuer MEMBER/PARENT: nur Nachrichten ihrer Teams + teamId=null (allgemeine)
+    let teamFilter: Record<string, unknown> = {};
+    if (teamId) {
+      teamFilter = { teamId };
+    } else {
+      const teamIds = await this.teamIdsFuerUser(tenantId, userId, rolle);
+      if (teamIds !== null) {
+        // MEMBER/PARENT: Nachrichten ohne Team (allgemeine) + Nachrichten ihrer Teams
+        teamFilter = {
+          OR: [
+            { teamId: null },
+            { teamId: { in: teamIds } },
+          ],
+        };
+      }
+    }
+
     return this.prisma.message.findMany({
       where: {
         tenantId,
-        ...(teamId && { teamId }),
+        ...teamFilter,
       },
       include: {
         team: { select: { id: true, name: true } },
@@ -89,15 +186,27 @@ export class MessageService {
     });
   }
 
-  async ungeleseneAnzahl(tenantId: string, userId: string) {
+  async ungeleseneAnzahl(tenantId: string, userId: string, rolle: string) {
+    // Team-Filter fuer MEMBER/PARENT
+    const teamIds = await this.teamIdsFuerUser(tenantId, userId, rolle);
+    let teamFilter: Record<string, unknown> = {};
+    if (teamIds !== null) {
+      teamFilter = {
+        OR: [
+          { teamId: null },
+          { teamId: { in: teamIds } },
+        ],
+      };
+    }
+
     const gesamt = await this.prisma.message.count({
-      where: { tenantId },
+      where: { tenantId, ...teamFilter },
     });
 
     const gelesen = await this.prisma.messageRead.count({
       where: {
         userId,
-        message: { tenantId },
+        message: { tenantId, ...teamFilter },
       },
     });
 
