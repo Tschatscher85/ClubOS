@@ -152,9 +152,12 @@ export class TenantService {
       kiProvider: dto.kiProvider,
     };
 
-    // API-Key nur aktualisieren, wenn explizit gesendet
+    // API-Key nur aktualisieren, wenn explizit gesendet und nicht maskiert
     if (dto.kiApiKey !== undefined) {
-      updateData.kiApiKey = dto.kiApiKey || null;
+      const istMaskiert = dto.kiApiKey && /^\*+/.test(dto.kiApiKey);
+      if (!istMaskiert) {
+        updateData.kiApiKey = dto.kiApiKey || null;
+      }
     }
 
     // Modell nur aktualisieren, wenn explizit gesendet
