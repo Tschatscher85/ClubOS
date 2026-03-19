@@ -523,16 +523,32 @@ Aufstellung oeffentlich (kein Login)
 - [x] Turniere-Tab: Zeigt anstehende Spiele + Button "Neues Spiel"
 
 ### Offen / Roadmap:
-- [ ] Vereinskalender (oeffentlich fuer alle Mitglieder, teamuebergreifend, z.B. Sommerfest)
-- [ ] Sichtbarkeit pro Mitglied (Backend-Filter: Mitglieder sehen nur Events ihrer Teams)
-- [ ] Docker-Setup fuer Produktion (Dockerfile + docker-compose.prod.yml)
-- [ ] Mobile App (Expo React Native) — kommt als letztes
+
+#### PRIO 1: Superadmin-Dashboard & Tenant-Verwaltung
+- [ ] Prisma: istAktiv, gesperrtAm, gesperrtGrund Felder im Tenant-Model
+- [ ] Sperr-Middleware: Bei jedem Request pruefen ob Tenant gesperrt -> Sperrseite
+- [ ] Backend: Admin-Endpoints (alle Vereine listen, sperren, entsperren, Plan aendern)
+- [ ] Backend: Impersonation ("Als Verein einloggen" ohne deren Passwort)
+- [ ] Frontend: /admin Dashboard (Vereine-Tabelle, Ampel gruen/gelb/rot)
+- [ ] Frontend: Sperrseite fuer gesperrte Tenants
+- [ ] Stripe-Webhook: Zahlung fehlgeschlagen -> automatisch warnen/sperren
+- [ ] Subdomain-Routing (fckunchen.clubos.de, Middleware existiert teilweise)
+- [ ] Eigene Domain pro Verein (optional, CNAME)
+
+#### PRIO 2: Features
+- [ ] Vereinskalender (oeffentlich, teamuebergreifend, z.B. Sommerfest)
+- [ ] Sichtbarkeit pro Mitglied (Backend-Filter: nur eigene Team-Events)
 - [ ] Vereinshomepage Frontend-Editor (Sektionen drag&drop, Vorschau)
 - [ ] Turnier-Landingpage Frontend-Editor
-- [ ] Vereinshomepage oeffentliche Darstellung (SSR-Seite fuer Besucher)
-- [ ] 2-Faktor-Authentifizierung (TOTP)
+- [ ] Vereinshomepage oeffentliche Darstellung (SSR-Seite)
 - [ ] Push-Notifications (Web mit Service Worker)
-- [ ] Subdomain-Routing (fckunchen.clubos.de → Vereinshomepage)
+- [ ] 2-Faktor-Authentifizierung (TOTP)
+- [ ] IMAP E-Mail-Empfang (aktuell nur SMTP-Versand)
+
+#### PRIO 3: Infrastruktur
+- [ ] Docker-Setup fuer Produktion (Dockerfile + docker-compose.prod.yml)
+- [ ] Mobile App (Expo React Native)
+- [ ] Umlaute ueberall korrigieren (ae->ae, oe->oe, ue->ue in Code)
 
 ### Deployment (aktuell):
 - Server: Hetzner Ubuntu VM (kein Docker)
