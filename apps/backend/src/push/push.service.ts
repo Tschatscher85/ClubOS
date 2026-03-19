@@ -15,7 +15,7 @@ export class PushService implements OnModuleInit {
 
     if (publicKey && privateKey) {
       webpush.setVapidDetails(
-        'mailto:' + (process.env.VAPID_EMAIL || 'admin@clubos.de'),
+        'mailto:' + (process.env.VAPID_EMAIL || 'admin@vereinbase.de'),
         publicKey,
         privateKey,
       );

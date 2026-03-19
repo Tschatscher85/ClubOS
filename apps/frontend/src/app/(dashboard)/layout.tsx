@@ -13,16 +13,16 @@ function ImpersonationBanner() {
   const [sichtbar, setSichtbar] = useState(false);
 
   useEffect(() => {
-    setSichtbar(!!localStorage.getItem('clubos-auth-admin-backup'));
+    setSichtbar(!!localStorage.getItem('vereinbase-auth-admin-backup'));
   }, []);
 
   if (!sichtbar) return null;
 
   const zurueckZumAdmin = () => {
-    const backup = localStorage.getItem('clubos-auth-admin-backup');
+    const backup = localStorage.getItem('vereinbase-auth-admin-backup');
     if (backup) {
-      localStorage.setItem('clubos-auth', backup);
-      localStorage.removeItem('clubos-auth-admin-backup');
+      localStorage.setItem('vereinbase-auth', backup);
+      localStorage.removeItem('vereinbase-auth-admin-backup');
       window.location.href = '/admin';
     }
   };
@@ -61,10 +61,10 @@ function Sperrseite({ grund }: { grund?: string }) {
           Sie den Support, um den Zugang wiederherzustellen.
         </p>
         <a
-          href="mailto:support@clubos.de"
+          href="mailto:support@vereinbase.de"
           className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
         >
-          <Mail className="h-4 w-4" /> support@clubos.de
+          <Mail className="h-4 w-4" /> support@vereinbase.de
         </a>
       </div>
     </div>

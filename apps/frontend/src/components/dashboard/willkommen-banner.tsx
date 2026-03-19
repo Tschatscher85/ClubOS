@@ -27,7 +27,7 @@ export function WillkommenBanner() {
       </Avatar>
       <div>
         <h1 className="text-2xl font-bold">
-          Willkommen bei {tenant?.name || 'ClubOS'}!
+          Willkommen bei {tenant?.name || 'Vereinbase'}!
         </h1>
         <p className="text-muted-foreground">
           Angemeldet als {benutzer?.email}

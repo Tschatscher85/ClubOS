@@ -253,7 +253,7 @@ export default function FormularePage() {
       formData.append('datei', uploadDatei);
       formData.append('name', uploadName);
 
-      const authState = JSON.parse(localStorage.getItem('clubos-auth') || '{}');
+      const authState = JSON.parse(localStorage.getItem('vereinbase-auth') || '{}');
       const token = authState?.state?.accessToken;
       const response = await fetch(
         `${API_BASE_URL}/formulare/vorlagen/ki-konvertierung`,

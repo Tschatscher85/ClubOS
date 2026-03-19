@@ -107,7 +107,7 @@ export default function OnboardingPage() {
     // Schritt 0: Willkommen + Logo
     <div key="logo" className="space-y-6">
       <div className="text-center space-y-2">
-        <h2 className="text-xl font-semibold">Willkommen bei ClubOS!</h2>
+        <h2 className="text-xl font-semibold">Willkommen bei Vereinbase!</h2>
         <p className="text-muted-foreground">
           Richten Sie Ihren Verein in wenigen Schritten ein.
         </p>
@@ -237,7 +237,7 @@ export default function OnboardingPage() {
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">
-              {tenant?.name || 'ClubOS'}
+              {tenant?.name || 'Vereinbase'}
             </CardTitle>
             <CardDescription>
               Schritt {schritt + 1} von {schritte.length}

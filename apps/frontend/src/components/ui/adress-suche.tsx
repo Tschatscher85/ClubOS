@@ -80,7 +80,7 @@ export function AdressSuche({
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?${params}`,
         {
-          headers: { 'User-Agent': 'ClubOS/1.0' },
+          headers: { 'User-Agent': 'Vereinbase/1.0' },
         },
       );
 

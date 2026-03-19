@@ -12,7 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RegistrierenDto } from './dto/registrieren.dto';
 import { AnmeldenDto } from './dto/anmelden.dto';
 import { Role } from '@prisma/client';
-import { BCRYPT_ROUNDS } from '@clubos/shared';
+import { BCRYPT_ROUNDS } from '@vereinbase/shared';
 
 @Injectable()
 export class AuthService {

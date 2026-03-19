@@ -90,7 +90,7 @@ export default function SchnellAnmeldungSeite() {
       {/* Header */}
       <header className="border-b bg-white px-4 py-4">
         <div className="mx-auto max-w-lg">
-          <h1 className="text-xl font-bold text-primary">ClubOS</h1>
+          <h1 className="text-xl font-bold text-primary">Vereinbase</h1>
         </div>
       </header>
 
@@ -251,7 +251,7 @@ export default function SchnellAnmeldungSeite() {
 
       {/* Footer */}
       <footer className="py-4 text-center text-sm text-muted-foreground">
-        Bereitgestellt von ClubOS
+        Bereitgestellt von Vereinbase
       </footer>
     </div>
   );

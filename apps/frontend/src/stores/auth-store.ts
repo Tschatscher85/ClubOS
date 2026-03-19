@@ -260,7 +260,7 @@ export const useAuthStore = create<AuthState>()(
       };
     },
     {
-      name: 'clubos-auth',
+      name: 'vereinbase-auth',
       partialize: (state) => ({
         benutzer: state.benutzer,
         tenant: state.tenant,

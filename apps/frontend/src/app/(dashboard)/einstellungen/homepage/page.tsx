@@ -917,7 +917,7 @@ export default function HomepageEditorPage() {
                   <span>
                     Oeffentliche URL:{' '}
                     <code className="bg-muted px-1.5 py-0.5 rounded text-foreground">
-                      {homepage.subdomain}.clubos.de
+                      {homepage.subdomain}.vereinbase.de
                     </code>
                   </span>
                 </div>

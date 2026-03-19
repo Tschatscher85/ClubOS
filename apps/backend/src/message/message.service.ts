@@ -5,7 +5,7 @@ import { NotfallBroadcastDto } from './dto/notfall-broadcast.dto';
 import { ReaktionDto } from './dto/reaktion.dto';
 import { AktualisiereBenachrichtigungsEinstellungDto } from './dto/benachrichtigungs-einstellung.dto';
 import { MessageType, Role, ReaktionTyp } from '@prisma/client';
-import { STILLE_STUNDEN_START, STILLE_STUNDEN_ENDE } from '@clubos/shared';
+import { STILLE_STUNDEN_START, STILLE_STUNDEN_ENDE } from '@vereinbase/shared';
 
 @Injectable()
 export class MessageService {

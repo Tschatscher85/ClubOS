@@ -1,24 +1,24 @@
-# ClubOS — Claude Code Prompts (Stand: März 2026)
+# Vereinbase — Claude Code Prompts (Stand: März 2026)
 
 > Vor jedem Prompt: Claude Code liest automatisch `CLAUDE.md` —
 > dort ist der komplette Projektkontext hinterlegt.
-> Repo: https://github.com/Tschatscher85/ClubOS
+> Repo: https://github.com/Tschatscher85/Vereinbase
 
 ---
 
 ## SOFORT — Sicherheit (5 Minuten)
 ```
-# ClubOS — Passwort aus README entfernen
+# Vereinbase — Passwort aus README entfernen
 
 ## Problem
-In README.md steht öffentlich sichtbar: Passwort fuer alle: ClubOS2024!
+In README.md steht öffentlich sichtbar: Passwort fuer alle: Vereinbase2024!
 
 ## Aufgabe
-1. In README.md die Zeile "Passwort fuer alle: ClubOS2024!" entfernen
+1. In README.md die Zeile "Passwort fuer alle: Vereinbase2024!" entfernen
 2. Stattdessen schreiben: "Passwort: siehe .env.example (lokal setzen)"
 3. In setup.sh prüfen: wird das Passwort dort hardkodiert gesetzt?
    Falls ja: durch openssl rand -base64 32 ersetzen und in .env schreiben
-4. In apps/backend/prisma/seed.ts prüfen: wird ClubOS2024! verwendet?
+4. In apps/backend/prisma/seed.ts prüfen: wird Vereinbase2024! verwendet?
    Falls ja: durch process.env.SEED_PASSWORD || 'LocalDev2024!' ersetzen
    und SEED_PASSWORD in .env.example dokumentieren
 
@@ -30,10 +30,10 @@ Commit-Nachricht: "security: Testpasswort aus öffentlichem README entfernt"
 
 ## Phase 6-A — Vereinshomepage Frontend-Editor
 ```
-# ClubOS — Vereinshomepage Frontend-Editor
+# Vereinbase — Vereinshomepage Frontend-Editor
 
 ## Kontext
-ClubOS Repo: https://github.com/Tschatscher85/ClubOS
+Vereinbase Repo: https://github.com/Tschatscher85/Vereinbase
 Das Backend-System für Vereinshomepages ist vollständig fertig (API + DB).
 Jetzt braucht es den visuellen Editor im Frontend.
 
@@ -89,10 +89,10 @@ apps/frontend/src/app/(admin)/einstellungen/homepage/
 
 ## Phase 6-B — Vereinshomepage öffentliche SSR-Seite
 ```
-# ClubOS — Vereinshomepage öffentliche Darstellung (SSR)
+# Vereinbase — Vereinshomepage öffentliche Darstellung (SSR)
 
 ## Kontext
-ClubOS Repo: https://github.com/Tschatscher85/ClubOS
+Vereinbase Repo: https://github.com/Tschatscher85/Vereinbase
 Backend für Vereinshomepages ist fertig.
 Editor (Phase 6-A) ist fertig.
 Jetzt braucht es die öffentliche Seite die Besucher sehen.
@@ -101,7 +101,7 @@ Jetzt braucht es die öffentliche Seite die Besucher sehen.
 Datei: apps/frontend/src/app/(public)/[vereinSlug]/page.tsx
 
 ### Funktionsweise:
-- URL: /fckunchen oder fckunchen.clubos.de (nach Subdomain-Routing)
+- URL: /fckunchen oder fckunchen.vereinbase.de (nach Subdomain-Routing)
 - Seite wird Server-Side gerendert (generateMetadata + fetch)
 - SEO: automatisch Vereinsname als Title, Logo als og:image
 - Lädt: Vereins-Branding (Logo, Farben) + alle aktiven Sektionen
@@ -148,11 +148,11 @@ GET /public/:slug/events — Kommende Events für TERMINE-Sektion
 
 ## Phase 6-C — Subdomain-Routing
 ```
-# ClubOS — Subdomain-Routing für Vereinshomepages
+# Vereinbase — Subdomain-Routing für Vereinshomepages
 
 ## Kontext
-ClubOS Repo: https://github.com/Tschatscher85/ClubOS
-Ziel: fckunchen.clubos.de soll die Vereinshomepage zeigen.
+Vereinbase Repo: https://github.com/Tschatscher85/Vereinbase
+Ziel: fckunchen.vereinbase.de soll die Vereinshomepage zeigen.
 Backend-Tenant-Middleware existiert bereits.
 
 ## Aufgabe: Next.js Middleware für Subdomains
@@ -163,7 +163,7 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
-  const mainDomain = process.env.NEXT_PUBLIC_DOMAIN || 'clubos.de';
+  const mainDomain = process.env.NEXT_PUBLIC_DOMAIN || 'vereinbase.de';
 
   // Subdomain extrahieren
   const subdomain = hostname.replace(`.${mainDomain}`, '').replace('.localhost:3000', '');
@@ -190,7 +190,7 @@ export const config = {
 };
 
 ### .env ergänzen:
-NEXT_PUBLIC_DOMAIN=clubos.de
+NEXT_PUBLIC_DOMAIN=vereinbase.de
 
 ### Lokal testen (ohne echte Domain):
 # In /etc/hosts hinzufügen:
@@ -198,7 +198,7 @@ NEXT_PUBLIC_DOMAIN=clubos.de
 # Dann: http://fckunchen.localhost:3000
 
 ### DNS-Setup für Produktion (Hetzner):
-# A-Record: *.clubos.de → [VM-IP]
+# A-Record: *.vereinbase.de → [VM-IP]
 # Traefik erkennt alle Subdomains automatisch
 ```
 
@@ -206,10 +206,10 @@ NEXT_PUBLIC_DOMAIN=clubos.de
 
 ## Phase 7-A — 2-Faktor-Authentifizierung (TOTP)
 ```
-# ClubOS — 2-Faktor-Authentifizierung (TOTP)
+# Vereinbase — 2-Faktor-Authentifizierung (TOTP)
 
 ## Kontext
-ClubOS Repo: https://github.com/Tschatscher85/ClubOS
+Vereinbase Repo: https://github.com/Tschatscher85/Vereinbase
 Backend: NestJS + Prisma + PostgreSQL
 Auth-Modul existiert: apps/backend/src/auth/
 
@@ -230,7 +230,7 @@ model User {
 ### Endpunkte:
 POST /auth/2fa/einrichten
   1. TOTP-Secret generieren: authenticator.generateSecret()
-  2. QR-Code URL erstellen: otpauth://totp/ClubOS:email?secret=...
+  2. QR-Code URL erstellen: otpauth://totp/Vereinbase:email?secret=...
   3. QR-Code als Base64-PNG generieren (qrcode.toDataURL)
   4. Secret verschlüsselt in DB speichern (twoFactorEnabled: false)
   5. Response: { qrCode: base64, secret: plaintext, backupCodes: string[] }
@@ -286,10 +286,10 @@ Falls Backend { requires2FA: true } zurückgibt:
 
 ## Phase 7-B — Web Push Notifications
 ```
-# ClubOS — Web Push Notifications (ohne App!)
+# Vereinbase — Web Push Notifications (ohne App!)
 
 ## Kontext
-ClubOS Repo: https://github.com/Tschatscher85/ClubOS
+Vereinbase Repo: https://github.com/Tschatscher85/Vereinbase
 Ziel: Mitglieder bekommen Push-Notifications im Browser,
 ohne die Mobile App installiert zu haben.
 
@@ -302,7 +302,7 @@ npx web-push generate-vapid-keys
 # → Ausgabe in .env speichern:
 VAPID_PUBLIC_KEY=...
 VAPID_PRIVATE_KEY=...
-VAPID_EMAIL=admin@clubos.de
+VAPID_EMAIL=admin@vereinbase.de
 
 ## Prisma Schema:
 model PushSubscription {
@@ -411,10 +411,10 @@ NEXT_PUBLIC_VAPID_PUBLIC_KEY=...  (der PUBLIC Key von oben)
 
 ## Phase 8 — Stripe Billing
 ```
-# ClubOS — Stripe Billing Integration
+# Vereinbase — Stripe Billing Integration
 
 ## Kontext
-ClubOS Repo: https://github.com/Tschatscher85/ClubOS
+Vereinbase Repo: https://github.com/Tschatscher85/Vereinbase
 Ziel: Vereine können per Kreditkarte oder SEPA bezahlen.
 30 Tage kostenlos testen, dann automatische Abrechnung.
 
@@ -494,10 +494,10 @@ if (tenant.trialEndsAt && tenant.trialEndsAt < new Date() && !tenant.stripeSubsc
 
 ## Phase 9 — Expo Mobile App
 ```
-# ClubOS — Expo Mobile App (apps/mobile/)
+# Vereinbase — Expo Mobile App (apps/mobile/)
 
 ## Kontext
-ClubOS Repo: https://github.com/Tschatscher85/ClubOS
+Vereinbase Repo: https://github.com/Tschatscher85/Vereinbase
 Alle Backend-Endpunkte sind fertig und dokumentiert unter /api/docs.
 Jetzt kommt die Mobile App als drittes App im Monorepo.
 
@@ -627,10 +627,10 @@ eas submit --platform android # Play Store
 
 ## Bonus — GitHub Actions CI
 ```
-# ClubOS — GitHub Actions CI/CD Pipeline
+# Vereinbase — GitHub Actions CI/CD Pipeline
 
 ## Kontext
-ClubOS Repo: https://github.com/Tschatscher85/ClubOS
+Vereinbase Repo: https://github.com/Tschatscher85/Vereinbase
 Ziel: Bei jedem Push automatisch TypeScript prüfen + Tests laufen lassen.
 
 ## Aufgabe
@@ -692,12 +692,12 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
-            cd /opt/clubos
+            cd /opt/vereinbase
             git pull origin main
             npm ci
             docker compose -f docker-compose.prod.yml build
             docker compose -f docker-compose.prod.yml up -d
-            docker exec clubos-backend npx prisma migrate deploy
+            docker exec vereinbase-backend npx prisma migrate deploy
 
 ## GitHub Secrets anlegen (Repository → Settings → Secrets):
 VM_HOST      = [Hetzner VM IP]

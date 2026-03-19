@@ -280,7 +280,7 @@ export default function AufstellungOeffentlichPage() {
 
         {/* Footer */}
         <div className="text-center mt-6 text-xs text-gray-400">
-          Erstellt mit ClubOS
+          Erstellt mit Vereinbase
         </div>
       </div>
     </div>

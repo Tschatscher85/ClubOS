@@ -67,7 +67,7 @@ export default function EmpfehlenPage() {
   }, [istAdmin]);
 
   const empfehlungsLink = daten
-    ? `https://clubos.de/registrieren?ref=${daten.code}`
+    ? `https://vereinbase.de/registrieren?ref=${daten.code}`
     : '';
 
   const handleCodeKopieren = async () => {
@@ -120,7 +120,7 @@ export default function EmpfehlenPage() {
         <div>
           <h1 className="text-2xl font-bold">Empfehlungsprogramm</h1>
           <p className="text-muted-foreground">
-            Empfehlen Sie ClubOS weiter und erhalten Sie Gratismonate
+            Empfehlen Sie Vereinbase weiter und erhalten Sie Gratismonate
           </p>
         </div>
       </div>

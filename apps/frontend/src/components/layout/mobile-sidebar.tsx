@@ -139,7 +139,7 @@ export function MobileSidebar() {
             </AvatarFallback>
           </Avatar>
           <p className="text-sm font-semibold truncate">
-            {tenant?.name || 'ClubOS'}
+            {tenant?.name || 'Vereinbase'}
           </p>
         </div>
 

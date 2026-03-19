@@ -118,11 +118,11 @@ export function PublicFooter({
           &copy; {new Date().getFullYear()} {vereinsname}. Alle Rechte
           vorbehalten. Bereitgestellt von{' '}
           <a
-            href="https://clubos.de"
+            href="https://vereinbase.de"
             className="hover:text-white"
             style={{ color: primaryColor }}
           >
-            ClubOS
+            Vereinbase
           </a>
         </div>
       </div>

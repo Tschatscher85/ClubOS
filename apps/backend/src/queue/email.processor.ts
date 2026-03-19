@@ -123,7 +123,7 @@ export class EmailProcessor {
       // (MailService hat keinen generischen sendMail, daher verwenden wir einladungSenden als Workaround nicht,
       //  sondern loggen den Inhalt wenn SMTP nicht konfiguriert ist)
       await this.mailService['transporter']?.sendMail({
-        from: 'noreply@clubos.de',
+        from: 'noreply@vereinbase.de',
         to: email,
         subject: `Erinnerung: ${eventTitel} am ${eventDatum}`,
         html: htmlInhalt,
@@ -161,7 +161,7 @@ export class EmailProcessor {
         </p>`;
 
       await this.mailService['transporter']?.sendMail({
-        from: 'noreply@clubos.de',
+        from: 'noreply@vereinbase.de',
         to: email,
         subject: `DRINGEND: ${betreff}`,
         html: htmlInhalt,

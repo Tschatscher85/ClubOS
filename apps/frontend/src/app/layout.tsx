@@ -6,7 +6,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'ClubOS - Die Plattform fuer Sportvereine',
+  title: 'Vereinbase - Die Plattform fuer Sportvereine',
   description: 'Multi-Tenant SaaS-Plattform fuer Sportvereine in Deutschland',
 };
 

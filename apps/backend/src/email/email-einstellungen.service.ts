@@ -152,11 +152,11 @@ export class EmailEinstellungenService {
       await transporter.sendMail({
         from: `"${einstellungen.absenderName}" <${einstellungen.absenderEmail}>`,
         to: einstellungen.absenderEmail,
-        subject: 'ClubOS — SMTP-Test erfolgreich',
+        subject: 'Vereinbase — SMTP-Test erfolgreich',
         html: `
           <h2>SMTP-Test erfolgreich!</h2>
           <p>Ihre E-Mail-Einstellungen funktionieren korrekt.</p>
-          <p>Diese Test-E-Mail wurde von ClubOS gesendet.</p>
+          <p>Diese Test-E-Mail wurde von Vereinbase gesendet.</p>
           ${einstellungen.signatur ? `<hr/>${einstellungen.signatur}` : ''}
         `,
       });

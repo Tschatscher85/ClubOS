@@ -129,9 +129,9 @@ export default function SicherheitPage() {
     if (!druckFenster) return;
     druckFenster.document.write(`
       <html>
-        <head><title>ClubOS - Backup-Codes</title></head>
+        <head><title>Vereinbase - Backup-Codes</title></head>
         <body style="font-family: monospace; padding: 40px;">
-          <h1>ClubOS - 2FA Backup-Codes</h1>
+          <h1>Vereinbase - 2FA Backup-Codes</h1>
           <p>Bewahren Sie diese Codes sicher auf. Jeder Code kann nur einmal verwendet werden.</p>
           <hr/>
           <div style="font-size: 18px; line-height: 2;">

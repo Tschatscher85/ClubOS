@@ -13,7 +13,7 @@ export default function RegistrierenPage() {
   return (
     <Card>
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">ClubOS</CardTitle>
+        <CardTitle className="text-2xl">Vereinbase</CardTitle>
         <CardDescription>
           Registrieren Sie Ihren Verein und starten Sie sofort
         </CardDescription>

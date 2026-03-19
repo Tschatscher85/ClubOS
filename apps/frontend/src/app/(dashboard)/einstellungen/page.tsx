@@ -466,7 +466,7 @@ export default function EinstellungenPage() {
             <CardHeader>
               <CardTitle>Vereinsname & Logo</CardTitle>
               <CardDescription>
-                Der Name und das Logo erscheinen überall in ClubOS - im Menü, in E-Mails und auf der Vereinshomepage.
+                Der Name und das Logo erscheinen überall in Vereinbase - im Menü, in E-Mails und auf der Vereinshomepage.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -546,7 +546,7 @@ export default function EinstellungenPage() {
                 Vereinsfarbe
               </CardTitle>
               <CardDescription>
-                Alle Buttons, Links und Hervorhebungen in ClubOS passen sich automatisch an Ihre Vereinsfarbe an.
+                Alle Buttons, Links und Hervorhebungen in Vereinbase passen sich automatisch an Ihre Vereinsfarbe an.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -897,7 +897,7 @@ export default function EinstellungenPage() {
                 </CardTitle>
                 <CardDescription>
                   Eigenen E-Mail-Server einrichten, damit Mails von Ihrer Adresse kommen.
-                  Ohne Einrichtung werden E-Mails über den ClubOS-Server versendet.
+                  Ohne Einrichtung werden E-Mails über den Vereinbase-Server versendet.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

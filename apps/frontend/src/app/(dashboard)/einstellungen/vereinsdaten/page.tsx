@@ -621,16 +621,16 @@ export default function VereinsdatenPage() {
             Domain & Online-Praesenz
           </CardTitle>
           <CardDescription>
-            Konfigurieren Sie die Webadresse Ihres Vereins. Die ClubOS-Subdomain ist automatisch aktiv.
+            Konfigurieren Sie die Webadresse Ihres Vereins. Die Vereinbase-Subdomain ist automatisch aktiv.
             Optional koennen Sie eine eigene Domain verbinden.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* ClubOS Subdomain */}
+          {/* Vereinbase Subdomain */}
           <div className="space-y-3">
             <h3 className="font-medium flex items-center gap-2">
               <Link2 className="h-4 w-4" />
-              ClubOS-Subdomain
+              Vereinbase-Subdomain
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -642,12 +642,12 @@ export default function VereinsdatenPage() {
                     placeholder="meinverein"
                     className="flex-1"
                   />
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">.clubos.de</span>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">.vereinbase.de</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Ihre Vereinshomepage ist erreichbar unter:{' '}
                   <span className="font-medium text-primary">
-                    {daten.subdomain || daten.slug || 'meinverein'}.clubos.de
+                    {daten.subdomain || daten.slug || 'meinverein'}.vereinbase.de
                   </span>
                 </p>
               </div>
@@ -693,7 +693,7 @@ export default function VereinsdatenPage() {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Ziel:</span>{' '}
-                  <span className="font-medium">{daten.subdomain || daten.slug || 'meinverein'}.clubos.de</span>
+                  <span className="font-medium">{daten.subdomain || daten.slug || 'meinverein'}.vereinbase.de</span>
                 </div>
               </div>
               {daten.domain && (
@@ -712,25 +712,25 @@ export default function VereinsdatenPage() {
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground w-32">Homepage:</span>
                 <code className="bg-muted px-2 py-0.5 rounded text-xs">
-                  {daten.domain || `${daten.subdomain || daten.slug || 'meinverein'}.clubos.de`}
+                  {daten.domain || `${daten.subdomain || daten.slug || 'meinverein'}.vereinbase.de`}
                 </code>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground w-32">Turniere:</span>
                 <code className="bg-muted px-2 py-0.5 rounded text-xs">
-                  {daten.domain || `${daten.subdomain || daten.slug || 'meinverein'}.clubos.de`}/turnier/...
+                  {daten.domain || `${daten.subdomain || daten.slug || 'meinverein'}.vereinbase.de`}/turnier/...
                 </code>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground w-32">Aufstellungen:</span>
                 <code className="bg-muted px-2 py-0.5 rounded text-xs">
-                  {daten.domain || `${daten.subdomain || daten.slug || 'meinverein'}.clubos.de`}/aufstellung/...
+                  {daten.domain || `${daten.subdomain || daten.slug || 'meinverein'}.vereinbase.de`}/aufstellung/...
                 </code>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground w-32">Einladungen:</span>
                 <code className="bg-muted px-2 py-0.5 rounded text-xs">
-                  {daten.domain || `${daten.subdomain || daten.slug || 'meinverein'}.clubos.de`}/einladung/...
+                  {daten.domain || `${daten.subdomain || daten.slug || 'meinverein'}.vereinbase.de`}/einladung/...
                 </code>
               </div>
             </div>

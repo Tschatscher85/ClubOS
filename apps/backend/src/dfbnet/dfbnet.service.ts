@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MemberStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
-/** Zuordnung DFBnet-Abteilung → ClubOS Sport-Enum */
+/** Zuordnung DFBnet-Abteilung → Vereinbase Sport-Enum */
 const ABTEILUNG_ZU_SPORT: Record<string, string> = {
   fussball: 'FUSSBALL',
   fußball: 'FUSSBALL',
@@ -15,7 +15,7 @@ const ABTEILUNG_ZU_SPORT: Record<string, string> = {
   leichtathletik: 'LEICHTATHLETIK',
 };
 
-/** Zuordnung ClubOS Sport-Enum → DFBnet-Abteilung */
+/** Zuordnung Vereinbase Sport-Enum → DFBnet-Abteilung */
 const SPORT_ZU_ABTEILUNG: Record<string, string> = {
   FUSSBALL: 'Fussball',
   HANDBALL: 'Handball',
@@ -266,7 +266,7 @@ export class DfbnetService {
           : '';
 
       const werte = [
-        '', // Anrede - nicht in ClubOS gespeichert
+        '', // Anrede - nicht in Vereinbase gespeichert
         this.csvWertEscapen(m.firstName),
         this.csvWertEscapen(m.lastName),
         this.datumFormatieren(m.birthDate),

@@ -30,14 +30,14 @@ export function middleware(request: NextRequest) {
 
   // ==================== Subdomain-Routing ====================
   const hostname = request.headers.get('host') || '';
-  const mainDomain = process.env.NEXT_PUBLIC_DOMAIN || 'clubos.de';
+  const mainDomain = process.env.NEXT_PUBLIC_DOMAIN || 'vereinbase.de';
 
   // Subdomain-Erkennung (nicht fuer localhost und nicht fuer IP-Adressen)
   const istIP = /^\d+\.\d+\.\d+\.\d+/.test(hostname.split(':')[0]);
   if (!hostname.includes('localhost') && !hostname.startsWith('api.') && !istIP) {
     const teile = hostname.split('.');
 
-    // Subdomain vorhanden wenn mindestens 3 Teile (z.B. fckunchen.clubos.de)
+    // Subdomain vorhanden wenn mindestens 3 Teile (z.B. fckunchen.vereinbase.de)
     // und nicht www
     const istSubdomain =
       teile.length >= 3 &&

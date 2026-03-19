@@ -126,7 +126,7 @@ export function Sidebar() {
         </Avatar>
         <div className="flex-1 truncate">
           <p className="text-sm font-semibold truncate">
-            {tenant?.name || 'ClubOS'}
+            {tenant?.name || 'Vereinbase'}
           </p>
         </div>
       </div>

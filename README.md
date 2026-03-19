@@ -1,4 +1,4 @@
-# ClubOS — Die Plattform fuer Sportvereine
+# Vereinbase — Die Plattform fuer Sportvereine
 
 Multi-Tenant SaaS-Plattform die WhatsApp-Gruppen, Spielerplus, easyVerein und Turnierheld ersetzt — alles in einer App, DSGVO-konform, deutscher Server.
 
@@ -85,8 +85,8 @@ Multi-Tenant SaaS-Plattform die WhatsApp-Gruppen, Spielerplus, easyVerein und Tu
 ### Automatisches Setup (empfohlen)
 
 ```bash
-git clone https://github.com/Tschatscher85/ClubOS.git
-cd ClubOS
+git clone https://github.com/Tschatscher85/Vereinbase.git
+cd Vereinbase
 
 # Installiert PostgreSQL, Redis, richtet DB ein, seedet Testdaten
 sudo bash setup.sh
@@ -176,7 +176,7 @@ Test-Zugangsdaten: Siehe `apps/backend/prisma/seed.ts` und lokal konfigurieren.
 
 | Rolle | E-Mail | Vereinsrollen |
 |-------|--------|---------------|
-| Superadmin | admin@clubos.de | — |
+| Superadmin | admin@vereinbase.de | — |
 | Admin | vorstand@fckunchen.de | Vorstand |
 | Trainer | trainer@fckunchen.de | Trainer |
 | Mitglied | spieler@fckunchen.de | Spieler |

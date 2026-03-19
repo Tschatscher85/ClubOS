@@ -712,7 +712,7 @@ export default function MitgliedDetailPage() {
                       size="sm"
                       onClick={async () => {
                         try {
-                          const authState = JSON.parse(localStorage.getItem('clubos-auth') || '{}');
+                          const authState = JSON.parse(localStorage.getItem('vereinbase-auth') || '{}');
                           const token = authState?.state?.accessToken;
                           const headers: Record<string, string> = {};
                           if (token) headers['Authorization'] = `Bearer ${token}`;

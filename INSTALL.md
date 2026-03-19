@@ -1,4 +1,4 @@
-# ClubOS - Installationsanleitung (Self-Hosting)
+# Vereinbase - Installationsanleitung (Self-Hosting)
 
 ## Voraussetzungen
 
@@ -27,8 +27,8 @@ sudo usermod -aG docker $USER
 
 ```bash
 # Repository klonen
-git clone https://github.com/Tschatscher85/ClubOS.git
-cd clubos
+git clone https://github.com/Tschatscher85/Vereinbase.git
+cd vereinbase
 
 # Installationsskript ausfuehren
 chmod +x install.sh
@@ -50,8 +50,8 @@ Das Skript erledigt automatisch:
 ### 1. Repository klonen
 
 ```bash
-git clone https://github.com/Tschatscher85/ClubOS.git
-cd clubos
+git clone https://github.com/Tschatscher85/Vereinbase.git
+cd vereinbase
 ```
 
 ### 2. Konfiguration erstellen
@@ -76,7 +76,7 @@ Alle Pflichtfelder in der `.env` ausfuellen (siehe Abschnitt "Konfiguration").
 In der `.env` die DATABASE_URL mit dem gesetzten Passwort aktualisieren:
 
 ```
-DATABASE_URL=postgresql://clubos:DEIN_DB_PASSWORT@postgres:5432/clubos
+DATABASE_URL=postgresql://vereinbase:DEIN_DB_PASSWORT@postgres:5432/vereinbase
 ```
 
 ### 4. Services starten
@@ -121,15 +121,15 @@ curl http://localhost:3001/health
 Fuer den Betrieb mit eigener Domain und automatischem SSL-Zertifikat:
 
 ```env
-DOMAIN=clubos.meinverein.de
+DOMAIN=vereinbase.meinverein.de
 ACME_EMAIL=admin@meinverein.de
-FRONTEND_URL=https://clubos.meinverein.de
-NEXT_PUBLIC_API_URL=https://api.clubos.meinverein.de
+FRONTEND_URL=https://vereinbase.meinverein.de
+NEXT_PUBLIC_API_URL=https://api.vereinbase.meinverein.de
 ```
 
 Wichtig: Die DNS-Eintraege muessen auf den Server zeigen:
-- `clubos.meinverein.de` -> Server-IP (A-Record)
-- `api.clubos.meinverein.de` -> Server-IP (A-Record)
+- `vereinbase.meinverein.de` -> Server-IP (A-Record)
+- `api.vereinbase.meinverein.de` -> Server-IP (A-Record)
 
 Zum Aktivieren von Traefik mit SSL:
 
@@ -186,17 +186,17 @@ docker compose -f docker-compose.prod.yml exec backend npx prisma db push --sche
 
 ```bash
 # Backup erstellen
-docker compose -f docker-compose.prod.yml exec postgres pg_dump -U clubos clubos > backup_$(date +%Y%m%d_%H%M%S).sql
+docker compose -f docker-compose.prod.yml exec postgres pg_dump -U vereinbase vereinbase > backup_$(date +%Y%m%d_%H%M%S).sql
 
 # Backup wiederherstellen
-docker compose -f docker-compose.prod.yml exec -T postgres psql -U clubos clubos < backup_20260318_120000.sql
+docker compose -f docker-compose.prod.yml exec -T postgres psql -U vereinbase vereinbase < backup_20260318_120000.sql
 ```
 
 ### Volumes sichern
 
 ```bash
 # Alle Docker-Volumes auflisten
-docker volume ls | grep clubos
+docker volume ls | grep vereinbase
 ```
 
 ---

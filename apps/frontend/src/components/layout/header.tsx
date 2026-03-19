@@ -43,7 +43,7 @@ export function Header() {
 
       <div className="flex-1">
         <h2 className="text-lg font-semibold lg:hidden">
-          {tenant?.name || 'ClubOS'}
+          {tenant?.name || 'Vereinbase'}
         </h2>
       </div>
 

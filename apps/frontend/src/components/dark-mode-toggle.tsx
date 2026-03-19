@@ -8,7 +8,7 @@ export function DarkModeToggle() {
   const [dunkel, setDunkel] = useState(false);
 
   useEffect(() => {
-    const gespeichert = localStorage.getItem('clubos-dark-mode');
+    const gespeichert = localStorage.getItem('vereinbase-dark-mode');
     const istDunkel =
       gespeichert === 'true' ||
       (!gespeichert && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -20,7 +20,7 @@ export function DarkModeToggle() {
     const neu = !dunkel;
     setDunkel(neu);
     document.documentElement.classList.toggle('dark', neu);
-    localStorage.setItem('clubos-dark-mode', String(neu));
+    localStorage.setItem('vereinbase-dark-mode', String(neu));
   };
 
   return (

@@ -30,7 +30,7 @@ export const EVENT_TYP_LABEL: Record<string, string> = {
   VOLUNTEER: 'Helfereinsatz',
 };
 
-const STORAGE_KEY = 'clubos-event-farben';
+const STORAGE_KEY = 'vereinbase-event-farben';
 
 export function getEventFarben(): EventFarben {
   if (typeof window === 'undefined') return STANDARD_FARBEN;

@@ -178,9 +178,9 @@ export default function AdminDashboard() {
       }>(`/admin/vereine/${id}/impersonate`, {});
 
       // Aktuellen Admin-Token sichern fuer "Zurueck zum Admin"
-      const aktuellerStore = localStorage.getItem('clubos-auth');
+      const aktuellerStore = localStorage.getItem('vereinbase-auth');
       if (aktuellerStore) {
-        localStorage.setItem('clubos-auth-admin-backup', aktuellerStore);
+        localStorage.setItem('vereinbase-auth-admin-backup', aktuellerStore);
       }
 
       // Auth-Store mit Vereins-Token ueberschreiben
@@ -200,7 +200,7 @@ export default function AdminDashboard() {
         },
         version: 0,
       };
-      localStorage.setItem('clubos-auth', JSON.stringify(storeData));
+      localStorage.setItem('vereinbase-auth', JSON.stringify(storeData));
 
       // Seite komplett neu laden damit Store frisch geladen wird
       window.location.href = '/dashboard';
@@ -259,7 +259,7 @@ export default function AdminDashboard() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-xl font-bold">ClubOS Admin</h1>
+              <h1 className="text-xl font-bold">Vereinbase Admin</h1>
               <p className="text-sm text-muted-foreground">Plattform-Verwaltung</p>
             </div>
           </div>

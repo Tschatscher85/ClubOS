@@ -113,10 +113,10 @@ async function main() {
 
   // Superadmin
   const superadmin = await prisma.user.upsert({
-    where: { email: 'admin@clubos.de' },
+    where: { email: 'admin@vereinbase.de' },
     update: {},
     create: {
-      email: 'admin@clubos.de',
+      email: 'admin@vereinbase.de',
       passwordHash: passwortHash,
       role: Role.SUPERADMIN,
       tenantId: tenant.id,
@@ -195,7 +195,7 @@ async function main() {
   console.log('Seeding abgeschlossen!');
   console.log('');
   console.log('Test-Zugangsdaten (alle Passwort: ClubOS2024!):');
-  console.log('  Superadmin:  admin@clubos.de');
+  console.log('  Superadmin:  admin@vereinbase.de');
   console.log('  Vorstand:    vorstand@fckunchen.de');
   console.log('  Trainer:     trainer@fckunchen.de');
   console.log('  Spieler:     spieler@fckunchen.de');

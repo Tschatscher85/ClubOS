@@ -236,7 +236,7 @@ export class PdfExportService {
     </div>
 
     <div class="fusszeile">
-      Erstellt mit ClubOS &mdash; ${this.escapeHtml(tenant.name)} &mdash; Exportiert am ${new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+      Erstellt mit Vereinbase &mdash; ${this.escapeHtml(tenant.name)} &mdash; Exportiert am ${new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
     </div>
   </div>
 </body>

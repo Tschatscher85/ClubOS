@@ -6,7 +6,7 @@ import { PrismaService } from '../../prisma/prisma.service';
  * Subdomain-Middleware: Erkennt den Verein anhand der Subdomain
  * und haengt den aufgeloesten Tenant an das Request-Objekt.
  *
- * Beispiel: fckunchen.clubos.de → slug = 'fckunchen'
+ * Beispiel: fckunchen.vereinbase.de → slug = 'fckunchen'
  */
 @Injectable()
 export class SubdomainMiddleware implements NestMiddleware {
@@ -29,10 +29,10 @@ export class SubdomainMiddleware implements NestMiddleware {
         return next();
       }
 
-      // Subdomain extrahieren: 'fckunchen.clubos.de' → 'fckunchen'
+      // Subdomain extrahieren: 'fckunchen.vereinbase.de' → 'fckunchen'
       const teile = hostname.split('.');
       if (teile.length < 3) {
-        // Keine Subdomain vorhanden (z.B. 'clubos.de')
+        // Keine Subdomain vorhanden (z.B. 'vereinbase.de')
         return next();
       }
 

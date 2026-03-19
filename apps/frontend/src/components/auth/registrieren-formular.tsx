@@ -129,7 +129,7 @@ export function RegistrierenFormular() {
         <Label htmlFor="slug">Vereins-URL</Label>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground whitespace-nowrap">
-            clubos.de/
+            vereinbase.de/
           </span>
           <Input
             id="slug"

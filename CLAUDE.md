@@ -1,12 +1,12 @@
-# ClubOS — Projektkontext für Claude Code
+# Vereinbase — Projektkontext für Claude Code
 
 ## 🎯 Was wird gebaut
-ClubOS ist eine Multi-Tenant SaaS-Plattform für Sportvereine in Deutschland.
+Vereinbase ist eine Multi-Tenant SaaS-Plattform für Sportvereine in Deutschland.
 Sie ersetzt WhatsApp-Gruppen, Spielerplus, easyVerein, Doodle, Google Sheets
 und Turnierheld — alles in einer App, DSGVO-konform, mit deutschem Server.
 
 **Kernversprechen an Vereine:**
-"Kündigt alle 6 Apps. ClubOS ersetzt WhatsApp-Gruppen, Spielerplus, easyVerein
+"Kündigt alle 6 Apps. Vereinbase ersetzt WhatsApp-Gruppen, Spielerplus, easyVerein
 und euren Turnierheld — für einen monatlichen Preis, mit deutschem Server,
 DSGVO-konform. Der Trainer gibt seine private Nummer nie wieder raus."
 
@@ -352,7 +352,7 @@ model FAQ {
 ### Sprint 7 (Woche 13-14): White-Label & Branding
 - Logo-Upload pro Verein
 - Primärfarbe wählbar
-- Subdomain-Routing (fckunchen.clubos.de)
+- Subdomain-Routing (fckunchen.vereinbase.de)
 - Optionale eigene Domain
 
 ### Beta-Launch Woche 15
@@ -403,7 +403,7 @@ model FAQ {
 ```yaml
 # Server: Hetzner CX22 Ubuntu 24.04
 # IP: [deine-server-ip]
-# Domain: clubos.de (geplant)
+# Domain: vereinbase.de (geplant)
 
 # Wichtige Ports:
 # 80/443: Traefik (Web)
@@ -532,7 +532,7 @@ Aufstellung oeffentlich (kein Login)
 - [ ] Frontend: /admin Dashboard (Vereine-Tabelle, Ampel gruen/gelb/rot)
 - [ ] Frontend: Sperrseite fuer gesperrte Tenants
 - [ ] Stripe-Webhook: Zahlung fehlgeschlagen -> automatisch warnen/sperren
-- [ ] Subdomain-Routing (fckunchen.clubos.de, Middleware existiert teilweise)
+- [ ] Subdomain-Routing (fckunchen.vereinbase.de, Middleware existiert teilweise)
 - [ ] Eigene Domain pro Verein (optional, CNAME)
 
 #### PRIO 1B: Sicherheit & Backup
@@ -574,9 +574,9 @@ Aufstellung oeffentlich (kein Login)
 ## 🔑 Test-Zugangsdaten (Entwicklung)
 
 ```
-Passwort fuer alle: ClubOS2024!
+Passwort fuer alle: Vereinbase2024!
 
-Superadmin:  admin@clubos.de
+Superadmin:  admin@vereinbase.de
 Admin:       vorstand@fckunchen.de
 Trainer:     trainer@fckunchen.de
 Mitglied:    spieler@fckunchen.de
@@ -591,5 +591,5 @@ Testdaten laden: `npx prisma db seed --schema=apps/backend/prisma/schema.prisma`
 
 - **KI-Trainer-Assistent:** "Erstelle mir einen Trainingsplan fuer die U12"
 - **E-Rechnung (ZUGFeRD):** Automatische Rechnungserstellung
-- **Subdomain-Routing:** fckunchen.clubos.de
+- **Subdomain-Routing:** fckunchen.vereinbase.de
 - **Push-Notifications:** Firebase Cloud Messaging

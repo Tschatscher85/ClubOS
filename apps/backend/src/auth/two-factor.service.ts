@@ -14,7 +14,7 @@ import * as QRCode from 'qrcode';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import { BCRYPT_ROUNDS } from '@clubos/shared';
+import { BCRYPT_ROUNDS } from '@vereinbase/shared';
 
 // TOTP-Plugins initialisieren
 const totpCrypto = new NobleCryptoPlugin();
@@ -48,7 +48,7 @@ export class TwoFactorService {
 
     // OTP-Auth URL erstellen
     const otpauthUrl = generateURI({
-      issuer: 'ClubOS',
+      issuer: 'Vereinbase',
       label: benutzer.email,
       secret,
     });

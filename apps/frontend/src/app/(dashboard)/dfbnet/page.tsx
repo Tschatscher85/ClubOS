@@ -158,7 +158,7 @@ export default function DfbnetPage() {
         <div>
           <h1 className="text-2xl font-bold">DFBnet Import/Export</h1>
           <p className="text-muted-foreground">
-            Mitgliederdaten zwischen ClubOS und DFBnet austauschen
+            Mitgliederdaten zwischen Vereinbase und DFBnet austauschen
           </p>
         </div>
       </div>
@@ -212,7 +212,7 @@ export default function DfbnetPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Laden Sie eine DFBnet-CSV-Datei hoch, um Mitglieder in ClubOS zu
+              Laden Sie eine DFBnet-CSV-Datei hoch, um Mitglieder in Vereinbase zu
               importieren. Bestehende Mitglieder (gleicher Name und
               Geburtsdatum) werden uebersprungen.
             </p>

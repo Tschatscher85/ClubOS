@@ -82,7 +82,7 @@ const TARIFE = [
       'Alles aus Pro',
       'Alle Sportarten',
       'Vereinshomepage-System',
-      'Subdomain (verein.clubos.de)',
+      'Subdomain (verein.vereinbase.de)',
       'Sponsoren-Modul',
       'Erweiterte Berechtigungen',
       'Prioritaets-Support',
@@ -264,7 +264,7 @@ export default function AbonnementPage() {
                     Testzeitraum abgelaufen
                   </p>
                   <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-                    Bitte schliessen Sie ein Abonnement ab, um ClubOS weiterhin zu nutzen.
+                    Bitte schliessen Sie ein Abonnement ab, um Vereinbase weiterhin zu nutzen.
                   </p>
                 </div>
               )}

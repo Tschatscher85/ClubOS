@@ -229,7 +229,7 @@ export default function TurnierLivePage() {
 
         {/* Footer */}
         <div className="text-center text-xs text-muted-foreground">
-          Powered by ClubOS
+          Powered by Vereinbase
         </div>
       </div>
     </div>

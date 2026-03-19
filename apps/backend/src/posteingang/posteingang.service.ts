@@ -167,8 +167,8 @@ export class PosteingangService {
       data: {
         tenantId,
         empfaengerId: userId,
-        von: absenderEmail || 'noreply@clubos.de',
-        vonName: tenant?.name || 'ClubOS',
+        von: absenderEmail || 'noreply@vereinbase.de',
+        vonName: tenant?.name || 'Vereinbase',
         an: daten.an.join(', '),
         betreff: daten.betreff,
         inhalt: daten.inhalt,

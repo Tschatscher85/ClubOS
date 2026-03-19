@@ -57,7 +57,7 @@ export class MailService {
         : '';
 
     let absenderEmail =
-      this.configService.get<string>('SMTP_FROM') || 'noreply@clubos.de';
+      this.configService.get<string>('SMTP_FROM') || 'noreply@vereinbase.de';
     let absenderName = vereinsname;
     let signatur = '';
 
@@ -111,7 +111,7 @@ export class MailService {
     senderId?: string,
   ): Promise<void> {
     let absenderEmail =
-      this.configService.get<string>('SMTP_FROM') || 'noreply@clubos.de';
+      this.configService.get<string>('SMTP_FROM') || 'noreply@vereinbase.de';
     let absenderName = vereinsname;
     let signatur = '';
 

@@ -15,7 +15,7 @@ import {
   AktualisiereBenutzerDto,
   AktualisiereBerechtigungenDto,
 } from './dto/erstelle-user.dto';
-import { BCRYPT_ROUNDS } from '@clubos/shared';
+import { BCRYPT_ROUNDS } from '@vereinbase/shared';
 
 /** Standard-Berechtigungen pro Rolle */
 const STANDARD_BERECHTIGUNGEN: Record<string, string[]> = {
