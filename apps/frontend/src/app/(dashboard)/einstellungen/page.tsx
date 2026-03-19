@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send, Building2, Trophy, CreditCard, Shield, Users, Gift, Layout, Calendar, MapPin, Plus } from 'lucide-react';
+import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send, Building2, Trophy, CreditCard, Shield, Users, Gift, Layout, Calendar, MapPin, Plus, ChevronDown, ChevronRight, Pencil, X, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { AdressSuche } from '@/components/kalender/adress-suche';
 import { altersklassenLaden, altersklassenSpeichern, altersklassenFallback } from '@/lib/altersklassen';
 import { veranstaltungstypenLaden, veranstaltungstypenSpeichern, veranstaltungstypenFallback } from '@/lib/veranstaltungstypen';
+import { sportartenCacheLeeren } from '@/lib/sportarten';
 import type { VeranstaltungsTyp } from '@/lib/veranstaltungstypen';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -60,6 +61,45 @@ function Abschnitt({ titel, beschreibung, kinder }: { titel: string; beschreibun
       </div>
       {kinder}
     </div>
+  );
+}
+
+// ==================== Einklappbare Karte ====================
+
+function KlappCard({ id, titel, icon: Icon, beschreibung, kinder }: {
+  id: string;
+  titel: string;
+  icon: React.ElementType;
+  beschreibung: string;
+  kinder: React.ReactNode;
+}) {
+  const storageKey = `einstellungen_offen_${id}`;
+  const [offen, setOffen] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const gespeichert = localStorage.getItem(storageKey);
+    return gespeichert === null ? true : gespeichert === '1';
+  });
+
+  const toggle = () => {
+    const neu = !offen;
+    setOffen(neu);
+    localStorage.setItem(storageKey, neu ? '1' : '0');
+  };
+
+  return (
+    <Card>
+      <CardHeader className="cursor-pointer select-none" onClick={toggle}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Icon className="h-5 w-5" />
+            <CardTitle>{titel}</CardTitle>
+          </div>
+          {offen ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+        </div>
+        <CardDescription>{beschreibung}</CardDescription>
+      </CardHeader>
+      {offen && <CardContent className="space-y-4">{kinder}</CardContent>}
+    </Card>
   );
 }
 
@@ -624,62 +664,49 @@ export default function EinstellungenPage() {
 
       {/* ============ TAB: Sportbetrieb ============ */}
       {aktiveTab === 'sportbetrieb' && istAdmin && (
-        <div className="space-y-6">
-          {/* Link zu Sportarten-Seite */}
-          <Link href="/einstellungen/sportarten" className="flex items-center gap-3 rounded-lg border p-4 hover:bg-muted transition-colors">
-            <Trophy className="h-6 w-6 text-primary" />
-            <div className="flex-1">
-              <p className="text-sm font-medium">Sportarten verwalten</p>
-              <p className="text-xs text-muted-foreground">Welche Sportarten bietet Ihr Verein an?</p>
-            </div>
-            <span className="text-muted-foreground text-sm">→</span>
-          </Link>
-
+        <div className="space-y-4">
+          <SportartenCard />
           <AltersklassenCard />
           <VeranstaltungstypenCard />
           <SportstaettenCard />
 
           {/* Kalender-Farben */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Palette className="h-5 w-5" />
-                Kalender-Farben
-              </CardTitle>
-              <CardDescription>
-                In welcher Farbe werden die Veranstaltungsarten im Kalender angezeigt?
-                So erkennen Sie auf einen Blick, ob es ein Training, Spiel oder etwas anderes ist.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {(Object.keys(EVENT_TYP_LABEL) as Array<keyof EventFarben>).map((typ) => (
-                <div key={typ} className="flex items-center gap-4">
-                  <Input
-                    type="color"
-                    value={eventFarben[typ]}
-                    onChange={(e) => handleEventFarbeAendern(typ, e.target.value)}
-                    className="w-12 h-10 p-1 cursor-pointer shrink-0"
-                  />
-                  <div className="flex-1">
-                    <span className="text-sm font-medium">{EVENT_TYP_LABEL[typ]}</span>
+          <KlappCard
+            id="kalender-farben"
+            titel="Kalender-Farben"
+            icon={Palette}
+            beschreibung="In welcher Farbe werden die Veranstaltungsarten im Kalender angezeigt?"
+            kinder={
+              <>
+                {(Object.keys(EVENT_TYP_LABEL) as Array<keyof EventFarben>).map((typ) => (
+                  <div key={typ} className="flex items-center gap-4">
+                    <Input
+                      type="color"
+                      value={eventFarben[typ]}
+                      onChange={(e) => handleEventFarbeAendern(typ, e.target.value)}
+                      className="w-12 h-10 p-1 cursor-pointer shrink-0"
+                    />
+                    <div className="flex-1">
+                      <span className="text-sm font-medium">{EVENT_TYP_LABEL[typ]}</span>
+                    </div>
+                    <Badge className="text-white text-xs" style={{ backgroundColor: eventFarben[typ] }}>
+                      {EVENT_TYP_LABEL[typ]}
+                    </Badge>
                   </div>
-                  <Badge className="text-white text-xs" style={{ backgroundColor: eventFarben[typ] }}>
-                    {EVENT_TYP_LABEL[typ]}
-                  </Badge>
+                ))}
+                <div className="flex items-center gap-3 pt-2">
+                  <Button variant="outline" onClick={handleEventFarbenSpeichern}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Farben speichern
+                  </Button>
+                  <Button variant="ghost" onClick={handleEventFarbenZuruecksetzen}>
+                    Zurücksetzen
+                  </Button>
+                  {eventFarbenGespeichert && <span className="text-sm text-green-600">Gespeichert!</span>}
                 </div>
-              ))}
-              <div className="flex items-center gap-3 pt-2">
-                <Button variant="outline" onClick={handleEventFarbenSpeichern}>
-                  <Save className="h-4 w-4 mr-2" />
-                  Farben speichern
-                </Button>
-                <Button variant="ghost" onClick={handleEventFarbenZuruecksetzen}>
-                  Zurücksetzen
-                </Button>
-                {eventFarbenGespeichert && <span className="text-sm text-green-600">Gespeichert!</span>}
-              </div>
-            </CardContent>
-          </Card>
+              </>
+            }
+          />
         </div>
       )}
 
@@ -1071,20 +1098,13 @@ function SportstaettenCard() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MapPin className="h-5 w-5" />
-          Sportstätten & Hallen
-        </CardTitle>
-        <CardDescription>
-          Hinterlegen Sie hier die Hallen und Sportplätze, in denen Ihr Verein trainiert und spielt.
-          Wenn Sie spaeter eine Veranstaltung erstellen, können Sie die Sportstätte einfach
-          aus einer Liste auswählen - Adresse und Untergrund werden automatisch eingetragen.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {ladend ? (
+    <KlappCard
+      id="sportstaetten"
+      titel="Sportstätten & Hallen"
+      icon={MapPin}
+      beschreibung="Hallen und Sportplätze hinterlegen. Bei Veranstaltungen wählen Sie dann einfach aus der Liste."
+      kinder={
+        ladend ? (
           <p className="text-sm text-muted-foreground">Laden...</p>
         ) : (
           <>
@@ -1256,9 +1276,9 @@ function SportstaettenCard() {
               </Button>
             )}
           </>
-        )}
-      </CardContent>
-    </Card>
+        )
+      }
+    />
   );
 }
 
@@ -1331,24 +1351,14 @@ function AltersklassenCard() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          Altersklassen
-        </CardTitle>
-        <CardDescription>
-          Bestimmen Sie, welche Altersklassen bei der Team-Erstellung zur Auswahl stehen.
-          Klicken Sie auf eine Klasse, um sie zu aktivieren oder zu deaktivieren.
-          Nur aktive Klassen erscheinen beim Erstellen eines neuen Teams.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {ladend ? (
-          <p className="text-sm text-muted-foreground">Laden...</p>
-        ) : (
+    <KlappCard
+      id="altersklassen"
+      titel="Altersklassen"
+      icon={Users}
+      beschreibung="Welche Altersklassen stehen bei der Team-Erstellung zur Auswahl? Klicken Sie zum Ein-/Ausschalten."
+      kinder={
+        ladend ? <p className="text-sm text-muted-foreground">Laden...</p> : (
           <>
-            {/* Standard-Altersklassen - Toggle */}
             <div>
               <Label className="text-sm font-medium mb-2 block">Standard-Klassen</Label>
               <p className="text-xs text-muted-foreground mb-3">
@@ -1417,9 +1427,9 @@ function AltersklassenCard() {
               <span className="text-sm text-green-600">Gespeichert!</span>
             )}
           </>
-        )}
-      </CardContent>
-    </Card>
+        )
+      }
+    />
   );
 }
 
@@ -1511,24 +1521,14 @@ function VeranstaltungstypenCard() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
-          Veranstaltungstypen
-        </CardTitle>
-        <CardDescription>
-          Bestimmen Sie, welche Arten von Veranstaltungen in Ihrem Verein möglich sind.
-          Klicken Sie auf einen Typ, um ihn zu aktivieren oder zu deaktivieren.
-          Nur aktive Typen erscheinen beim Erstellen einer neuen Veranstaltung.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {ladend ? (
-          <p className="text-sm text-muted-foreground">Laden...</p>
-        ) : (
+    <KlappCard
+      id="veranstaltungstypen"
+      titel="Veranstaltungstypen"
+      icon={Calendar}
+      beschreibung="Welche Arten von Veranstaltungen gibt es in Ihrem Verein? Klicken Sie zum Ein-/Ausschalten."
+      kinder={
+        ladend ? <p className="text-sm text-muted-foreground">Laden...</p> : (
           <>
-            {/* Vordefinierte Typen - Toggle */}
             <div>
               <Label className="text-sm font-medium mb-2 block">Standard-Typen</Label>
               <p className="text-xs text-muted-foreground mb-3">
@@ -1627,8 +1627,195 @@ function VeranstaltungstypenCard() {
               <span className="text-sm text-green-600">Gespeichert!</span>
             )}
           </>
-        )}
-      </CardContent>
-    </Card>
+        )
+      }
+    />
+  );
+}
+
+// ==================== Sportarten-Verwaltung ====================
+
+interface Sportart {
+  id: string;
+  name: string;
+  beschreibung: string;
+  icon: string;
+  istVordefiniert: boolean;
+}
+
+const VORAUSWAHL_SPORTARTEN = [
+  { name: 'Badminton', icon: '🏸' }, { name: 'Volleyball', icon: '🏐' },
+  { name: 'Tischtennis', icon: '🏓' }, { name: 'Eishockey', icon: '🏒' },
+  { name: 'Rugby', icon: '🏉' }, { name: 'Baseball', icon: '⚾' },
+  { name: 'Golf', icon: '⛳' }, { name: 'Boxen', icon: '🥊' },
+  { name: 'Judo', icon: '🥋' }, { name: 'Reiten', icon: '🏇' },
+  { name: 'Rudern', icon: '🚣' }, { name: 'Klettern', icon: '🧗' },
+  { name: 'Tanzen', icon: '💃' }, { name: 'Yoga', icon: '🧘' },
+  { name: 'Fechten', icon: '🤺' }, { name: 'Segeln', icon: '⛵' },
+];
+
+function SportartenCard() {
+  const [sportarten, setSportarten] = useState<Sportart[]>([]);
+  const [ladend, setLadend] = useState(true);
+  const [vordefinierteAlle, setVordefinierteAlle] = useState<{ id: string; name: string; istAktiv: boolean }[]>([]);
+  const [neuerName, setNeuerName] = useState('');
+  const [neuesIcon, setNeuesIcon] = useState('');
+  const [fehler, setFehler] = useState('');
+  const [erfolg, setErfolg] = useState('');
+  const [vorauswahlOffen, setVorauswahlOffen] = useState(false);
+
+  const laden = async () => {
+    try {
+      const [result, vordefResult] = await Promise.all([
+        apiClient.get<Sportart[]>('/sportarten'),
+        apiClient.get<{ id: string; name: string; istAktiv: boolean }[]>('/sportarten/alle-vordefinierten').catch(() => []),
+      ]);
+      setSportarten(result);
+      setVordefinierteAlle(vordefResult);
+    } catch {
+      setFehler('Fehler beim Laden.');
+    } finally {
+      setLadend(false);
+    }
+  };
+
+  useEffect(() => { laden(); }, []);
+
+  const handleVordefinierteToggle = async (sportId: string) => {
+    const neueAktive = vordefinierteAlle
+      .map((s) => s.id === sportId ? { ...s, istAktiv: !s.istAktiv } : s)
+      .filter((s) => s.istAktiv)
+      .map((s) => s.id);
+    try {
+      await apiClient.put('/sportarten/aktive', { sportarten: neueAktive });
+      sportartenCacheLeeren();
+      await laden();
+    } catch (error) {
+      setFehler(error instanceof Error ? error.message : 'Fehler.');
+    }
+  };
+
+  const handleSportartHinzufuegen = async (name: string, icon: string) => {
+    if (!name.trim()) return;
+    setFehler('');
+    try {
+      await apiClient.post('/sportarten/custom', { name, icon, beschreibung: '' });
+      sportartenCacheLeeren();
+      setNeuerName('');
+      setNeuesIcon('');
+      setErfolg(`"${name}" hinzugefügt.`);
+      setTimeout(() => setErfolg(''), 3000);
+      await laden();
+    } catch (error) {
+      setFehler(error instanceof Error ? error.message : 'Fehler.');
+    }
+  };
+
+  const handleSportartLoeschen = async (id: string) => {
+    if (!confirm('Sportart wirklich löschen?')) return;
+    try {
+      await apiClient.delete(`/sportarten/custom/${id}`);
+      sportartenCacheLeeren();
+      await laden();
+    } catch (error) {
+      setFehler(error instanceof Error ? error.message : 'Fehler.');
+    }
+  };
+
+  const eigene = sportarten.filter((s) => !s.istVordefiniert && s.name.trim());
+  const vorhandeneNamen = new Set(sportarten.map((s) => s.name.toLowerCase()));
+  const verfuegbareVorauswahl = VORAUSWAHL_SPORTARTEN.filter((v) => !vorhandeneNamen.has(v.name.toLowerCase()));
+
+  return (
+    <KlappCard
+      id="sportarten"
+      titel="Sportarten"
+      icon={Trophy}
+      beschreibung="Welche Sportarten bietet Ihr Verein an? Klicken Sie zum Ein-/Ausschalten."
+      kinder={
+        ladend ? <p className="text-sm text-muted-foreground">Laden...</p> : (
+          <>
+            {fehler && <p className="text-sm text-destructive">{fehler}</p>}
+            {erfolg && <p className="text-sm text-green-600">{erfolg}</p>}
+
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Standard-Sportarten</Label>
+              <p className="text-xs text-muted-foreground mb-3">
+                Klicken Sie auf eine Sportart, um sie für Ihren Verein ein- oder auszuschalten.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {vordefinierteAlle.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => handleVordefinierteToggle(s.id)}
+                    className={`text-sm py-1.5 px-3 rounded-full border transition-colors ${
+                      s.istAktiv
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                    }`}
+                  >
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Eigene Sportarten</Label>
+              {eigene.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  {eigene.map((s) => (
+                    <div key={s.id} className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
+                      {s.icon && <span>{s.icon}</span>}
+                      <span className="flex-1 text-sm">{s.name}</span>
+                      <button type="button" onClick={() => handleSportartLoeschen(s.id)} className="text-xs text-destructive hover:text-destructive/80">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input value={neuesIcon} onChange={(e) => setNeuesIcon(e.target.value)} placeholder="🏸" className="w-16" />
+                <Input
+                  value={neuerName}
+                  onChange={(e) => setNeuerName(e.target.value)}
+                  placeholder="z.B. Badminton"
+                  className="flex-1"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSportartHinzufuegen(neuerName, neuesIcon)}
+                />
+                <Button variant="outline" size="sm" onClick={() => handleSportartHinzufuegen(neuerName, neuesIcon)} disabled={!neuerName.trim()}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Hinzufügen
+                </Button>
+              </div>
+            </div>
+
+            {verfuegbareVorauswahl.length > 0 && (
+              <div>
+                <button onClick={() => setVorauswahlOffen(!vorauswahlOffen)} className="flex items-center gap-2 text-sm text-primary hover:underline">
+                  <Zap className="h-4 w-4" />
+                  {vorauswahlOffen ? 'Vorauswahl verbergen' : 'Weitere Sportarten schnell hinzufügen'}
+                </button>
+                {vorauswahlOffen && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {verfuegbareVorauswahl.map((v) => (
+                      <button
+                        key={v.name}
+                        onClick={() => handleSportartHinzufuegen(v.name, v.icon)}
+                        className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm hover:bg-primary/10 hover:border-primary transition-colors"
+                      >
+                        <span>{v.icon}</span> <span>{v.name}</span> <Plus className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )
+      }
+    />
   );
 }
