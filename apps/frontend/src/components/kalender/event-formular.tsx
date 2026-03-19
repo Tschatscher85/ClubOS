@@ -51,6 +51,8 @@ const EVENT_TYPEN = [
   { wert: 'TRAINING', label: 'Training' },
   { wert: 'MATCH', label: 'Spiel' },
   { wert: 'TOURNAMENT', label: 'Turnier' },
+  { wert: 'EVENT', label: 'Veranstaltung (Fest, Jubilaeum etc.)' },
+  { wert: 'VOLUNTEER', label: 'Helfereinsatz (Aufbau, Abbau etc.)' },
   { wert: 'TRIP', label: 'Ausflug' },
   { wert: 'MEETING', label: 'Besprechung' },
 ];

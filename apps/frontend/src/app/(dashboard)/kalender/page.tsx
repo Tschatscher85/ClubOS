@@ -3,10 +3,9 @@
 import { Calendar } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import KalenderInhalt from './kalender-inhalt';
-import TurniereInhalt from '../turniere/turniere-inhalt';
+import VeranstaltungenInhalt from './veranstaltungen-inhalt';
+import BelegungRessourcenInhalt from './belegung-ressourcen-inhalt';
 import TrainingsplaeneInhalt from '../turniere/trainingsplaene-inhalt';
-import BelegungsplanInhalt from '../hallen/belegungsplan-inhalt';
-import RessourcenInhalt from '../hallen/ressourcen-inhalt';
 
 export default function KalenderPage() {
   return (
@@ -16,7 +15,7 @@ export default function KalenderPage() {
         <div>
           <h1 className="text-2xl font-bold">Kalender & Spielbetrieb</h1>
           <p className="text-muted-foreground">
-            Termine, Turniere, Trainingplaene, Belegungen und Ressourcen verwalten
+            Termine, Veranstaltungen, Belegungen und Trainingsplaene verwalten
           </p>
         </div>
       </div>
@@ -24,25 +23,21 @@ export default function KalenderPage() {
       <Tabs defaultValue="kalender">
         <TabsList>
           <TabsTrigger value="kalender">Kalender</TabsTrigger>
-          <TabsTrigger value="turniere">Turniere & Spiele</TabsTrigger>
+          <TabsTrigger value="veranstaltungen">Veranstaltungen</TabsTrigger>
+          <TabsTrigger value="belegung">Belegung & Ressourcen</TabsTrigger>
           <TabsTrigger value="training">Trainingsplaene</TabsTrigger>
-          <TabsTrigger value="belegung">Belegungsplan</TabsTrigger>
-          <TabsTrigger value="ressourcen">Ressourcen</TabsTrigger>
         </TabsList>
         <TabsContent value="kalender">
           <KalenderInhalt />
         </TabsContent>
-        <TabsContent value="turniere">
-          <TurniereInhalt />
+        <TabsContent value="veranstaltungen">
+          <VeranstaltungenInhalt />
+        </TabsContent>
+        <TabsContent value="belegung">
+          <BelegungRessourcenInhalt />
         </TabsContent>
         <TabsContent value="training">
           <TrainingsplaeneInhalt />
-        </TabsContent>
-        <TabsContent value="belegung">
-          <BelegungsplanInhalt />
-        </TabsContent>
-        <TabsContent value="ressourcen">
-          <RessourcenInhalt />
         </TabsContent>
       </Tabs>
     </div>

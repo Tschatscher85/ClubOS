@@ -498,6 +498,8 @@ enum EventType {
   TOURNAMENT
   TRIP
   MEETING
+  EVENT       // Allgemeine Veranstaltung (Vereinsfest, Jubilaeum, Halloween etc.)
+  VOLUNTEER   // Helfereinsatz, Aufbau, Abbau
 }
 
 // ==================== Anwesenheit ====================

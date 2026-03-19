@@ -6,6 +6,8 @@ export interface EventFarben {
   TOURNAMENT: string;
   TRIP: string;
   MEETING: string;
+  EVENT: string;
+  VOLUNTEER: string;
 }
 
 export const STANDARD_FARBEN: EventFarben = {
@@ -14,6 +16,8 @@ export const STANDARD_FARBEN: EventFarben = {
   TOURNAMENT: '#9333ea',   // lila
   TRIP: '#f97316',         // orange
   MEETING: '#6b7280',      // grau
+  EVENT: '#ec4899',        // pink
+  VOLUNTEER: '#14b8a6',    // teal
 };
 
 export const EVENT_TYP_LABEL: Record<string, string> = {
@@ -22,6 +26,8 @@ export const EVENT_TYP_LABEL: Record<string, string> = {
   TOURNAMENT: 'Turnier',
   TRIP: 'Ausflug',
   MEETING: 'Besprechung',
+  EVENT: 'Veranstaltung',
+  VOLUNTEER: 'Helfereinsatz',
 };
 
 const STORAGE_KEY = 'clubos-event-farben';
