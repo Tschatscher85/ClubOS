@@ -66,10 +66,25 @@ async function apiFetch<T>(
     ...options?.headers,
   };
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  // Timeout nach 15 Sekunden (verhindert ewiges "Laden...")
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('Server antwortet nicht. Bitte spaeter erneut versuchen.');
+    }
+    throw error;
+  }
+  clearTimeout(timeoutId);
 
   if (response.status === 401 && retry) {
     const refreshed = await tryRefresh();
