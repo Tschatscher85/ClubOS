@@ -627,16 +627,17 @@ export default function EinstellungenPage() {
       />
 
       {/* ================================================================ */}
-      {/* ABSCHNITT 2: Kalender & Veranstaltungen                          */}
+      {/* ABSCHNITT 2: Sportbetrieb                                        */}
       {/* ================================================================ */}
       {istAdmin && (
         <Abschnitt
-          titel="Kalender & Veranstaltungen"
-          beschreibung="Legen Sie fest, wo Veranstaltungen stattfinden und welche Typen es gibt. Diese Einstellungen erscheinen beim Erstellen von Veranstaltungen im Kalender."
+          titel="Sportbetrieb"
+          beschreibung="Alles rund um Teams, Veranstaltungen und Sportstätten. Diese Einstellungen erscheinen bei der Erstellung von Teams und Veranstaltungen."
           kinder={
             <>
-              <SportstaettenCard />
+              <AltersklassenCard />
               <VeranstaltungstypenCard />
+              <SportstaettenCard />
 
               {/* Kalender-Farben */}
               <Card id="kalender-farben">
@@ -687,17 +688,6 @@ export default function EinstellungenPage() {
               </Card>
             </>
           }
-        />
-      )}
-
-      {/* ================================================================ */}
-      {/* ABSCHNITT 3: Teams & Mannschaften                                */}
-      {/* ================================================================ */}
-      {istAdmin && (
-        <Abschnitt
-          titel="Teams & Mannschaften"
-          beschreibung="Einstellungen für die Mannschaftsverwaltung."
-          kinder={<AltersklassenCard />}
         />
       )}
 
@@ -1402,6 +1392,12 @@ function SportstaettenCard() {
 
 // ==================== Altersklassen-Verwaltung ====================
 
+const STANDARD_ALTERSKLASSEN = [
+  'Bambini', 'U6', 'U7', 'U8', 'U9', 'U10', 'U11', 'U12',
+  'U13', 'U14', 'U15', 'U16', 'U17', 'U18', 'U19',
+  'Senioren', 'AH',
+];
+
 function AltersklassenCard() {
   const [altersklassen, setAltersklassen] = useState<string[]>([]);
   const [ladend, setLadend] = useState(true);
@@ -1415,19 +1411,13 @@ function AltersklassenCard() {
     });
   }, []);
 
-  const handleHinzufuegen = () => {
-    if (!neueKlasse.trim() || altersklassen.includes(neueKlasse.trim())) return;
-    setAltersklassen([...altersklassen, neueKlasse.trim()]);
-    setNeueKlasse('');
-  };
+  const standardSet = new Set(STANDARD_ALTERSKLASSEN);
+  const aktiveSet = new Set(altersklassen);
+  const eigeneKlassen = altersklassen.filter((k) => !standardSet.has(k));
 
-  const handleEntfernen = (index: number) => {
-    setAltersklassen(altersklassen.filter((_, i) => i !== index));
-  };
-
-  const handleSpeichern = async () => {
+  const speichernUndMelden = async (neueKlassen: string[]) => {
     try {
-      await altersklassenSpeichern(altersklassen);
+      await altersklassenSpeichern(neueKlassen);
       setGespeichert(true);
       setTimeout(() => setGespeichert(false), 3000);
     } catch (error) {
@@ -1435,8 +1425,37 @@ function AltersklassenCard() {
     }
   };
 
-  const handleZuruecksetzen = () => {
-    setAltersklassen(altersklassenFallback());
+  const handleToggle = async (klasse: string) => {
+    let neueKlassen: string[];
+    if (aktiveSet.has(klasse)) {
+      neueKlassen = altersklassen.filter((k) => k !== klasse);
+    } else {
+      // Einfügen an der richtigen Position (Standard-Reihenfolge beibehalten)
+      neueKlassen = [...altersklassen, klasse].sort((a, b) => {
+        const idxA = STANDARD_ALTERSKLASSEN.indexOf(a);
+        const idxB = STANDARD_ALTERSKLASSEN.indexOf(b);
+        if (idxA === -1 && idxB === -1) return 0;
+        if (idxA === -1) return 1;
+        if (idxB === -1) return -1;
+        return idxA - idxB;
+      });
+    }
+    setAltersklassen(neueKlassen);
+    await speichernUndMelden(neueKlassen);
+  };
+
+  const handleHinzufuegen = async () => {
+    if (!neueKlasse.trim() || altersklassen.includes(neueKlasse.trim())) return;
+    const neueKlassen = [...altersklassen, neueKlasse.trim()];
+    setAltersklassen(neueKlassen);
+    setNeueKlasse('');
+    await speichernUndMelden(neueKlassen);
+  };
+
+  const handleEntfernen = async (klasse: string) => {
+    const neueKlassen = altersklassen.filter((k) => k !== klasse);
+    setAltersklassen(neueKlassen);
+    await speichernUndMelden(neueKlassen);
   };
 
   return (
@@ -1447,59 +1466,84 @@ function AltersklassenCard() {
           Altersklassen
         </CardTitle>
         <CardDescription>
-          Legen Sie fest, welche Altersklassen bei der Team-Erstellung zur Auswahl stehen.
-          Die Standard-Einteilung (Bambini bis AH) ist voreingestellt.
-          Sie können eigene Klassen hinzufügen (z.B. Damen, Herren 2, U21).
+          Bestimmen Sie, welche Altersklassen bei der Team-Erstellung zur Auswahl stehen.
+          Klicken Sie auf eine Klasse, um sie zu aktivieren oder zu deaktivieren.
+          Nur aktive Klassen erscheinen beim Erstellen eines neuen Teams.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {ladend ? (
           <p className="text-sm text-muted-foreground">Laden...</p>
         ) : (
           <>
-            <div className="flex flex-wrap gap-2">
-              {altersklassen.map((klasse, index) => (
-                <div
-                  key={`${klasse}-${index}`}
-                  className="flex items-center gap-1 rounded-full border bg-muted/30 px-3 py-1"
-                >
-                  <span className="text-sm">{klasse}</span>
+            {/* Standard-Altersklassen - Toggle */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Standard-Klassen</Label>
+              <p className="text-xs text-muted-foreground mb-3">
+                Klicken Sie auf eine Klasse, um sie für Ihren Verein ein- oder auszuschalten.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {STANDARD_ALTERSKLASSEN.map((klasse) => (
                   <button
-                    onClick={() => handleEntfernen(index)}
-                    className="text-xs text-destructive hover:text-destructive/80 ml-1"
-                    title="Entfernen"
+                    key={klasse}
+                    type="button"
+                    onClick={() => handleToggle(klasse)}
+                    className={`text-sm py-1.5 px-3 rounded-full border transition-colors ${
+                      aktiveSet.has(klasse)
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                    }`}
                   >
-                    x
+                    {klasse}
                   </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Eigene Klassen */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Eigene Klassen</Label>
+              <p className="text-xs text-muted-foreground mb-3">
+                Brauchen Sie eine Klasse, die nicht in der Liste ist? Erstellen Sie hier Ihre eigene (z.B. Damen, Herren 2, U21).
+              </p>
+              {eigeneKlassen.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  {eigeneKlassen.map((klasse) => (
+                    <div
+                      key={klasse}
+                      className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2"
+                    >
+                      <span className="flex-1 text-sm">{klasse}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleEntfernen(klasse)}
+                        className="text-xs text-destructive hover:text-destructive/80"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-
-            <div className="flex gap-2">
-              <Input
-                value={neueKlasse}
-                onChange={(e) => setNeueKlasse(e.target.value)}
-                placeholder="z.B. U21, Damen, Herren 2..."
-                className="max-w-xs"
-                onKeyDown={(e) => e.key === 'Enter' && handleHinzufuegen()}
-              />
-              <Button variant="outline" size="sm" onClick={handleHinzufuegen} disabled={!neueKlasse.trim()}>
-                Hinzufügen
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={handleSpeichern}>
-                <Save className="h-4 w-4 mr-2" />
-                Altersklassen speichern
-              </Button>
-              <Button variant="ghost" onClick={handleZuruecksetzen}>
-                Zurücksetzen
-              </Button>
-              {gespeichert && (
-                <span className="text-sm text-green-600">Gespeichert!</span>
               )}
+
+              <div className="flex gap-2">
+                <Input
+                  value={neueKlasse}
+                  onChange={(e) => setNeueKlasse(e.target.value)}
+                  placeholder="z.B. U21, Damen, Herren 2..."
+                  className="flex-1"
+                  onKeyDown={(e) => e.key === 'Enter' && handleHinzufuegen()}
+                />
+                <Button variant="outline" size="sm" onClick={handleHinzufuegen} disabled={!neueKlasse.trim()}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Hinzufügen
+                </Button>
+              </div>
             </div>
+
+            {gespeichert && (
+              <span className="text-sm text-green-600">Gespeichert!</span>
+            )}
           </>
         )}
       </CardContent>
