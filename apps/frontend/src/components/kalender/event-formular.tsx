@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { apiClient } from '@/lib/api-client';
 import { AdressSuche } from './adress-suche';
+import { sportartenLaden, sportartenFallback } from '@/lib/sportarten';
 
 interface Team {
   id: string;
@@ -94,8 +95,15 @@ export function EventFormular({
   const [wiederholungTage, setWiederholungTage] = useState<string[]>([]);
   const [wiederholungEnde, setWiederholungEnde] = useState('');
 
+  // Turnier-spezifische Felder
+  const [turnierSportart, setTurnierSportart] = useState('FUSSBALL');
+  const [turnierFormat, setTurnierFormat] = useState('GRUPPE');
+  const [sportartenOptionen, setSportartenOptionen] = useState(sportartenFallback());
+
   const [ladend, setLadend] = useState(false);
   const [fehler, setFehler] = useState('');
+
+  const istTurnier = typ === 'TOURNAMENT';
 
   // Daten laden
   useEffect(() => {
@@ -110,6 +118,15 @@ export function EventFormular({
       if (!teamId && teamDaten.length > 0) {
         setTeamId(teamDaten[0].id);
       }
+    });
+
+    sportartenLaden().then((daten) => {
+      setSportartenOptionen(
+        daten.map((s) => ({
+          wert: s.istVordefiniert ? s.name.toUpperCase().replace(/[^A-Z]/g, '') || s.name : s.name,
+          label: s.name,
+        })),
+      );
     });
 
     // Felder setzen bei Bearbeitung
@@ -136,6 +153,8 @@ export function EventFormular({
       setWiederholung('WEEKLY');
       setWiederholungTage([]);
       setWiederholungEnde('');
+      setTurnierSportart('FUSSBALL');
+      setTurnierFormat('GRUPPE');
     }
     setFehler('');
   }, [offen, event]);
@@ -158,6 +177,16 @@ export function EventFormular({
     setFehler('');
 
     try {
+      // Bei Turnier: erst Turnier anlegen (mit Spielplan, Livescoring, oeffentlicher URL)
+      if (istTurnier && !istBearbeitung) {
+        await apiClient.post('/turniere', {
+          name: titel,
+          sportart: turnierSportart,
+          format: turnierFormat,
+        });
+      }
+
+      // Event/Veranstaltung anlegen (auch fuer Turniere als Kalender-Eintrag)
       const daten = {
         titel,
         typ,
@@ -252,6 +281,34 @@ export function EventFormular({
               </Select>
             </div>
           </div>
+
+          {/* Turnier-spezifische Felder */}
+          {istTurnier && !istBearbeitung && (
+            <div className="space-y-4 rounded-md border border-purple-200 bg-purple-50 p-4">
+              <p className="text-sm font-medium text-purple-800">
+                Turnier-Einstellungen (Spielplan, Livescoring & oeffentliche Anzeigetafel)
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Sportart</Label>
+                  <Select value={turnierSportart} onChange={(e) => setTurnierSportart(e.target.value)}>
+                    {sportartenOptionen.map((opt) => (
+                      <option key={opt.wert} value={opt.wert}>{opt.label}</option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Turnier-Format</Label>
+                  <Select value={turnierFormat} onChange={(e) => setTurnierFormat(e.target.value)}>
+                    <option value="GRUPPE">Gruppenphase</option>
+                    <option value="KO">KO-System</option>
+                    <option value="SCHWEIZER">Schweizer System</option>
+                    <option value="KOMBINATION">Kombination</option>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Datum & Uhrzeit */}
           <div className="grid grid-cols-2 gap-4">

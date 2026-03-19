@@ -10,14 +10,10 @@ import {
   Radio,
   Calendar,
   PartyPopper,
-  Users,
-  Briefcase,
-  MapPin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TurnierFormular } from '@/components/turniere/turnier-formular';
 import { EventFormular } from '@/components/kalender/event-formular';
 import { apiClient } from '@/lib/api-client';
 import { getEventFarbe, EVENT_TYP_LABEL } from '@/lib/event-farben';
@@ -64,7 +60,6 @@ export default function VeranstaltungenInhalt() {
   const [turniere, setTurniere] = useState<Turnier[]>([]);
   const [alleEvents, setAlleEvents] = useState<VeranstaltungEvent[]>([]);
   const [ladend, setLadend] = useState(true);
-  const [turnierFormularOffen, setTurnierFormularOffen] = useState(false);
   const [eventFormularOffen, setEventFormularOffen] = useState(false);
   const router = useRouter();
 
@@ -126,16 +121,10 @@ export default function VeranstaltungenInhalt() {
         <p className="text-sm text-muted-foreground">
           {alleEvents.length} anstehende Termine · {turniere.length} Turniere
         </p>
-        <div className="flex gap-2">
-          <Button onClick={() => setEventFormularOffen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Neue Veranstaltung
-          </Button>
-          <Button variant="outline" onClick={() => setTurnierFormularOffen(true)}>
-            <Trophy className="h-4 w-4 mr-2" />
-            Neues Turnier
-          </Button>
-        </div>
+        <Button onClick={() => setEventFormularOffen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Neue Veranstaltung
+        </Button>
       </div>
 
       {/* Anstehende Spiele & Turniere */}
@@ -312,12 +301,6 @@ export default function VeranstaltungenInhalt() {
           </p>
         </div>
       )}
-
-      <TurnierFormular
-        offen={turnierFormularOffen}
-        onSchliessen={() => setTurnierFormularOffen(false)}
-        onGespeichert={datenLaden}
-      />
 
       <EventFormular
         offen={eventFormularOffen}
