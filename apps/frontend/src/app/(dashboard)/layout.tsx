@@ -7,7 +7,41 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { EmailVerifizierungBanner } from '@/components/auth/email-verifizierung-banner';
 import { apiClient } from '@/lib/api-client';
-import { Ban, Mail } from 'lucide-react';
+import { Ban, Mail, ArrowLeft } from 'lucide-react';
+
+function ImpersonationBanner() {
+  const [sichtbar, setSichtbar] = useState(false);
+
+  useEffect(() => {
+    setSichtbar(!!localStorage.getItem('clubos-auth-admin-backup'));
+  }, []);
+
+  if (!sichtbar) return null;
+
+  const zurueckZumAdmin = () => {
+    const backup = localStorage.getItem('clubos-auth-admin-backup');
+    if (backup) {
+      localStorage.setItem('clubos-auth', backup);
+      localStorage.removeItem('clubos-auth-admin-backup');
+      window.location.href = '/admin';
+    }
+  };
+
+  return (
+    <div className="bg-amber-500 text-white px-4 py-2 flex items-center justify-between text-sm">
+      <div className="flex items-center gap-2">
+        <span className="font-medium">Fernwartung aktiv</span>
+        <span className="opacity-80">— Du siehst diesen Verein als deren Admin</span>
+      </div>
+      <button
+        onClick={zurueckZumAdmin}
+        className="flex items-center gap-1 bg-white/20 hover:bg-white/30 rounded px-3 py-1 text-sm font-medium"
+      >
+        <ArrowLeft className="h-4 w-4" /> Zurück zum Admin
+      </button>
+    </div>
+  );
+}
 
 function Sperrseite({ grund }: { grund?: string }) {
   return (
@@ -105,6 +139,7 @@ export default function DashboardLayout({
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
+        <ImpersonationBanner />
         <Header />
         <EmailVerifizierungBanner />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>

@@ -177,13 +177,33 @@ export default function AdminDashboard() {
         tenant: { id: string; name: string; slug: string; logo: string | null; primaryColor: string };
       }>(`/admin/vereine/${id}/impersonate`, {});
 
-      // Token + Tenant im localStorage speichern und Seite neu laden
-      localStorage.setItem('impersonation_token', result.accessToken);
-      localStorage.setItem('impersonation_tenant', JSON.stringify(result.tenant));
-      localStorage.setItem('impersonation_user', JSON.stringify(result.benutzer));
+      // Aktuellen Admin-Token sichern fuer "Zurueck zum Admin"
+      const aktuellerStore = localStorage.getItem('clubos-auth');
+      if (aktuellerStore) {
+        localStorage.setItem('clubos-auth-admin-backup', aktuellerStore);
+      }
 
-      // Neues Fenster oeffnen mit Impersonation
-      window.open(`/dashboard?impersonate=${result.accessToken}`, '_blank');
+      // Auth-Store mit Vereins-Token ueberschreiben
+      const storeData = {
+        state: {
+          benutzer: {
+            id: result.benutzer.id,
+            email: result.benutzer.email,
+            rolle: result.benutzer.rolle,
+            berechtigungen: [],
+            vereinsRollen: [],
+          },
+          tenant: result.tenant,
+          accessToken: result.accessToken,
+          refreshToken: null,
+          istAngemeldet: true,
+        },
+        version: 0,
+      };
+      localStorage.setItem('clubos-auth', JSON.stringify(storeData));
+
+      // Seite komplett neu laden damit Store frisch geladen wird
+      window.location.href = '/dashboard';
     } catch (err) {
       console.error('Impersonation fehlgeschlagen:', err);
     }
