@@ -86,6 +86,7 @@ model Tenant {
   istAktiv                     Boolean   @default(true)
   gesperrtAm                   DateTime?
   gesperrtGrund                String?
+  zahlungsFehlschlaege         Int       @default(0)
   createdAt                    DateTime  @default(now())
   updatedAt                    DateTime  @updatedAt
 

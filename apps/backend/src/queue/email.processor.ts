@@ -41,6 +41,15 @@ interface NotfallJobDaten {
   nachricht: string;
 }
 
+/** Daten fuer Zahlungs-Warnungs-E-Mails */
+interface ZahlungWarnungJobDaten {
+  email: string;
+  vorname: string;
+  vereinsname: string;
+  fehlschlaege: number;
+  gesperrt: boolean;
+}
+
 @Processor('email')
 export class EmailProcessor {
   private readonly logger = new Logger(EmailProcessor.name);
@@ -139,6 +148,54 @@ export class EmailProcessor {
     } catch (fehler) {
       this.logger.error(
         `Fehler beim Senden der Erinnerungs-E-Mail an ${email}: ${fehler}`,
+      );
+      throw fehler;
+    }
+  }
+
+  @Process('zahlungWarnung')
+  async zahlungWarnungVerarbeiten(job: Job<ZahlungWarnungJobDaten>): Promise<void> {
+    const { email, vorname, vereinsname, fehlschlaege, gesperrt } = job.data;
+    this.logger.log(`Zahlungs-Warnung wird an ${email} gesendet...`);
+
+    try {
+      const betreffText = gesperrt
+        ? `DRINGEND: ${vereinsname} wurde gesperrt`
+        : `Zahlungserinnerung: ${vereinsname}`;
+
+      const htmlInhalt = gesperrt
+        ? `<h2 style="color:#dc2626;">Verein gesperrt — Zahlung fehlgeschlagen</h2>
+          <p>Hallo ${vorname},</p>
+          <p>Die Zahlung fuer <strong>${vereinsname}</strong> ist <strong>${fehlschlaege} Mal</strong> fehlgeschlagen.
+          Ihr Vereinszugang wurde daher voruebergehend gesperrt.</p>
+          <p>Bitte aktualisieren Sie Ihre Zahlungsmethode im Stripe-Kundenportal oder kontaktieren Sie uns unter
+          <a href="mailto:support@vereinbase.de">support@vereinbase.de</a>.</p>
+          <p>Sobald die Zahlung eingeht, wird Ihr Zugang automatisch wiederhergestellt.</p>`
+        : `<h2>Zahlungserinnerung</h2>
+          <p>Hallo ${vorname},</p>
+          <p>Die Zahlung fuer <strong>${vereinsname}</strong> konnte nicht eingezogen werden
+          (Fehlversuch ${fehlschlaege} von 3).</p>
+          <p>Bitte pruefen Sie Ihre Zahlungsmethode. Nach 3 fehlgeschlagenen Versuchen wird
+          der Vereinszugang automatisch gesperrt.</p>
+          <p>Bei Fragen: <a href="mailto:support@vereinbase.de">support@vereinbase.de</a></p>`;
+
+      await this.mailService['transporter']?.sendMail({
+        from: 'noreply@vereinbase.de',
+        to: email,
+        subject: betreffText,
+        html: htmlInhalt,
+      });
+
+      if (!this.mailService['transporter']) {
+        this.logger.log(
+          `[Mail] SMTP nicht konfiguriert. Zahlungs-Warnung an ${email}: Fehlschlag ${fehlschlaege}/3`,
+        );
+      }
+
+      this.logger.log(`Zahlungs-Warnung erfolgreich an ${email} gesendet`);
+    } catch (fehler) {
+      this.logger.error(
+        `Fehler beim Senden der Zahlungs-Warnung an ${email}: ${fehler}`,
       );
       throw fehler;
     }

@@ -1,8 +1,12 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bull';
 import { BillingService } from './billing.service';
 import { BillingController } from './billing.controller';
 
 @Module({
+  imports: [
+    BullModule.registerQueue({ name: 'email' }),
+  ],
   controllers: [BillingController],
   providers: [BillingService],
   exports: [BillingService],

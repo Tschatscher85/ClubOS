@@ -1,4 +1,6 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, Optional } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bullmq';
 import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service';
 import { Plan } from '@prisma/client';
@@ -22,7 +24,10 @@ export class BillingService {
   private readonly logger = new Logger(BillingService.name);
   private stripe: Stripe | null = null;
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    @Optional() @InjectQueue('email') private readonly emailQueue?: Queue,
+  ) {
     const secretKey = process.env.STRIPE_SECRET_KEY;
     if (secretKey) {
       this.stripe = new Stripe(secretKey, {
@@ -246,6 +251,13 @@ export class BillingService {
             where: { stripeSubscriptionId: subscriptionId },
           });
           if (tenant) {
+            // Fehlschlag-Zaehler zuruecksetzen bei erfolgreicher Zahlung
+            if (tenant.zahlungsFehlschlaege > 0) {
+              await this.prisma.tenant.update({
+                where: { id: tenant.id },
+                data: { zahlungsFehlschlaege: 0 },
+              });
+            }
             this.logger.log(
               `Zahlung erfolgreich fuer Verein ${tenant.name} (${tenant.id})`,
             );
@@ -266,10 +278,51 @@ export class BillingService {
             where: { stripeSubscriptionId: subscriptionId },
           });
           if (tenant) {
-            this.logger.warn(
-              `Zahlung fehlgeschlagen fuer Verein ${tenant.name} (${tenant.id}). ` +
-              'Verein wird benachrichtigt.',
-            );
+            const fehlschlaege = tenant.zahlungsFehlschlaege + 1;
+            const updateData: Record<string, unknown> = {
+              zahlungsFehlschlaege: fehlschlaege,
+            };
+
+            // Nach 3 fehlgeschlagenen Zahlungen: Verein automatisch sperren
+            if (fehlschlaege >= 3) {
+              updateData.istAktiv = false;
+              updateData.gesperrtAm = new Date();
+              updateData.gesperrtGrund =
+                `Automatisch gesperrt: ${fehlschlaege} fehlgeschlagene Zahlungen`;
+              this.logger.error(
+                `Verein ${tenant.name} (${tenant.id}) nach ${fehlschlaege} fehlgeschlagenen Zahlungen GESPERRT.`,
+              );
+            } else {
+              this.logger.warn(
+                `Zahlung fehlgeschlagen fuer Verein ${tenant.name} (${tenant.id}). ` +
+                `Fehlschlag ${fehlschlaege}/3. Verein wird benachrichtigt.`,
+              );
+            }
+
+            await this.prisma.tenant.update({
+              where: { id: tenant.id },
+              data: updateData,
+            });
+
+            // Admin-Benutzer des Vereins per E-Mail warnen
+            const admins = await this.prisma.user.findMany({
+              where: { tenantId: tenant.id, role: { in: ['ADMIN', 'SUPERADMIN'] } },
+              select: { email: true, profile: { select: { firstName: true } } },
+            });
+
+            for (const admin of admins) {
+              try {
+                await this.emailQueue?.add('zahlungWarnung', {
+                  email: admin.email,
+                  vorname: admin.profile?.firstName || 'Admin',
+                  vereinsname: tenant.name,
+                  fehlschlaege,
+                  gesperrt: fehlschlaege >= 3,
+                });
+              } catch {
+                this.logger.warn(`Warn-E-Mail an ${admin.email} konnte nicht gequeued werden`);
+              }
+            }
           }
         }
         break;
