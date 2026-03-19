@@ -428,52 +428,66 @@ export class MemberService {
   }
 
   /** Team-Zuordnungen eines Mitglieds synchronisieren (alte loeschen, neue erstellen) */
-  async teamsSetzen(tenantId: string, memberId: string, teamIds: string[]) {
+  async teamsSetzen(tenantId: string, memberId: string, teamZuordnungen: Array<{ teamId: string; rolle?: string }> | string[]) {
     const mitglied = await this.prisma.member.findFirst({
       where: { id: memberId, tenantId },
     });
     if (!mitglied) throw new NotFoundException('Mitglied nicht gefunden.');
 
+    // Normalisieren: string[] oder {teamId, rolle}[]
+    const zuordnungen: Array<{ teamId: string; rolle: string }> = (teamZuordnungen as Array<unknown>).map((z) => {
+      if (typeof z === 'string') return { teamId: z, rolle: 'SPIELER' };
+      const obj = z as { teamId?: string; rolle?: string };
+      return { teamId: obj.teamId || '', rolle: obj.rolle || 'SPIELER' };
+    }).filter((z) => z.teamId);
+
+    const teamIds = zuordnungen.map((z) => z.teamId);
+
     // Pruefen ob alle Teams zum Verein gehoeren
     const teams = await this.prisma.team.findMany({
       where: { id: { in: teamIds }, tenantId },
     });
-    const gueltigeTeamIds = teams.map((t) => t.id);
+    const gueltigeTeamIds = new Set(teams.map((t) => t.id));
+    const gueltigeZuordnungen = zuordnungen.filter((z) => gueltigeTeamIds.has(z.teamId));
 
     // Bestehende Zuordnungen abrufen
     const bestehende = await this.prisma.teamMember.findMany({
       where: { memberId },
-      select: { teamId: true },
+      select: { teamId: true, rolle: true },
     });
-    const bestehendIds = new Set(bestehende.map((b) => b.teamId));
+    const bestehendMap = new Map(bestehende.map((b) => [b.teamId, b.rolle]));
 
     // Neue Zuordnungen (noch nicht vorhanden)
-    const zuErstellen = gueltigeTeamIds.filter((id) => !bestehendIds.has(id));
+    const zuErstellen = gueltigeZuordnungen.filter((z) => !bestehendMap.has(z.teamId));
+
+    // Rollen-Updates (bestehende Zuordnung, aber Rolle hat sich geaendert)
+    const zuAktualisieren = gueltigeZuordnungen.filter(
+      (z) => bestehendMap.has(z.teamId) && bestehendMap.get(z.teamId) !== z.rolle,
+    );
 
     // Alte Zuordnungen (nicht mehr gewuenscht)
-    const zuLoeschen = Array.from(bestehendIds).filter(
-      (id) => !gueltigeTeamIds.includes(id),
+    const gewuenschteIds = new Set(gueltigeZuordnungen.map((z) => z.teamId));
+    const zuLoeschen = Array.from(bestehendMap.keys()).filter(
+      (id) => !gewuenschteIds.has(id),
     );
 
     // Transaktional ausfuehren
     await this.prisma.$transaction([
-      // Alte entfernen
       ...(zuLoeschen.length > 0
-        ? [
-            this.prisma.teamMember.deleteMany({
-              where: { memberId, teamId: { in: zuLoeschen } },
-            }),
-          ]
+        ? [this.prisma.teamMember.deleteMany({ where: { memberId, teamId: { in: zuLoeschen } } })]
         : []),
-      // Neue erstellen
-      ...zuErstellen.map((teamId) =>
-        this.prisma.teamMember.create({
-          data: { teamId, memberId, rolle: 'SPIELER' },
+      ...zuErstellen.map((z) =>
+        this.prisma.teamMember.create({ data: { teamId: z.teamId, memberId, rolle: z.rolle } }),
+      ),
+      ...zuAktualisieren.map((z) =>
+        this.prisma.teamMember.updateMany({
+          where: { memberId, teamId: z.teamId },
+          data: { rolle: z.rolle },
         }),
       ),
     ]);
 
-    return { nachricht: 'Team-Zuordnungen aktualisiert.', teams: gueltigeTeamIds.length };
+    return { nachricht: 'Team-Zuordnungen aktualisiert.', teams: gueltigeZuordnungen.length };
   }
 
   // ==================== Formular-Einreichungen ====================

@@ -141,7 +141,7 @@ export function MitgliedFormular({
   // Team- und Abteilungs-Zuordnung
   const [alleTeams, setAlleTeams] = useState<TeamKurz[]>([]);
   const [alleAbteilungen, setAlleAbteilungen] = useState<AbteilungKurz[]>([]);
-  const [gewaehlteTeamIds, setGewaehlteTeamIds] = useState<string[]>([]);
+  const [gewaehlteTeams, setGewaehlteTeams] = useState<Record<string, string>>({}); // teamId → rolle
 
   // Beitragsklassen + Rollen + Sportarten + Teams laden
   useEffect(() => {
@@ -167,13 +167,17 @@ export function MitgliedFormular({
         })));
       }).catch(() => {});
 
-      // Bestehende Team-Zuordnungen laden
+      // Bestehende Team-Zuordnungen laden (mit Rolle)
       if (mitglied) {
-        apiClient.get<Array<{ teamId: string }>>(`/mitglieder/${mitglied.id}/teams`)
-          .then((daten) => setGewaehlteTeamIds(daten.map((t) => t.teamId)))
-          .catch(() => setGewaehlteTeamIds([]));
+        apiClient.get<Array<{ teamId: string; rolle: string }>>(`/mitglieder/${mitglied.id}/teams`)
+          .then((daten) => {
+            const map: Record<string, string> = {};
+            for (const t of daten) map[t.teamId] = t.rolle || 'SPIELER';
+            setGewaehlteTeams(map);
+          })
+          .catch(() => setGewaehlteTeams({}));
       } else {
-        setGewaehlteTeamIds([]);
+        setGewaehlteTeams({});
       }
     }
   }, [offen, mitglied]);
@@ -290,10 +294,11 @@ export function MitgliedFormular({
             vereinsRollen: gewaehlteRollen,
           }).catch(() => {/* User hat ggf. noch keinen Account */});
         }
-        // Team-Zuordnungen aktualisieren
-        if (gewaehlteTeamIds.length > 0) {
+        // Team-Zuordnungen aktualisieren (mit Rollen)
+        const teamZuordnungen = Object.entries(gewaehlteTeams).map(([teamId, rolle]) => ({ teamId, rolle }));
+        if (teamZuordnungen.length > 0) {
           await apiClient.put(`/mitglieder/${mitglied.id}/teams`, {
-            teamIds: gewaehlteTeamIds,
+            teamIds: teamZuordnungen,
           }).catch(() => {});
         }
       } else {
@@ -304,10 +309,11 @@ export function MitgliedFormular({
             vereinsRollen: gewaehlteRollen,
           }).catch(() => {});
         }
-        // Team-Zuordnungen setzen
-        if (gewaehlteTeamIds.length > 0) {
+        // Team-Zuordnungen setzen (mit Rollen)
+        const teamZuordnungen = Object.entries(gewaehlteTeams).map(([teamId, rolle]) => ({ teamId, rolle }));
+        if (teamZuordnungen.length > 0) {
           await apiClient.put(`/mitglieder/${neuesMitglied.id}/teams`, {
-            teamIds: gewaehlteTeamIds,
+            teamIds: teamZuordnungen,
           }).catch(() => {});
         }
       }
@@ -462,104 +468,84 @@ export function MitgliedFormular({
               <p className="text-xs text-muted-foreground">
                 Mitglied einem oder mehreren Teams zuordnen. Das Mitglied sieht nur Kalender, Nachrichten und Spiele seiner Teams.
               </p>
-              <div className="space-y-1 mt-2 max-h-48 overflow-y-auto">
-                {alleAbteilungen.length > 0 ? (
-                  // Nach Abteilung gruppiert
-                  <>
-                    {alleAbteilungen.map((abt) => {
-                      const abtTeams = alleTeams.filter((t) => t.abteilungId === abt.id);
-                      if (abtTeams.length === 0) return null;
-                      return (
-                        <div key={abt.id} className="mb-2">
-                          <p className="text-xs font-semibold text-muted-foreground mb-1">{abt.name}</p>
-                          {abtTeams.map((team) => (
-                            <label
-                              key={team.id}
-                              className={`flex items-center gap-2 rounded-md px-3 py-1.5 cursor-pointer transition-colors ${
-                                gewaehlteTeamIds.includes(team.id)
-                                  ? 'bg-primary/10 text-primary'
-                                  : 'hover:bg-muted/50'
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={gewaehlteTeamIds.includes(team.id)}
-                                onChange={() => {
-                                  setGewaehlteTeamIds((prev) =>
-                                    prev.includes(team.id)
-                                      ? prev.filter((id) => id !== team.id)
-                                      : [...prev, team.id],
-                                  );
-                                }}
-                                className="rounded border-gray-300"
-                              />
-                              <span className="text-sm">{team.name}</span>
-                              <span className="text-xs text-muted-foreground">({team.ageGroup})</span>
-                            </label>
-                          ))}
-                        </div>
-                      );
-                    })}
-                    {/* Teams ohne Abteilung */}
-                    {alleTeams.filter((t) => !t.abteilungId).length > 0 && (
-                      <div>
-                        <p className="text-xs font-semibold text-muted-foreground mb-1">Ohne Abteilung</p>
-                        {alleTeams.filter((t) => !t.abteilungId).map((team) => (
-                          <label
-                            key={team.id}
-                            className={`flex items-center gap-2 rounded-md px-3 py-1.5 cursor-pointer transition-colors ${
-                              gewaehlteTeamIds.includes(team.id)
-                                ? 'bg-primary/10 text-primary'
-                                : 'hover:bg-muted/50'
-                            }`}
+              <div className="space-y-1 mt-2 max-h-60 overflow-y-auto">
+                {(() => {
+                  const renderTeamZeile = (team: TeamKurz) => {
+                    const istGewaehlt = team.id in gewaehlteTeams;
+                    return (
+                      <div
+                        key={team.id}
+                        className={`flex items-center gap-2 rounded-md px-3 py-1.5 transition-colors ${
+                          istGewaehlt ? 'bg-primary/10' : 'hover:bg-muted/50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={istGewaehlt}
+                          onChange={() => {
+                            setGewaehlteTeams((prev) => {
+                              const neu = { ...prev };
+                              if (istGewaehlt) {
+                                delete neu[team.id];
+                              } else {
+                                neu[team.id] = 'SPIELER';
+                              }
+                              return neu;
+                            });
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm flex-1">{team.name}</span>
+                        <span className="text-xs text-muted-foreground">({team.ageGroup})</span>
+                        {istGewaehlt && (
+                          <select
+                            value={gewaehlteTeams[team.id] || 'SPIELER'}
+                            onChange={(e) => {
+                              setGewaehlteTeams((prev) => ({
+                                ...prev,
+                                [team.id]: e.target.value,
+                              }));
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs rounded border border-input bg-background px-2 py-0.5 ml-1"
                           >
-                            <input
-                              type="checkbox"
-                              checked={gewaehlteTeamIds.includes(team.id)}
-                              onChange={() => {
-                                setGewaehlteTeamIds((prev) =>
-                                  prev.includes(team.id)
-                                    ? prev.filter((id) => id !== team.id)
-                                    : [...prev, team.id],
-                                );
-                              }}
-                              className="rounded border-gray-300"
-                            />
-                            <span className="text-sm">{team.name}</span>
-                            <span className="text-xs text-muted-foreground">({team.ageGroup})</span>
-                          </label>
-                        ))}
+                            <option value="SPIELER">Spieler</option>
+                            <option value="TRAINER">Trainer</option>
+                            <option value="CO_TRAINER">Co-Trainer</option>
+                            <option value="TORWART_TRAINER">TW-Trainer</option>
+                            <option value="BETREUER">Betreuer</option>
+                            <option value="KAPITAEN">Kapitaen</option>
+                          </select>
+                        )}
                       </div>
-                    )}
-                  </>
-                ) : (
-                  // Keine Abteilungen, einfache Liste
-                  alleTeams.map((team) => (
-                    <label
-                      key={team.id}
-                      className={`flex items-center gap-2 rounded-md px-3 py-1.5 cursor-pointer transition-colors ${
-                        gewaehlteTeamIds.includes(team.id)
-                          ? 'bg-primary/10 text-primary'
-                          : 'hover:bg-muted/50'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={gewaehlteTeamIds.includes(team.id)}
-                        onChange={() => {
-                          setGewaehlteTeamIds((prev) =>
-                            prev.includes(team.id)
-                              ? prev.filter((id) => id !== team.id)
-                              : [...prev, team.id],
+                    );
+                  };
+
+                  if (alleAbteilungen.length > 0) {
+                    return (
+                      <>
+                        {alleAbteilungen.map((abt) => {
+                          const abtTeams = alleTeams.filter((t) => t.abteilungId === abt.id);
+                          if (abtTeams.length === 0) return null;
+                          return (
+                            <div key={abt.id} className="mb-2">
+                              <p className="text-xs font-semibold text-muted-foreground mb-1">{abt.name}</p>
+                              {abtTeams.map(renderTeamZeile)}
+                            </div>
                           );
-                        }}
-                        className="rounded border-gray-300"
-                      />
-                      <span className="text-sm">{team.name}</span>
-                      <span className="text-xs text-muted-foreground">({team.ageGroup})</span>
-                    </label>
-                  ))
-                )}
+                        })}
+                        {alleTeams.filter((t) => !t.abteilungId).length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-muted-foreground mb-1">Ohne Abteilung</p>
+                            {alleTeams.filter((t) => !t.abteilungId).map(renderTeamZeile)}
+                          </div>
+                        )}
+                      </>
+                    );
+                  }
+
+                  return alleTeams.map(renderTeamZeile);
+                })()}
               </div>
             </div>
           )}
