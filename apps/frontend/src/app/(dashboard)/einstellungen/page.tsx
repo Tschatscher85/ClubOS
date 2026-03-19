@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send, Building2, Trophy, CreditCard, Shield, Users, Gift, Layout, Calendar } from 'lucide-react';
+import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send, Building2, Trophy, CreditCard, Shield, Users, Gift, Layout, Calendar, MapPin, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { AdressSuche } from '@/components/kalender/adress-suche';
 import { altersklassenLaden, altersklassenSpeichern, altersklassenFallback } from '@/lib/altersklassen';
@@ -28,6 +28,8 @@ import {
 } from '@/lib/event-farben';
 import type { EventFarben } from '@/lib/event-farben';
 
+// ==================== Konstanten ====================
+
 const FARBEN = [
   { name: 'Blau', wert: '#1a56db' },
   { name: 'Rot', wert: '#dc2626' },
@@ -46,6 +48,22 @@ const PLAN_LABEL: Record<string, string> = {
   ENTERPRISE: 'Enterprise',
   SELF_HOSTED: 'Self-Hosted',
 };
+
+// ==================== Abschnitts-Trenner ====================
+
+function Abschnitt({ titel, beschreibung, kinder }: { titel: string; beschreibung: string; kinder: React.ReactNode }) {
+  return (
+    <div className="space-y-4">
+      <div className="border-b pb-3">
+        <h2 className="text-lg font-semibold">{titel}</h2>
+        <p className="text-sm text-muted-foreground mt-1">{beschreibung}</p>
+      </div>
+      {kinder}
+    </div>
+  );
+}
+
+// ==================== Hauptseite ====================
 
 export default function EinstellungenPage() {
   const { benutzer, tenant, profilLaden } = useAuth();
@@ -220,7 +238,6 @@ export default function EinstellungenPage() {
         setEmailIstAktiv(daten.istAktiv ?? false);
         setEmailGeladen(true);
       } catch {
-        // Keine Einstellungen vorhanden
         setEmailGeladen(true);
       }
     };
@@ -358,16 +375,19 @@ export default function EinstellungenPage() {
   const istAdmin = benutzer?.rolle === 'ADMIN' || benutzer?.rolle === 'SUPERADMIN';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-4xl">
+      {/* Kopfzeile */}
       <div className="flex items-center gap-3">
         <Settings className="h-8 w-8 text-primary" />
         <div>
           <h1 className="text-2xl font-bold">Einstellungen</h1>
-          <p className="text-muted-foreground">Vereinseinstellungen verwalten</p>
+          <p className="text-muted-foreground">
+            Hier koennen Sie alles rund um Ihren Verein anpassen.
+          </p>
         </div>
       </div>
 
-      {/* Navigation */}
+      {/* Schnellnavigation */}
       <div className="flex flex-wrap gap-2 border-b pb-4">
         <Badge variant="default" className="cursor-default">Verein</Badge>
         {istAdmin && (
@@ -426,595 +446,650 @@ export default function EinstellungenPage() {
             </Badge>
           </Link>
         )}
-        {istAdmin && (
-          <a href="#kalender-farben">
-            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-              <Calendar className="h-3 w-3 mr-1" />
-              Kalender-Farben
-            </Badge>
-          </a>
-        )}
-        <a href="#ki-einstellungen">
-          <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-            <Brain className="h-3 w-3 mr-1" />
-            KI
-          </Badge>
-        </a>
         <Link href="/einstellungen/sicherheit">
           <Badge variant="outline" className="cursor-pointer hover:bg-muted">
             <Lock className="h-3 w-3 mr-1" />
             Sicherheit
           </Badge>
         </Link>
-        {istAdminOderTrainer && (
-          <a href="#email-einstellungen">
-            <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-              <Mail className="h-3 w-3 mr-1" />
-              E-Mail
-            </Badge>
-          </a>
-        )}
       </div>
 
-      {/* Vereinsdaten */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Vereinsdaten</CardTitle>
-          <CardDescription>Name und Grundeinstellungen des Vereins</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Vereinsname</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={!istAdmin}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Slug (URL)</Label>
-              <Input value={tenant?.slug || ''} disabled />
-            </div>
-            <div className="space-y-2">
-              <Label>Tarif</Label>
-              <div className="h-10 flex items-center">
-                <Badge variant="secondary">
-                  {PLAN_LABEL[(tenant as unknown as Record<string, string>)?.plan] || 'Starter'}
-                </Badge>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Vereinslogo */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ImageIcon className="h-5 w-5" />
-            Vereinslogo
-          </CardTitle>
-          <CardDescription>
-            Logo hochladen (PNG, JPG, SVG oder WebP, max. 2 MB)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-6">
-            <Avatar className="h-24 w-24">
-              {tenant?.logo && (
-                <AvatarImage
-                  src={`${API_BASE_URL}${tenant.logo}`}
-                  alt={tenant.name}
-                />
-              )}
-              <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-                {tenant?.name
-                  ? tenant.name
-                      .split(' ')
-                      .map((w) => w[0])
-                      .join('')
-                      .slice(0, 2)
-                      .toUpperCase()
-                  : 'CO'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="space-y-2">
-              <input
-                ref={logoInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                className="hidden"
-                onChange={handleLogoUpload}
-                disabled={!istAdmin}
-              />
-              <Button
-                variant="outline"
-                onClick={() => logoInputRef.current?.click()}
-                disabled={!istAdmin || logoLadend}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                {logoLadend ? 'Wird hochgeladen...' : 'Logo hochladen'}
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                Empfohlen: Quadratisch, mind. 200x200 Pixel
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Vereinsfarbe */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5" />
-            Vereinsfarbe
-          </CardTitle>
-          <CardDescription>
-            Waehlen Sie die Primaerfarbe Ihres Vereins. Alle Buttons, Links und Akzente passen sich automatisch an.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-3">
-            {FARBEN.map((f) => (
-              <button
-                key={f.wert}
-                onClick={() => handleFarbeWaehlen(f.wert)}
-                className={`w-12 h-12 rounded-lg border-2 transition-all ${
-                  farbe === f.wert
-                    ? 'border-foreground scale-110 shadow-lg'
-                    : 'border-transparent hover:scale-105'
-                }`}
-                style={{ backgroundColor: f.wert }}
-                title={f.name}
-                disabled={!istAdmin}
-              />
-            ))}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Label>Eigene Farbe:</Label>
-            <Input
-              type="color"
-              value={farbe}
-              onChange={(e) => handleFarbeWaehlen(e.target.value)}
-              className="w-16 h-10 p-1 cursor-pointer"
-              disabled={!istAdmin}
-            />
-            <Input
-              value={farbe}
-              onChange={(e) => {
-                if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) {
-                  handleFarbeWaehlen(e.target.value);
-                }
-                setCustomFarbe(e.target.value);
-              }}
-              placeholder="#1a56db"
-              className="w-32"
-              disabled={!istAdmin}
-            />
-          </div>
-
-          <div className="rounded-lg border p-4 space-y-3">
-            <p className="text-sm font-medium">Vorschau:</p>
-            <div className="flex gap-3">
-              <Button>Primaer-Button</Button>
-              <Button variant="outline">Outline-Button</Button>
-              <Badge>Badge</Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Kalender-Farben */}
-      {istAdmin && (
-        <Card id="kalender-farben">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Kalender-Farben
-            </CardTitle>
-            <CardDescription>
-              Farben fuer die verschiedenen Event-Typen im Kalender anpassen
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {(Object.keys(EVENT_TYP_LABEL) as Array<keyof EventFarben>).map((typ) => (
-              <div key={typ} className="flex items-center gap-4">
-                <Input
-                  type="color"
-                  value={eventFarben[typ]}
-                  onChange={(e) => handleEventFarbeAendern(typ, e.target.value)}
-                  className="w-12 h-10 p-1 cursor-pointer shrink-0"
-                />
-                <div className="flex-1">
-                  <span className="text-sm font-medium">{EVENT_TYP_LABEL[typ]}</span>
-                </div>
-                <Badge
-                  className="text-white text-xs"
-                  style={{ backgroundColor: eventFarben[typ] }}
-                >
-                  {EVENT_TYP_LABEL[typ]}
-                </Badge>
-              </div>
-            ))}
-
-            <div className="flex items-center gap-3 pt-2">
-              <Button variant="outline" onClick={handleEventFarbenSpeichern}>
-                <Save className="h-4 w-4 mr-2" />
-                Farben speichern
-              </Button>
-              <Button variant="ghost" onClick={handleEventFarbenZuruecksetzen}>
-                Zuruecksetzen
-              </Button>
-              {eventFarbenGespeichert && (
-                <span className="text-sm text-green-600">Gespeichert!</span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Benutzerinfo */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Mein Konto</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>E-Mail</Label>
-              <Input value={benutzer?.email || ''} disabled />
-            </div>
-            <div className="space-y-2">
-              <Label>Rolle</Label>
-              <Input value={benutzer?.rolle || ''} disabled />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* KI-Einstellungen */}
-      {istAdmin && (
-        <Card id="ki-einstellungen">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Brain className="h-5 w-5" />
-              KI-Einstellungen
-            </CardTitle>
-            <CardDescription>
-              Waehlen Sie den KI-Anbieter fuer FAQ-Antworten und PDF-Erkennung.
-              Unterstuetzt werden Anthropic (Claude) und OpenAI (GPT).
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4" onClick={handleKiLaden}>
-            <div className="space-y-2">
-              <Label>KI-Anbieter</Label>
-              <Select
-                value={kiProvider}
-                onChange={(e) => {
-                  setKiProvider(e.target.value);
-                  if (e.target.value === 'anthropic' && !kiModell) {
-                    setKiModell('claude-sonnet-4-20250514');
-                  } else if (e.target.value === 'openai' && !kiModell) {
-                    setKiModell('gpt-4o');
-                  }
-                }}
-              >
-                <option value="anthropic">Anthropic (Claude)</option>
-                <option value="openai">OpenAI (GPT)</option>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>API-Key</Label>
-              <div className="flex gap-2">
-                <Input
-                  type={kiAnzeigen ? 'text' : 'password'}
-                  value={kiApiKey}
-                  onChange={(e) => setKiApiKey(e.target.value)}
-                  placeholder={
-                    kiProvider === 'openai'
-                      ? 'sk-...'
-                      : 'sk-ant-...'
-                  }
-                  className="flex-1"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setKiAnzeigen(!kiAnzeigen)}
-                >
-                  {kiAnzeigen ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Leer lassen um den globalen API-Key aus der Server-Konfiguration zu verwenden
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Modell</Label>
-              <Select
-                value={kiModell}
-                onChange={(e) => setKiModell(e.target.value)}
-              >
-                {kiProvider === 'anthropic' ? (
-                  <>
-                    <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
-                    <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (schneller, guenstiger)</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="gpt-4o">GPT-4o</option>
-                    <option value="gpt-4o-mini">GPT-4o Mini (schneller, guenstiger)</option>
-                    <option value="gpt-4.1">GPT-4.1</option>
-                  </>
-                )}
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={handleKiSpeichern}
-                disabled={kiLadend}
-              >
-                <Brain className="h-4 w-4 mr-2" />
-                {kiLadend ? 'Wird gespeichert...' : 'KI-Einstellungen speichern'}
-              </Button>
-              {kiErfolg && (
-                <span className="text-sm text-green-600">{kiErfolg}</span>
-              )}
-              {kiFehler && (
-                <span className="text-sm text-destructive">{kiFehler}</span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* E-Mail-Einstellungen */}
-      {istAdminOderTrainer && (
-        <Card id="email-einstellungen">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              E-Mail-Einstellungen
-            </CardTitle>
-            <CardDescription>
-              Konfigurieren Sie Ihren persoenlichen SMTP-Server fuer den E-Mail-Versand aus ClubOS.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Aktivierung */}
-            <div className="flex items-center gap-3">
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={emailIstAktiv}
-                  onChange={(e) => setEmailIstAktiv(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
-              </label>
-              <Label>Persoenlichen E-Mail-Versand aktivieren</Label>
-            </div>
-
-            {/* SMTP Host + Port */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="col-span-2 space-y-2">
-                <Label>SMTP-Host</Label>
-                <Input
-                  value={emailSmtpHost}
-                  onChange={(e) => setEmailSmtpHost(e.target.value)}
-                  placeholder="smtp.beispiel.de"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>SMTP-Port</Label>
-                <Input
-                  type="number"
-                  value={emailSmtpPort}
-                  onChange={(e) => setEmailSmtpPort(e.target.value)}
-                  placeholder="587"
-                />
-              </div>
-            </div>
-
-            {/* SMTP Zugangsdaten */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>SMTP-Benutzername</Label>
-                <Input
-                  value={emailSmtpUser}
-                  onChange={(e) => setEmailSmtpUser(e.target.value)}
-                  placeholder="benutzer@beispiel.de"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>SMTP-Passwort</Label>
-                <div className="flex gap-2">
+      {/* ================================================================ */}
+      {/* ABSCHNITT 1: Ihr Verein - Aussehen & Branding                    */}
+      {/* ================================================================ */}
+      <Abschnitt
+        titel="Ihr Verein"
+        beschreibung="Hier legen Sie fest, wie Ihr Verein in ClubOS aussieht - Name, Logo und Farbe."
+        kinder={
+          <>
+            {/* Vereinsname + Logo + Farbe in einer Karte */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Vereinsname & Logo</CardTitle>
+                <CardDescription>
+                  Der Name und das Logo erscheinen ueberall in ClubOS, z.B. im Menue, in E-Mails und auf der Vereinshomepage.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Name */}
+                <div className="space-y-2">
+                  <Label>Vereinsname</Label>
                   <Input
-                    type={emailSmtpPassAnzeigen ? 'text' : 'password'}
-                    value={emailSmtpPass}
-                    onChange={(e) => setEmailSmtpPass(e.target.value)}
-                    placeholder="Passwort"
-                    className="flex-1"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={!istAdmin}
+                    placeholder="z.B. TSV Musterstadt 1920 e.V."
                   />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setEmailSmtpPassAnzeigen(!emailSmtpPassAnzeigen)}
-                  >
-                    {emailSmtpPassAnzeigen ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
                 </div>
+
+                {/* Info-Zeile */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Vereins-URL</Label>
+                    <Input value={tenant?.slug || ''} disabled />
+                    <p className="text-xs text-muted-foreground">
+                      Wird automatisch aus dem Namen erstellt und kann nicht geaendert werden.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Aktueller Tarif</Label>
+                    <div className="h-10 flex items-center">
+                      <Badge variant="secondary">
+                        {PLAN_LABEL[(tenant as unknown as Record<string, string>)?.plan] || 'Starter'}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Logo */}
+                <div className="border-t pt-4">
+                  <Label className="mb-3 block">Vereinslogo</Label>
+                  <div className="flex items-center gap-6">
+                    <Avatar className="h-20 w-20">
+                      {tenant?.logo && (
+                        <AvatarImage
+                          src={`${API_BASE_URL}${tenant.logo}`}
+                          alt={tenant.name}
+                        />
+                      )}
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xl">
+                        {tenant?.name
+                          ? tenant.name
+                              .split(' ')
+                              .map((w) => w[0])
+                              .join('')
+                              .slice(0, 2)
+                              .toUpperCase()
+                          : 'CO'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="space-y-2">
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                        className="hidden"
+                        onChange={handleLogoUpload}
+                        disabled={!istAdmin}
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => logoInputRef.current?.click()}
+                        disabled={!istAdmin || logoLadend}
+                        size="sm"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {logoLadend ? 'Wird hochgeladen...' : 'Logo hochladen'}
+                      </Button>
+                      <p className="text-xs text-muted-foreground">
+                        PNG, JPG, SVG oder WebP. Empfohlen: quadratisch, mind. 200x200 Pixel.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Vereinsfarbe */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-5 w-5" />
+                  Vereinsfarbe
+                </CardTitle>
+                <CardDescription>
+                  Waehlen Sie die Farbe Ihres Vereins. Alle Buttons, Links und Hervorhebungen in ClubOS passen sich automatisch an.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap gap-3">
+                  {FARBEN.map((f) => (
+                    <button
+                      key={f.wert}
+                      onClick={() => handleFarbeWaehlen(f.wert)}
+                      className={`w-12 h-12 rounded-lg border-2 transition-all ${
+                        farbe === f.wert
+                          ? 'border-foreground scale-110 shadow-lg'
+                          : 'border-transparent hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: f.wert }}
+                      title={f.name}
+                      disabled={!istAdmin}
+                    />
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Label>Eigene Farbe:</Label>
+                  <Input
+                    type="color"
+                    value={farbe}
+                    onChange={(e) => handleFarbeWaehlen(e.target.value)}
+                    className="w-16 h-10 p-1 cursor-pointer"
+                    disabled={!istAdmin}
+                  />
+                  <Input
+                    value={farbe}
+                    onChange={(e) => {
+                      if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) {
+                        handleFarbeWaehlen(e.target.value);
+                      }
+                      setCustomFarbe(e.target.value);
+                    }}
+                    placeholder="#1a56db"
+                    className="w-32"
+                    disabled={!istAdmin}
+                  />
+                </div>
+
+                <div className="rounded-lg border p-4 space-y-3">
+                  <p className="text-sm font-medium">Vorschau:</p>
+                  <div className="flex gap-3">
+                    <Button>Primaer-Button</Button>
+                    <Button variant="outline">Outline-Button</Button>
+                    <Badge>Badge</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Speichern fuer Verein */}
+            {istAdmin && (
+              <div className="flex items-center gap-3">
+                <Button onClick={handleSpeichern} disabled={ladend}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {ladend ? 'Speichern...' : 'Vereinsdaten speichern'}
+                </Button>
+                {gespeichert && (
+                  <span className="text-sm text-green-600">Gespeichert!</span>
+                )}
+                {fehler && (
+                  <span className="text-sm text-destructive">{fehler}</span>
+                )}
               </div>
-            </div>
-
-            {/* Absender */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Absender-E-Mail</Label>
-                <Input
-                  type="email"
-                  value={emailAbsenderEmail}
-                  onChange={(e) => setEmailAbsenderEmail(e.target.value)}
-                  placeholder="info@meinverein.de"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Absender-Name</Label>
-                <Input
-                  value={emailAbsenderName}
-                  onChange={(e) => setEmailAbsenderName(e.target.value)}
-                  placeholder="FC Mein Verein"
-                />
-              </div>
-            </div>
-
-            {/* Signatur */}
-            <div className="space-y-2">
-              <Label>E-Mail-Signatur (HTML)</Label>
-              <Textarea
-                value={emailSignatur}
-                onChange={(e) => setEmailSignatur(e.target.value)}
-                placeholder="<p>Mit sportlichen Gruessen<br/>Ihr Vereinsname</p>"
-                rows={4}
-              />
-              <p className="text-xs text-muted-foreground">
-                HTML-Formatierung wird unterstuetzt. Die Signatur wird automatisch an jede E-Mail angehaengt.
-              </p>
-            </div>
-
-            {/* Aktionen */}
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
-                onClick={handleEmailSpeichern}
-                disabled={emailLadend}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {emailLadend ? 'Wird gespeichert...' : 'Speichern'}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleEmailTesten}
-                disabled={emailTestLadend || !emailSmtpHost}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                {emailTestLadend ? 'Wird gesendet...' : 'Test-E-Mail senden'}
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleEmailLoeschen}
-                disabled={emailLoeschend}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                {emailLoeschend ? 'Wird geloescht...' : 'Einstellungen loeschen'}
-              </Button>
-            </div>
-
-            {emailErfolg && (
-              <p className="text-sm text-green-600">{emailErfolg}</p>
             )}
-            {emailFehler && (
-              <p className="text-sm text-destructive">{emailFehler}</p>
-            )}
-          </CardContent>
-        </Card>
+          </>
+        }
+      />
+
+      {/* ================================================================ */}
+      {/* ABSCHNITT 2: Kalender & Veranstaltungen                          */}
+      {/* ================================================================ */}
+      {istAdmin && (
+        <Abschnitt
+          titel="Kalender & Veranstaltungen"
+          beschreibung="Legen Sie fest, wo Veranstaltungen stattfinden und welche Typen es gibt. Diese Einstellungen erscheinen beim Erstellen von Veranstaltungen im Kalender."
+          kinder={
+            <>
+              <SportstaettenCard />
+              <VeranstaltungstypenCard />
+
+              {/* Kalender-Farben */}
+              <Card id="kalender-farben">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Palette className="h-5 w-5" />
+                    Kalender-Farben
+                  </CardTitle>
+                  <CardDescription>
+                    Bestimmen Sie, in welcher Farbe die verschiedenen Veranstaltungsarten im Kalender angezeigt werden.
+                    So erkennen Sie auf einen Blick, ob es sich um ein Training, ein Spiel oder eine andere Veranstaltung handelt.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {(Object.keys(EVENT_TYP_LABEL) as Array<keyof EventFarben>).map((typ) => (
+                    <div key={typ} className="flex items-center gap-4">
+                      <Input
+                        type="color"
+                        value={eventFarben[typ]}
+                        onChange={(e) => handleEventFarbeAendern(typ, e.target.value)}
+                        className="w-12 h-10 p-1 cursor-pointer shrink-0"
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm font-medium">{EVENT_TYP_LABEL[typ]}</span>
+                      </div>
+                      <Badge
+                        className="text-white text-xs"
+                        style={{ backgroundColor: eventFarben[typ] }}
+                      >
+                        {EVENT_TYP_LABEL[typ]}
+                      </Badge>
+                    </div>
+                  ))}
+
+                  <div className="flex items-center gap-3 pt-2">
+                    <Button variant="outline" onClick={handleEventFarbenSpeichern}>
+                      <Save className="h-4 w-4 mr-2" />
+                      Farben speichern
+                    </Button>
+                    <Button variant="ghost" onClick={handleEventFarbenZuruecksetzen}>
+                      Zuruecksetzen
+                    </Button>
+                    {eventFarbenGespeichert && (
+                      <span className="text-sm text-green-600">Gespeichert!</span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          }
+        />
       )}
 
-      {/* Sportstaetten / Hallen / Plaetze */}
-      {istAdmin && <SportstaettenCard />}
-
-      {/* Altersklassen */}
-      {istAdmin && <AltersklassenCard />}
-
-      {/* Veranstaltungstypen */}
-      {istAdmin && <VeranstaltungstypenCard />}
-
-      {/* Passwort aendern */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lock className="h-5 w-5" />
-            Passwort aendern
-          </CardTitle>
-          <CardDescription>
-            Aendern Sie Ihr persoenliches Passwort. Das neue Passwort muss mindestens 8 Zeichen lang sein.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Aktuelles Passwort</Label>
-            <Input
-              type="password"
-              value={altesPasswort}
-              onChange={(e) => setAltesPasswort(e.target.value)}
-              placeholder="Aktuelles Passwort eingeben"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Neues Passwort</Label>
-            <Input
-              type="password"
-              value={neuesPasswort}
-              onChange={(e) => setNeuesPasswort(e.target.value)}
-              placeholder="Neues Passwort eingeben (min. 8 Zeichen)"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Neues Passwort bestaetigen</Label>
-            <Input
-              type="password"
-              value={passwortBestaetigung}
-              onChange={(e) => setPasswortBestaetigung(e.target.value)}
-              placeholder="Neues Passwort wiederholen"
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={handlePasswortAendern}
-              disabled={pwLadend || !altesPasswort || !neuesPasswort || !passwortBestaetigung}
-              variant="outline"
-            >
-              <Lock className="h-4 w-4 mr-2" />
-              {pwLadend ? 'Wird geaendert...' : 'Passwort aendern'}
-            </Button>
-            {pwErfolg && (
-              <span className="text-sm text-green-600">{pwErfolg}</span>
-            )}
-            {pwFehler && (
-              <span className="text-sm text-destructive">{pwFehler}</span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Speichern */}
+      {/* ================================================================ */}
+      {/* ABSCHNITT 3: Teams & Mannschaften                                */}
+      {/* ================================================================ */}
       {istAdmin && (
-        <div className="flex items-center gap-3">
-          <Button onClick={handleSpeichern} disabled={ladend}>
-            <Save className="h-4 w-4 mr-2" />
-            {ladend ? 'Speichern...' : 'Einstellungen speichern'}
-          </Button>
-          {gespeichert && (
-            <span className="text-sm text-green-600">Gespeichert!</span>
-          )}
-          {fehler && (
-            <span className="text-sm text-destructive">{fehler}</span>
-          )}
-        </div>
+        <Abschnitt
+          titel="Teams & Mannschaften"
+          beschreibung="Einstellungen fuer die Mannschaftsverwaltung."
+          kinder={<AltersklassenCard />}
+        />
+      )}
+
+      {/* ================================================================ */}
+      {/* ABSCHNITT 4: Mein Konto                                          */}
+      {/* ================================================================ */}
+      <Abschnitt
+        titel="Mein Konto"
+        beschreibung="Ihre persoenlichen Kontodaten und Sicherheitseinstellungen."
+        kinder={
+          <>
+            {/* Kontoinformationen */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Kontoinformationen</CardTitle>
+                <CardDescription>
+                  Ihre Anmeldedaten und Rolle im Verein.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>E-Mail-Adresse</Label>
+                    <Input value={benutzer?.email || ''} disabled />
+                    <p className="text-xs text-muted-foreground">
+                      Mit dieser Adresse melden Sie sich an.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Ihre Rolle</Label>
+                    <Input value={benutzer?.rolle || ''} disabled />
+                    <p className="text-xs text-muted-foreground">
+                      Die Rolle bestimmt, was Sie in ClubOS sehen und tun koennen.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Passwort aendern */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="h-5 w-5" />
+                  Passwort aendern
+                </CardTitle>
+                <CardDescription>
+                  Aendern Sie Ihr Passwort regelmaessig, um Ihr Konto zu schuetzen.
+                  Das neue Passwort muss mindestens 8 Zeichen lang sein.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Aktuelles Passwort</Label>
+                  <Input
+                    type="password"
+                    value={altesPasswort}
+                    onChange={(e) => setAltesPasswort(e.target.value)}
+                    placeholder="Ihr aktuelles Passwort"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Neues Passwort</Label>
+                  <Input
+                    type="password"
+                    value={neuesPasswort}
+                    onChange={(e) => setNeuesPasswort(e.target.value)}
+                    placeholder="Mindestens 8 Zeichen"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Neues Passwort wiederholen</Label>
+                  <Input
+                    type="password"
+                    value={passwortBestaetigung}
+                    onChange={(e) => setPasswortBestaetigung(e.target.value)}
+                    placeholder="Neues Passwort nochmal eingeben"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button
+                    onClick={handlePasswortAendern}
+                    disabled={pwLadend || !altesPasswort || !neuesPasswort || !passwortBestaetigung}
+                    variant="outline"
+                  >
+                    <Lock className="h-4 w-4 mr-2" />
+                    {pwLadend ? 'Wird geaendert...' : 'Passwort aendern'}
+                  </Button>
+                  {pwErfolg && (
+                    <span className="text-sm text-green-600">{pwErfolg}</span>
+                  )}
+                  {pwFehler && (
+                    <span className="text-sm text-destructive">{pwFehler}</span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        }
+      />
+
+      {/* ================================================================ */}
+      {/* ABSCHNITT 5: Erweiterte Einstellungen (Admin/Trainer)            */}
+      {/* ================================================================ */}
+      {(istAdmin || istAdminOderTrainer) && (
+        <Abschnitt
+          titel="Erweiterte Einstellungen"
+          beschreibung="Technische Einstellungen fuer KI-Funktionen und E-Mail-Versand. Diese Bereiche sind nur fuer Administratoren und Trainer sichtbar."
+          kinder={
+            <>
+              {/* KI-Einstellungen */}
+              {istAdmin && (
+                <Card id="ki-einstellungen">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain className="h-5 w-5" />
+                      KI-Einstellungen
+                    </CardTitle>
+                    <CardDescription>
+                      ClubOS nutzt kuenstliche Intelligenz fuer automatische Antworten auf Elternfragen,
+                      das Erkennen von Formularfeldern und die Erstellung von Trainingsplaenen.
+                      Hier koennen Sie den KI-Anbieter und den API-Schluessel konfigurieren.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4" onClick={handleKiLaden}>
+                    <div className="space-y-2">
+                      <Label>KI-Anbieter</Label>
+                      <Select
+                        value={kiProvider}
+                        onChange={(e) => {
+                          setKiProvider(e.target.value);
+                          if (e.target.value === 'anthropic' && !kiModell) {
+                            setKiModell('claude-sonnet-4-20250514');
+                          } else if (e.target.value === 'openai' && !kiModell) {
+                            setKiModell('gpt-4o');
+                          }
+                        }}
+                      >
+                        <option value="anthropic">Anthropic (Claude)</option>
+                        <option value="openai">OpenAI (GPT)</option>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Beide Anbieter liefern sehr gute Ergebnisse. Anthropic (Claude) ist die Standardeinstellung.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>API-Schluessel</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type={kiAnzeigen ? 'text' : 'password'}
+                          value={kiApiKey}
+                          onChange={(e) => setKiApiKey(e.target.value)}
+                          placeholder={
+                            kiProvider === 'openai'
+                              ? 'sk-...'
+                              : 'sk-ant-...'
+                          }
+                          className="flex-1"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setKiAnzeigen(!kiAnzeigen)}
+                          title={kiAnzeigen ? 'Verstecken' : 'Anzeigen'}
+                        >
+                          {kiAnzeigen ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Leer lassen, um den voreingestellten Schluessel des Servers zu verwenden.
+                        Nur noetig, wenn Sie einen eigenen API-Zugang haben.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Modell</Label>
+                      <Select
+                        value={kiModell}
+                        onChange={(e) => setKiModell(e.target.value)}
+                      >
+                        {kiProvider === 'anthropic' ? (
+                          <>
+                            <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (empfohlen)</option>
+                            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (schneller, guenstiger)</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="gpt-4o">GPT-4o (empfohlen)</option>
+                            <option value="gpt-4o-mini">GPT-4o Mini (schneller, guenstiger)</option>
+                            <option value="gpt-4.1">GPT-4.1</option>
+                          </>
+                        )}
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={handleKiSpeichern}
+                        disabled={kiLadend}
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        {kiLadend ? 'Wird gespeichert...' : 'KI-Einstellungen speichern'}
+                      </Button>
+                      {kiErfolg && (
+                        <span className="text-sm text-green-600">{kiErfolg}</span>
+                      )}
+                      {kiFehler && (
+                        <span className="text-sm text-destructive">{kiFehler}</span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* E-Mail-Einstellungen */}
+              {istAdminOderTrainer && (
+                <Card id="email-einstellungen">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Mail className="h-5 w-5" />
+                      E-Mail-Versand
+                    </CardTitle>
+                    <CardDescription>
+                      Konfigurieren Sie hier Ihren eigenen E-Mail-Server (SMTP), damit E-Mails
+                      von Ihrer persoenlichen Adresse versendet werden. Ohne diese Einstellung
+                      werden E-Mails ueber den ClubOS-Server verschickt.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Aktivierung */}
+                    <div className="flex items-center gap-3">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={emailIstAktiv}
+                          onChange={(e) => setEmailIstAktiv(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
+                      </label>
+                      <Label>Eigenen E-Mail-Server verwenden</Label>
+                    </div>
+
+                    {/* SMTP Host + Port */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="col-span-2 space-y-2">
+                        <Label>SMTP-Server</Label>
+                        <Input
+                          value={emailSmtpHost}
+                          onChange={(e) => setEmailSmtpHost(e.target.value)}
+                          placeholder="z.B. smtp.ionos.de oder smtp.gmail.com"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Port</Label>
+                        <Input
+                          type="number"
+                          value={emailSmtpPort}
+                          onChange={(e) => setEmailSmtpPort(e.target.value)}
+                          placeholder="587"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Standard: 587
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* SMTP Zugangsdaten */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Benutzername</Label>
+                        <Input
+                          value={emailSmtpUser}
+                          onChange={(e) => setEmailSmtpUser(e.target.value)}
+                          placeholder="z.B. info@meinverein.de"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Passwort</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type={emailSmtpPassAnzeigen ? 'text' : 'password'}
+                            value={emailSmtpPass}
+                            onChange={(e) => setEmailSmtpPass(e.target.value)}
+                            placeholder="SMTP-Passwort"
+                            className="flex-1"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setEmailSmtpPassAnzeigen(!emailSmtpPassAnzeigen)}
+                            title={emailSmtpPassAnzeigen ? 'Verstecken' : 'Anzeigen'}
+                          >
+                            {emailSmtpPassAnzeigen ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Absender */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Absender E-Mail</Label>
+                        <Input
+                          type="email"
+                          value={emailAbsenderEmail}
+                          onChange={(e) => setEmailAbsenderEmail(e.target.value)}
+                          placeholder="info@meinverein.de"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Diese Adresse sehen die Empfaenger.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Absender Name</Label>
+                        <Input
+                          value={emailAbsenderName}
+                          onChange={(e) => setEmailAbsenderName(e.target.value)}
+                          placeholder="z.B. TSV Musterstadt"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Signatur */}
+                    <div className="space-y-2">
+                      <Label>E-Mail-Signatur</Label>
+                      <Textarea
+                        value={emailSignatur}
+                        onChange={(e) => setEmailSignatur(e.target.value)}
+                        placeholder="Mit sportlichen Gruessen&#10;Ihr Vereinsname"
+                        rows={3}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Wird automatisch unter jede E-Mail gesetzt. HTML-Formatierung moeglich.
+                      </p>
+                    </div>
+
+                    {/* Aktionen */}
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Button
+                        onClick={handleEmailSpeichern}
+                        disabled={emailLadend}
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        {emailLadend ? 'Wird gespeichert...' : 'Speichern'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleEmailTesten}
+                        disabled={emailTestLadend || !emailSmtpHost}
+                      >
+                        <Send className="h-4 w-4 mr-2" />
+                        {emailTestLadend ? 'Wird gesendet...' : 'Test-E-Mail senden'}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={handleEmailLoeschen}
+                        disabled={emailLoeschend}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {emailLoeschend ? 'Wird geloescht...' : 'Einstellungen loeschen'}
+                      </Button>
+                    </div>
+
+                    {emailErfolg && (
+                      <p className="text-sm text-green-600">{emailErfolg}</p>
+                    )}
+                    {emailFehler && (
+                      <p className="text-sm text-destructive">{emailFehler}</p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          }
+        />
       )}
     </div>
   );
@@ -1027,8 +1102,13 @@ interface Sportstaette {
   name: string;
   adresse: string | null;
   kapazitaet: number | null;
-  untergruende?: string[];
+  untergruende: string[];
 }
+
+const UNTERGRUND_OPTIONEN = [
+  'Halle', 'Rasen', 'Kunstrasen', 'Asche', 'Hartplatz',
+  'Tartanbahn', 'Schwimmbad', 'Sonstiges',
+];
 
 function SportstaettenCard() {
   const [sportstaetten, setSportstaetten] = useState<Sportstaette[]>([]);
@@ -1039,17 +1119,12 @@ function SportstaettenCard() {
   const [formAdresse, setFormAdresse] = useState('');
   const [formKapazitaet, setFormKapazitaet] = useState('');
   const [formUntergruende, setFormUntergruende] = useState<string[]>([]);
-  const [speichern, setSpeichern] = useState(false);
-
-  const UNTERGRUND_OPTIONEN = [
-    'Halle', 'Rasen', 'Kunstrasen', 'Asche', 'Hartplatz',
-    'Tartanbahn', 'Schwimmbad', 'Sonstiges',
-  ];
+  const [speichernd, setSpeichernd] = useState(false);
 
   const laden = async () => {
     try {
       const daten = await apiClient.get<Sportstaette[]>('/hallen');
-      setSportstaetten(daten);
+      setSportstaetten(daten.map((s) => ({ ...s, untergruende: s.untergruende ?? [] })));
     } catch {
       console.error('Fehler beim Laden der Sportstaetten');
     } finally {
@@ -1075,13 +1150,20 @@ function SportstaettenCard() {
     setFormName(s.name);
     setFormAdresse(s.adresse || '');
     setFormKapazitaet(s.kapazitaet ? String(s.kapazitaet) : '');
-    setFormUntergruende(s.untergruende || []);
+    setFormUntergruende(Array.isArray(s.untergruende) ? [...s.untergruende] : []);
     setFormOffen(true);
+  };
+
+  const handleUntergrundToggle = (ug: string) => {
+    const wert = ug.toUpperCase();
+    setFormUntergruende((prev) =>
+      prev.includes(wert) ? prev.filter((u) => u !== wert) : [...prev, wert],
+    );
   };
 
   const handleSpeichern = async () => {
     if (!formName) return;
-    setSpeichern(true);
+    setSpeichernd(true);
     try {
       const daten = {
         name: formName,
@@ -1099,12 +1181,12 @@ function SportstaettenCard() {
     } catch (error) {
       console.error('Fehler:', error);
     } finally {
-      setSpeichern(false);
+      setSpeichernd(false);
     }
   };
 
   const handleLoeschen = async (id: string) => {
-    if (!confirm('Sportstaette wirklich loeschen?')) return;
+    if (!confirm('Sportstaette wirklich loeschen? Bestehende Veranstaltungen bleiben erhalten.')) return;
     try {
       await apiClient.delete(`/hallen/${id}`);
       laden();
@@ -1117,12 +1199,13 @@ function SportstaettenCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Building2 className="h-5 w-5" />
+          <MapPin className="h-5 w-5" />
           Sportstaetten & Hallen
         </CardTitle>
         <CardDescription>
-          Hinterlegen Sie die Hallen und Sportplaetze Ihres Vereins einmalig.
-          Diese koennen dann bei jeder Veranstaltung direkt ausgewaehlt werden.
+          Hinterlegen Sie hier die Hallen und Sportplaetze, in denen Ihr Verein trainiert und spielt.
+          Wenn Sie spaeter eine Veranstaltung erstellen, koennen Sie die Sportstaette einfach
+          aus einer Liste auswaehlen - Adresse und Untergrund werden automatisch eingetragen.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1131,58 +1214,72 @@ function SportstaettenCard() {
         ) : (
           <>
             {sportstaetten.length === 0 && !formOffen && (
-              <p className="text-sm text-muted-foreground">
-                Noch keine Sportstaetten hinterlegt.
-              </p>
+              <div className="rounded-lg border border-dashed p-6 text-center">
+                <MapPin className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground mb-3">
+                  Noch keine Sportstaetten hinterlegt.
+                </p>
+                <Button variant="outline" onClick={handleNeu} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Erste Sportstaette hinzufuegen
+                </Button>
+              </div>
             )}
 
             {/* Liste */}
-            <div className="space-y-2">
-              {sportstaetten.map((s) => (
-                <div
-                  key={s.id}
-                  className="flex items-center justify-between rounded-lg border p-3"
-                >
-                  <div>
-                    <p className="font-medium text-sm">{s.name}</p>
-                    {s.adresse && (
-                      <p className="text-xs text-muted-foreground">{s.adresse}</p>
-                    )}
-                    {s.kapazitaet && (
-                      <p className="text-xs text-muted-foreground">
-                        Kapazität: {s.kapazitaet} Personen
-                      </p>
-                    )}
-                    {s.untergruende && s.untergruende.length > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        Untergründe: {s.untergruende.join(', ')}
-                      </p>
-                    )}
+            {sportstaetten.length > 0 && (
+              <div className="space-y-2">
+                {sportstaetten.map((s) => (
+                  <div
+                    key={s.id}
+                    className="flex items-center justify-between rounded-lg border p-3"
+                  >
+                    <div>
+                      <p className="font-medium text-sm">{s.name}</p>
+                      {s.adresse && (
+                        <p className="text-xs text-muted-foreground">{s.adresse}</p>
+                      )}
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {s.kapazitaet && s.kapazitaet > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            {s.kapazitaet} Personen
+                          </Badge>
+                        )}
+                        {s.untergruende && s.untergruende.length > 0 && s.untergruende.map((ug) => (
+                          <Badge key={ug} variant="secondary" className="text-xs">
+                            {UNTERGRUND_OPTIONEN.find((o) => o.toUpperCase() === ug) || ug}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleBearbeiten(s)}
+                      >
+                        Bearbeiten
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive"
+                        onClick={() => handleLoeschen(s.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleBearbeiten(s)}
-                    >
-                      Bearbeiten
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive"
-                      onClick={() => handleLoeschen(s.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Formular */}
             {formOffen && (
               <div className="space-y-3 rounded-lg border p-4 bg-muted/30">
+                <p className="text-sm font-medium">
+                  {bearbeitenId ? 'Sportstaette bearbeiten' : 'Neue Sportstaette'}
+                </p>
                 <div className="space-y-2">
                   <Label>Name *</Label>
                   <Input
@@ -1190,6 +1287,9 @@ function SportstaettenCard() {
                     onChange={(e) => setFormName(e.target.value)}
                     placeholder="z.B. Ankenhalle, Sportplatz am Bach"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Der Name, unter dem die Sportstaette in der Auswahl erscheint.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label>Adresse</Label>
@@ -1198,50 +1298,50 @@ function SportstaettenCard() {
                     onChange={setFormAdresse}
                     placeholder="Adresse suchen (z.B. Jahnhalle, Kuchen)"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Tippen Sie die Adresse ein - Vorschlaege erscheinen automatisch.
+                  </p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Kapazitaet (Personen)</Label>
+                  <Label>Kapazitaet (optional)</Label>
                   <Input
                     type="number"
                     value={formKapazitaet}
                     onChange={(e) => setFormKapazitaet(e.target.value)}
                     placeholder="z.B. 200"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Wie viele Personen passen in die Halle oder auf den Platz?
+                  </p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Untergründe (mehrere möglich)</Label>
+                  <Label>Untergruende</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Waehlen Sie alle Bodenarten aus, die an dieser Sportstaette verfuegbar sind.
+                    Bei Veranstaltungen wird der Untergrund dann automatisch vorgeschlagen.
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {UNTERGRUND_OPTIONEN.map((ug) => (
-                      <label
+                      <button
                         key={ug}
-                        className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm cursor-pointer transition-colors ${
+                        type="button"
+                        onClick={() => handleUntergrundToggle(ug)}
+                        className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
                           formUntergruende.includes(ug.toUpperCase())
                             ? 'bg-primary text-primary-foreground border-primary'
-                            : 'hover:bg-accent'
+                            : 'bg-background hover:bg-accent border-border'
                         }`}
                       >
-                        <input
-                          type="checkbox"
-                          checked={formUntergruende.includes(ug.toUpperCase())}
-                          onChange={(e) => {
-                            const wert = ug.toUpperCase();
-                            if (e.target.checked) {
-                              setFormUntergruende([...formUntergruende, wert]);
-                            } else {
-                              setFormUntergruende(formUntergruende.filter((u) => u !== wert));
-                            }
-                          }}
-                          className="sr-only"
-                        />
                         {ug}
-                      </label>
+                      </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <Button onClick={handleSpeichern} disabled={!formName || speichern} size="sm">
-                    {speichern ? 'Speichern...' : bearbeitenId ? 'Aktualisieren' : 'Hinzufügen'}
+                <div className="flex gap-2 pt-2">
+                  <Button onClick={handleSpeichern} disabled={!formName || speichernd} size="sm">
+                    <Save className="h-4 w-4 mr-2" />
+                    {speichernd ? 'Speichern...' : bearbeitenId ? 'Aktualisieren' : 'Hinzufuegen'}
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => setFormOffen(false)}>
                     Abbrechen
@@ -1250,10 +1350,10 @@ function SportstaettenCard() {
               </div>
             )}
 
-            {!formOffen && (
+            {sportstaetten.length > 0 && !formOffen && (
               <Button variant="outline" onClick={handleNeu}>
-                <Building2 className="h-4 w-4 mr-2" />
-                Neue Sportstaette hinzufuegen
+                <Plus className="h-4 w-4 mr-2" />
+                Weitere Sportstaette hinzufuegen
               </Button>
             )}
           </>
@@ -1288,14 +1388,6 @@ function AltersklassenCard() {
     setAltersklassen(altersklassen.filter((_, i) => i !== index));
   };
 
-  const handleVerschieben = (index: number, richtung: number) => {
-    const neu = [...altersklassen];
-    const ziel = index + richtung;
-    if (ziel < 0 || ziel >= neu.length) return;
-    [neu[index], neu[ziel]] = [neu[ziel], neu[index]];
-    setAltersklassen(neu);
-  };
-
   const handleSpeichern = async () => {
     try {
       await altersklassenSpeichern(altersklassen);
@@ -1318,7 +1410,9 @@ function AltersklassenCard() {
           Altersklassen
         </CardTitle>
         <CardDescription>
-          Konfigurieren Sie die Altersklassen die bei der Team-Erstellung zur Auswahl stehen.
+          Legen Sie fest, welche Altersklassen bei der Team-Erstellung zur Auswahl stehen.
+          Die Standard-Einteilung (Bambini bis AH) ist voreingestellt.
+          Sie koennen eigene Klassen hinzufuegen (z.B. Damen, Herren 2, U21).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1330,15 +1424,15 @@ function AltersklassenCard() {
               {altersklassen.map((klasse, index) => (
                 <div
                   key={`${klasse}-${index}`}
-                  className="flex items-center gap-1 rounded-md border bg-muted/30 px-2 py-1"
+                  className="flex items-center gap-1 rounded-full border bg-muted/30 px-3 py-1"
                 >
-                  <span className="text-sm font-medium">{klasse}</span>
+                  <span className="text-sm">{klasse}</span>
                   <button
                     onClick={() => handleEntfernen(index)}
                     className="text-xs text-destructive hover:text-destructive/80 ml-1"
                     title="Entfernen"
                   >
-                    ✕
+                    x
                   </button>
                 </div>
               ))}
@@ -1408,24 +1502,7 @@ function VeranstaltungstypenCard() {
   const aktiveWerte = new Set(typen.map((t) => t.wert));
   const eigeneTypen = typen.filter((t) => !vordefinierteWerte.has(t.wert));
 
-  const handleVordefinierteToggle = async (typ: VeranstaltungsTyp) => {
-    let neueTypen: VeranstaltungsTyp[];
-    if (aktiveWerte.has(typ.wert)) {
-      // Deaktivieren
-      neueTypen = typen.filter((t) => t.wert !== typ.wert);
-    } else {
-      // Aktivieren - an der richtigen Position einfuegen
-      const vordefinierteReihenfolge = VORDEFINIERTE_VERANSTALTUNGSTYPEN.map((v) => v.wert);
-      neueTypen = [...typen, typ].sort((a, b) => {
-        const idxA = vordefinierteReihenfolge.indexOf(a.wert);
-        const idxB = vordefinierteReihenfolge.indexOf(b.wert);
-        if (idxA === -1 && idxB === -1) return 0;
-        if (idxA === -1) return 1;
-        if (idxB === -1) return 1;
-        return idxA - idxB;
-      });
-    }
-    setTypen(neueTypen);
+  const speichernUndMelden = async (neueTypen: VeranstaltungsTyp[]) => {
     try {
       await veranstaltungstypenSpeichern(neueTypen);
       setGespeichert(true);
@@ -1433,6 +1510,25 @@ function VeranstaltungstypenCard() {
     } catch (error) {
       console.error('Fehler:', error);
     }
+  };
+
+  const handleVordefinierteToggle = async (typ: VeranstaltungsTyp) => {
+    let neueTypen: VeranstaltungsTyp[];
+    if (aktiveWerte.has(typ.wert)) {
+      neueTypen = typen.filter((t) => t.wert !== typ.wert);
+    } else {
+      const reihenfolge = VORDEFINIERTE_VERANSTALTUNGSTYPEN.map((v) => v.wert);
+      neueTypen = [...typen, typ].sort((a, b) => {
+        const idxA = reihenfolge.indexOf(a.wert);
+        const idxB = reihenfolge.indexOf(b.wert);
+        if (idxA === -1 && idxB === -1) return 0;
+        if (idxA === -1) return 1;
+        if (idxB === -1) return -1;
+        return idxA - idxB;
+      });
+    }
+    setTypen(neueTypen);
+    await speichernUndMelden(neueTypen);
   };
 
   const handleHinzufuegen = async () => {
@@ -1442,25 +1538,13 @@ function VeranstaltungstypenCard() {
     const neueTypen = [...typen, { wert, label: neuesLabel.trim() }];
     setTypen(neueTypen);
     setNeuesLabel('');
-    try {
-      await veranstaltungstypenSpeichern(neueTypen);
-      setGespeichert(true);
-      setTimeout(() => setGespeichert(false), 3000);
-    } catch (error) {
-      console.error('Fehler:', error);
-    }
+    await speichernUndMelden(neueTypen);
   };
 
   const handleEntfernen = async (wert: string) => {
     const neueTypen = typen.filter((t) => t.wert !== wert);
     setTypen(neueTypen);
-    try {
-      await veranstaltungstypenSpeichern(neueTypen);
-      setGespeichert(true);
-      setTimeout(() => setGespeichert(false), 3000);
-    } catch (error) {
-      console.error('Fehler:', error);
-    }
+    await speichernUndMelden(neueTypen);
   };
 
   const handleLabelSpeichern = async () => {
@@ -1470,13 +1554,7 @@ function VeranstaltungstypenCard() {
     );
     setTypen(neueTypen);
     setBearbeitenWert(null);
-    try {
-      await veranstaltungstypenSpeichern(neueTypen);
-      setGespeichert(true);
-      setTimeout(() => setGespeichert(false), 3000);
-    } catch (error) {
-      console.error('Fehler:', error);
-    }
+    await speichernUndMelden(neueTypen);
   };
 
   return (
@@ -1487,13 +1565,9 @@ function VeranstaltungstypenCard() {
           Veranstaltungstypen
         </CardTitle>
         <CardDescription>
-          Aktivieren/deaktivieren Sie Veranstaltungstypen fuer Ihren Verein.
-          Nur aktive Typen erscheinen im Event-Formular.
-          {typen.length > 0 && (
-            <span className="block mt-1 font-medium text-foreground">
-              {typen.length} aktiv
-            </span>
-          )}
+          Bestimmen Sie, welche Arten von Veranstaltungen in Ihrem Verein moeglich sind.
+          Klicken Sie auf einen Typ, um ihn zu aktivieren oder zu deaktivieren.
+          Nur aktive Typen erscheinen beim Erstellen einer neuen Veranstaltung.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -1503,11 +1577,15 @@ function VeranstaltungstypenCard() {
           <>
             {/* Vordefinierte Typen - Toggle */}
             <div>
-              <Label className="text-sm font-medium mb-3 block">Standard-Typen</Label>
+              <Label className="text-sm font-medium mb-2 block">Standard-Typen</Label>
+              <p className="text-xs text-muted-foreground mb-3">
+                Klicken Sie auf einen Typ, um ihn fuer Ihren Verein ein- oder auszuschalten.
+              </p>
               <div className="flex flex-wrap gap-2">
                 {VORDEFINIERTE_VERANSTALTUNGSTYPEN.map((typ) => (
                   <button
                     key={typ.wert}
+                    type="button"
                     onClick={() => handleVordefinierteToggle(typ)}
                     className={`text-sm py-1.5 px-3 rounded-full border transition-colors ${
                       aktiveWerte.has(typ.wert)
@@ -1523,7 +1601,10 @@ function VeranstaltungstypenCard() {
 
             {/* Eigene Typen */}
             <div>
-              <Label className="text-sm font-medium mb-3 block">Eigene Typen</Label>
+              <Label className="text-sm font-medium mb-2 block">Eigene Typen</Label>
+              <p className="text-xs text-muted-foreground mb-3">
+                Brauchen Sie einen Typ, der nicht in der Liste ist? Erstellen Sie hier Ihren eigenen.
+              </p>
               {eigeneTypen.length > 0 && (
                 <div className="space-y-2 mb-4">
                   {eigeneTypen.map((typ) => (
@@ -1551,19 +1632,19 @@ function VeranstaltungstypenCard() {
                         <>
                           <span className="flex-1 text-sm">{typ.label}</span>
                           <button
+                            type="button"
                             onClick={() => {
                               setBearbeitenWert(typ.wert);
                               setBearbeitenLabel(typ.label);
                             }}
                             className="text-xs text-muted-foreground hover:text-foreground"
-                            title="Umbenennen"
                           >
                             Bearbeiten
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleEntfernen(typ.wert)}
                             className="text-xs text-destructive hover:text-destructive/80"
-                            title="Entfernen"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -1583,6 +1664,7 @@ function VeranstaltungstypenCard() {
                   onKeyDown={(e) => e.key === 'Enter' && handleHinzufuegen()}
                 />
                 <Button variant="outline" size="sm" onClick={handleHinzufuegen} disabled={!neuesLabel.trim()}>
+                  <Plus className="h-4 w-4 mr-1" />
                   Hinzufuegen
                 </Button>
               </div>
