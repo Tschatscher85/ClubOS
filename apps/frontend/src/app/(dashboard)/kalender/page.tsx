@@ -5,6 +5,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import KalenderInhalt from './kalender-inhalt';
 import TurniereInhalt from '../turniere/turniere-inhalt';
 import TrainingsplaeneInhalt from '../turniere/trainingsplaene-inhalt';
+import BelegungsplanInhalt from '../hallen/belegungsplan-inhalt';
+import RessourcenInhalt from '../hallen/ressourcen-inhalt';
 
 export default function KalenderPage() {
   return (
@@ -14,7 +16,7 @@ export default function KalenderPage() {
         <div>
           <h1 className="text-2xl font-bold">Kalender & Spielbetrieb</h1>
           <p className="text-muted-foreground">
-            Termine, Turniere und Trainingspläne verwalten
+            Termine, Turniere, Trainingplaene, Belegungen und Ressourcen verwalten
           </p>
         </div>
       </div>
@@ -23,7 +25,9 @@ export default function KalenderPage() {
         <TabsList>
           <TabsTrigger value="kalender">Kalender</TabsTrigger>
           <TabsTrigger value="turniere">Turniere & Spiele</TabsTrigger>
-          <TabsTrigger value="training">Trainingspläne</TabsTrigger>
+          <TabsTrigger value="training">Trainingsplaene</TabsTrigger>
+          <TabsTrigger value="belegung">Belegungsplan</TabsTrigger>
+          <TabsTrigger value="ressourcen">Ressourcen</TabsTrigger>
         </TabsList>
         <TabsContent value="kalender">
           <KalenderInhalt />
@@ -33,6 +37,12 @@ export default function KalenderPage() {
         </TabsContent>
         <TabsContent value="training">
           <TrainingsplaeneInhalt />
+        </TabsContent>
+        <TabsContent value="belegung">
+          <BelegungsplanInhalt />
+        </TabsContent>
+        <TabsContent value="ressourcen">
+          <RessourcenInhalt />
         </TabsContent>
       </Tabs>
     </div>
