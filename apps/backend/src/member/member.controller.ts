@@ -323,6 +323,41 @@ export class MemberController {
     return this.memberService.beitragSetzen(tenantId, id, dto);
   }
 
+  // ==================== Team-Zuordnung ====================
+
+  @Get(':id/teams')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
+  @ApiOperation({ summary: 'Team-Zuordnungen eines Mitglieds abrufen' })
+  async teamsAbrufen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.memberService.teamsAbrufen(tenantId, id);
+  }
+
+  @Put(':id/teams')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
+  @ApiOperation({ summary: 'Team-Zuordnungen eines Mitglieds setzen (sync)' })
+  async teamsSetzen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+    @Body() body: { teamIds: string[] },
+  ) {
+    return this.memberService.teamsSetzen(tenantId, id, body.teamIds);
+  }
+
+  // ==================== Formular-Einreichungen ====================
+
+  @Get(':id/formulare')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
+  @ApiOperation({ summary: 'Formular-Einreichungen eines Mitglieds abrufen' })
+  async formulareAbrufen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.memberService.formulareAbrufen(tenantId, id);
+  }
+
   @Delete(':id/verknuepfen')
   @Rollen(Role.SUPERADMIN, Role.ADMIN)
   @ApiOperation({ summary: 'Verknuepfung zwischen Mitglied und Benutzer aufheben' })

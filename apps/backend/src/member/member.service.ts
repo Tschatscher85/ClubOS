@@ -408,6 +408,94 @@ export class MemberService {
     });
   }
 
+  // ==================== Team-Zuordnung ====================
+
+  /** Team-Zuordnungen eines Mitglieds abrufen */
+  async teamsAbrufen(tenantId: string, memberId: string) {
+    const mitglied = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+    });
+    if (!mitglied) throw new NotFoundException('Mitglied nicht gefunden.');
+
+    return this.prisma.teamMember.findMany({
+      where: { memberId },
+      include: {
+        team: {
+          select: { id: true, name: true, ageGroup: true, abteilungId: true },
+        },
+      },
+    });
+  }
+
+  /** Team-Zuordnungen eines Mitglieds synchronisieren (alte loeschen, neue erstellen) */
+  async teamsSetzen(tenantId: string, memberId: string, teamIds: string[]) {
+    const mitglied = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+    });
+    if (!mitglied) throw new NotFoundException('Mitglied nicht gefunden.');
+
+    // Pruefen ob alle Teams zum Verein gehoeren
+    const teams = await this.prisma.team.findMany({
+      where: { id: { in: teamIds }, tenantId },
+    });
+    const gueltigeTeamIds = teams.map((t) => t.id);
+
+    // Bestehende Zuordnungen abrufen
+    const bestehende = await this.prisma.teamMember.findMany({
+      where: { memberId },
+      select: { teamId: true },
+    });
+    const bestehendIds = new Set(bestehende.map((b) => b.teamId));
+
+    // Neue Zuordnungen (noch nicht vorhanden)
+    const zuErstellen = gueltigeTeamIds.filter((id) => !bestehendIds.has(id));
+
+    // Alte Zuordnungen (nicht mehr gewuenscht)
+    const zuLoeschen = Array.from(bestehendIds).filter(
+      (id) => !gueltigeTeamIds.includes(id),
+    );
+
+    // Transaktional ausfuehren
+    await this.prisma.$transaction([
+      // Alte entfernen
+      ...(zuLoeschen.length > 0
+        ? [
+            this.prisma.teamMember.deleteMany({
+              where: { memberId, teamId: { in: zuLoeschen } },
+            }),
+          ]
+        : []),
+      // Neue erstellen
+      ...zuErstellen.map((teamId) =>
+        this.prisma.teamMember.create({
+          data: { teamId, memberId, rolle: 'SPIELER' },
+        }),
+      ),
+    ]);
+
+    return { nachricht: 'Team-Zuordnungen aktualisiert.', teams: gueltigeTeamIds.length };
+  }
+
+  // ==================== Formular-Einreichungen ====================
+
+  /** Formular-Einreichungen eines Mitglieds abrufen (ueber E-Mail) */
+  async formulareAbrufen(tenantId: string, memberId: string) {
+    const mitglied = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+    });
+    if (!mitglied) throw new NotFoundException('Mitglied nicht gefunden.');
+
+    if (!mitglied.email) return [];
+
+    return this.prisma.formSubmission.findMany({
+      where: { tenantId, email: mitglied.email },
+      include: {
+        template: { select: { name: true, type: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   // ==================== CSV Import/Export ====================
 
   /**

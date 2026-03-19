@@ -23,6 +23,8 @@ import {
   TrendingUp,
   HeartPulse,
   Info,
+  FileText,
+  Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +32,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { apiClient } from '@/lib/api-client';
+import { API_BASE_URL } from '@/lib/constants';
 import { sportartLabel } from '@/lib/sportarten';
 import { useBenutzer } from '@/hooks/use-auth';
 import { UnterschriftPad } from '@/components/unterschrift/unterschrift-pad';
@@ -68,6 +71,17 @@ interface Mitglied {
   qrCode: string | null;
   teamMembers: TeamMitgliedschaft[];
   user: BenutzerInfo | null;
+}
+
+interface FormularEinreichung {
+  id: string;
+  email: string;
+  status: string;
+  createdAt: string;
+  daten: Record<string, unknown>;
+  signatureUrl?: string;
+  kommentar?: string;
+  template: { name: string; type: string };
 }
 
 interface AnwesenheitsStatistik {
@@ -187,6 +201,9 @@ export default function MitgliedDetailPage() {
   // Verletzungen
   const [verletzungen, setVerletzungen] = useState<VerletzungDaten[]>([]);
 
+  // Formular-Einreichungen
+  const [formulare, setFormulare] = useState<FormularEinreichung[]>([]);
+
   const datenLaden = useCallback(async () => {
     try {
       const [mitgliedDaten, statistikDaten] = await Promise.all([
@@ -197,6 +214,11 @@ export default function MitgliedDetailPage() {
       ]);
       setMitglied(mitgliedDaten);
       setStatistik(statistikDaten);
+
+      // Formulare laden
+      apiClient.get<FormularEinreichung[]>(`/mitglieder/${mitgliedId}/formulare`)
+        .then(setFormulare)
+        .catch(() => setFormulare([]));
 
       // Wenn kein Benutzer verknuepft, lade verfuegbare Benutzer
       if (!mitgliedDaten.user) {
@@ -627,6 +649,81 @@ export default function MitgliedDetailPage() {
               <Info className="h-3 w-3" />
               Gesundheitsdaten werden nur vereinsintern gespeichert (Art. 9 DSGVO)
             </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Formulare & Dokumente */}
+      {formulare.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Formulare & Dokumente
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {formulare.map((f) => (
+                <div
+                  key={f.id}
+                  className="flex items-center justify-between rounded-md border px-4 py-3"
+                >
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{f.template.name}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                      <span>
+                        {new Date(f.createdAt).toLocaleDateString('de-DE', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                        })}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={
+                          f.status === 'GENEHMIGT'
+                            ? 'border-green-300 text-green-700 bg-green-50'
+                            : f.status === 'ABGELEHNT'
+                              ? 'border-red-300 text-red-700 bg-red-50'
+                              : f.status === 'EINGEREICHT'
+                                ? 'border-orange-300 text-orange-700 bg-orange-50'
+                                : ''
+                        }
+                      >
+                        {f.status === 'EINGEREICHT'
+                          ? 'Eingereicht'
+                          : f.status === 'GENEHMIGT'
+                            ? 'Genehmigt'
+                            : f.status === 'ABGELEHNT'
+                              ? 'Abgelehnt'
+                              : f.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {f.signatureUrl && (
+                      <Badge variant="secondary" className="text-xs">
+                        Unterschrieben
+                      </Badge>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        window.open(
+                          `${API_BASE_URL}/formulare/einreichungen/${f.id}/export`,
+                          '_blank',
+                        );
+                      }}
+                    >
+                      <Download className="h-3.5 w-3.5 mr-1" />
+                      PDF
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
