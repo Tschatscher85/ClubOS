@@ -524,7 +524,7 @@ Aufstellung oeffentlich (kein Login)
 
 ### Offen / Roadmap:
 
-#### PRIO 1: Superadmin-Dashboard & Tenant-Verwaltung
+#### PRIO 1A: Superadmin-Dashboard & Tenant-Verwaltung
 - [ ] Prisma: istAktiv, gesperrtAm, gesperrtGrund Felder im Tenant-Model
 - [ ] Sperr-Middleware: Bei jedem Request pruefen ob Tenant gesperrt -> Sperrseite
 - [ ] Backend: Admin-Endpoints (alle Vereine listen, sperren, entsperren, Plan aendern)
@@ -534,6 +534,19 @@ Aufstellung oeffentlich (kein Login)
 - [ ] Stripe-Webhook: Zahlung fehlgeschlagen -> automatisch warnen/sperren
 - [ ] Subdomain-Routing (fckunchen.clubos.de, Middleware existiert teilweise)
 - [ ] Eigene Domain pro Verein (optional, CNAME)
+
+#### PRIO 1B: Sicherheit & Backup
+- [ ] PostgreSQL Row-Level Security (RLS) auf allen Tabellen mit tenantId
+  - RLS-Policies: USING (tenantId = current_setting('app.current_tenant_id'))
+  - Prisma-Extension: SET LOCAL app.current_tenant_id bei jeder Query
+  - 4. Sicherheitsschicht (neben JWT + TenantGuard + Service-Filter)
+  - Schuetzt auch bei Entwicklerfehlern (vergessenes WHERE tenantId)
+- [ ] Taeglich automatisches DB-Backup (pg_dump 3:00 Uhr, rsync auf NAS)
+  - 30 Tage behalten + 1 pro Monat langzeit
+- [ ] Pro-Verein-Export im Admin-Dashboard (Button -> ZIP mit JSON/CSV)
+- [ ] Automatischer naechtlicher Pro-Verein-Export auf NAS
+- [ ] DSGVO-Export pro Mitglied (Art. 15 + Art. 20)
+- [ ] Tenant-Isolations-Tests (Tenant A sieht NIE Daten von Tenant B)
 
 #### PRIO 2: Features
 - [ ] Vereinskalender (oeffentlich, teamuebergreifend, z.B. Sommerfest)
