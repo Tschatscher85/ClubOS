@@ -240,13 +240,11 @@ export default function SportartenPage() {
 
   return (
     <div className="space-y-6">
+      <Link href="/einstellungen" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors">
+        <ArrowLeft className="h-4 w-4" />
+        Zurück zu Einstellungen
+      </Link>
       <div className="flex items-center gap-3">
-        <Link href="/einstellungen">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Zurueck
-          </Button>
-        </Link>
         <Trophy className="h-8 w-8 text-primary" />
         <div>
           <h1 className="text-2xl font-bold">Sportarten</h1>

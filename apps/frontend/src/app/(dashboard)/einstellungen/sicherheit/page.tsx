@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { apiClient } from '@/lib/api-client';
 import {
-  Settings, Building2, Trophy, CreditCard, Users, Gift, Brain, Mail, Lock,
+  Settings, Building2, Trophy, CreditCard, Users, Gift, Brain, Mail, Lock, ArrowLeft,
 } from 'lucide-react';
 
 interface EinrichtungsAntwort {
@@ -148,6 +148,10 @@ export default function SicherheitPage() {
 
   return (
     <div className="space-y-6">
+      <Link href="/einstellungen" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors">
+        <ArrowLeft className="h-4 w-4" />
+        Zurück zu Einstellungen
+      </Link>
       <div className="flex items-center gap-3">
         <Settings className="h-8 w-8 text-primary" />
         <div>
