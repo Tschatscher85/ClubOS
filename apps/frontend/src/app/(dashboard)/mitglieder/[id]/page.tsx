@@ -710,15 +710,26 @@ export default function MitgliedDetailPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        window.open(
-                          `${API_BASE_URL}/formulare/einreichungen/${f.id}/export`,
-                          '_blank',
-                        );
+                      onClick={async () => {
+                        try {
+                          const authState = JSON.parse(localStorage.getItem('clubos-auth') || '{}');
+                          const token = authState?.state?.accessToken;
+                          const res = await fetch(`/api/formulare/einreichungen/${f.id}/export`, {
+                            headers: token ? { Authorization: `Bearer ${token}` } : {},
+                          });
+                          const html = await res.text();
+                          const fenster = window.open('', '_blank');
+                          if (fenster) {
+                            fenster.document.write(html);
+                            fenster.document.close();
+                          }
+                        } catch (error) {
+                          console.error('Fehler beim PDF-Export:', error);
+                        }
                       }}
                     >
                       <Download className="h-3.5 w-3.5 mr-1" />
-                      PDF
+                      Ansehen
                     </Button>
                   </div>
                 </div>

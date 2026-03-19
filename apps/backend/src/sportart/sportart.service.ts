@@ -94,9 +94,17 @@ export class SportartService {
    * Vordefinierte Enum-Werte + eigene Sportarten des Vereins
    */
   async alleAbrufen(tenantId: string) {
-    // Vordefinierte Sportarten (ohne CUSTOM, da das nur ein Platzhalter ist)
+    // Aktive Sportarten des Vereins laden
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { aktiveSportarten: true },
+    });
+    const aktiveSet = new Set(tenant?.aktiveSportarten || []);
+
+    // Vordefinierte Sportarten - nur aktive (wenn Liste nicht leer)
     const vordefinierte = Object.entries(SPORT_LABELS)
       .filter(([key]) => key !== Sport.CUSTOM)
+      .filter(([key]) => aktiveSet.size === 0 || aktiveSet.has(key))
       .map(([key, label]) => ({
         id: key,
         name: label,
@@ -120,6 +128,36 @@ export class SportartService {
     }));
 
     return [...vordefinierte, ...eigene];
+  }
+
+  /**
+   * Alle vordefinierten Sportarten (fuer Einstellungsseite, inkl. Aktivitaetsstatus)
+   */
+  async alleVordefinierten(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { aktiveSportarten: true },
+    });
+    const aktiveSet = new Set(tenant?.aktiveSportarten || []);
+
+    return Object.entries(SPORT_LABELS)
+      .filter(([key]) => key !== Sport.CUSTOM)
+      .map(([key, label]) => ({
+        id: key,
+        name: label,
+        istAktiv: aktiveSet.has(key),
+      }));
+  }
+
+  /**
+   * Aktive vordefinierte Sportarten setzen
+   */
+  async aktiveSetzen(tenantId: string, sportarten: string[]) {
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { aktiveSportarten: sportarten },
+    });
+    return { nachricht: 'Aktive Sportarten aktualisiert.', anzahl: sportarten.length };
   }
 
   /**

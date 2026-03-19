@@ -30,9 +30,26 @@ export class SportartController {
 
   @Get()
   @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER, Role.MEMBER, Role.PARENT)
-  @ApiOperation({ summary: 'Alle verfuegbaren Sportarten abrufen (vordefinierte + eigene)' })
+  @ApiOperation({ summary: 'Alle aktiven Sportarten abrufen (aktive vordefinierte + eigene)' })
   async alleAbrufen(@AktuellerBenutzer('tenantId') tenantId: string) {
     return this.sportartService.alleAbrufen(tenantId);
+  }
+
+  @Get('alle-vordefinierten')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Alle vordefinierten Sportarten abrufen (fuer Einstellungen)' })
+  async alleVordefinierten(@AktuellerBenutzer('tenantId') tenantId: string) {
+    return this.sportartService.alleVordefinierten(tenantId);
+  }
+
+  @Put('aktive')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Aktive vordefinierte Sportarten setzen' })
+  async aktiveSetzen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Body() body: { sportarten: string[] },
+  ) {
+    return this.sportartService.aktiveSetzen(tenantId, body.sportarten);
   }
 
   @Post('custom')

@@ -78,11 +78,18 @@ export default function SportartenPage() {
 
   const istAdmin = benutzer?.rolle === 'ADMIN' || benutzer?.rolle === 'SUPERADMIN';
 
+  // Vordefinierte mit Aktivitaetsstatus
+  const [vordefinierteAlle, setVordefinierteAlle] = useState<{ id: string; name: string; istAktiv: boolean }[]>([]);
+
   const laden = async () => {
     setLadend(true);
     try {
-      const result = await apiClient.get<Sportart[]>('/sportarten');
+      const [result, vordefResult] = await Promise.all([
+        apiClient.get<Sportart[]>('/sportarten'),
+        apiClient.get<{ id: string; name: string; istAktiv: boolean }[]>('/sportarten/alle-vordefinierten').catch(() => []),
+      ]);
       setSportarten(result);
+      setVordefinierteAlle(vordefResult);
     } catch {
       setFehler('Fehler beim Laden der Sportarten.');
     } finally {
@@ -93,6 +100,20 @@ export default function SportartenPage() {
   useEffect(() => {
     laden();
   }, []);
+
+  const handleVordefinierteToggle = async (sportId: string) => {
+    const neueAktive = vordefinierteAlle
+      .map((s) => s.id === sportId ? { ...s, istAktiv: !s.istAktiv } : s)
+      .filter((s) => s.istAktiv)
+      .map((s) => s.id);
+    try {
+      await apiClient.put('/sportarten/aktive', { sportarten: neueAktive });
+      sportartenCacheLeeren();
+      await laden();
+    } catch (error) {
+      setFehler(error instanceof Error ? error.message : 'Fehler beim Speichern.');
+    }
+  };
 
   const handleErstellen = async () => {
     if (!neueSportart.name.trim()) {
@@ -247,21 +268,34 @@ export default function SportartenPage() {
         <CardHeader>
           <CardTitle>Vordefinierte Sportarten</CardTitle>
           <CardDescription>
-            Im System vorinstalliert. Werden automatisch in Formularen angezeigt.
+            Klicken Sie auf eine Sportart um sie fuer Ihren Verein zu aktivieren/deaktivieren.
+            Nur aktive Sportarten erscheinen in Formularen.
+            {vordefinierteAlle.filter((s) => s.istAktiv).length > 0 && (
+              <span className="block mt-1 font-medium text-foreground">
+                {vordefinierteAlle.filter((s) => s.istAktiv).length} aktiv
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {ladend ? (
             <p className="text-muted-foreground">Wird geladen...</p>
-          ) : vordefinierte.length === 0 ? (
+          ) : vordefinierteAlle.length === 0 ? (
             <p className="text-muted-foreground">Keine vordefinierten Sportarten vorhanden.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {vordefinierte.map((sportart) => (
-                <Badge key={sportart.id} variant="secondary" className="text-sm py-1 px-3">
-                  {sportart.icon && <span className="mr-1">{sportart.icon}</span>}
+              {vordefinierteAlle.map((sportart) => (
+                <button
+                  key={sportart.id}
+                  onClick={() => handleVordefinierteToggle(sportart.id)}
+                  className={`text-sm py-1 px-3 rounded-full border transition-colors ${
+                    sportart.istAktiv
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                  }`}
+                >
                   {sportart.name}
-                </Badge>
+                </button>
               ))}
             </div>
           )}

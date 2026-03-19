@@ -72,6 +72,8 @@ model Tenant {
   landessportbund              String? // z.B. "WLSB - Wuerttembergischer LSB"
   sportverband                 String? // z.B. "WFV - Wuerttembergischer FV"
   verbandsMitgliedsNr          String? // Mitgliedsnummer beim Verband
+  // Aktive vordefinierte Sportarten (nur diese erscheinen in Formularen)
+  aktiveSportarten             String[] @default([])
   // Stripe Billing
   stripeCustomerId             String?
   stripeSubscriptionId         String?
