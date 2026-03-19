@@ -34,13 +34,28 @@ export class AktualisiereTeamDto {
   @IsEnum(Sport)
   sportart?: Sport;
 
+  @ApiPropertyOptional({ enum: Sport, description: 'Alias fuer sportart' })
+  @IsOptional()
+  @IsEnum(Sport)
+  sport?: Sport;
+
   @ApiPropertyOptional({ example: 'U12' })
   @IsOptional()
   @IsString()
   altersklasse?: string;
 
+  @ApiPropertyOptional({ example: 'U12', description: 'Alias fuer altersklasse' })
+  @IsOptional()
+  @IsString()
+  ageGroup?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   trainerId?: string;
+
+  @ApiPropertyOptional({ description: 'Abteilungs-ID' })
+  @IsOptional()
+  @IsString()
+  abteilungId?: string;
 }

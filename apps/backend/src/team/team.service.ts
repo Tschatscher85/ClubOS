@@ -68,13 +68,17 @@ export class TeamService {
   async aktualisieren(tenantId: string, id: string, dto: AktualisiereTeamDto) {
     await this.nachIdAbrufen(tenantId, id);
 
+    const sportWert = dto.sportart || dto.sport;
+    const altersklasseWert = dto.altersklasse || dto.ageGroup;
+
     return this.prisma.team.update({
       where: { id },
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
-        ...(dto.sportart !== undefined && { sport: dto.sportart }),
-        ...(dto.altersklasse !== undefined && { ageGroup: dto.altersklasse }),
+        ...(sportWert !== undefined && { sport: sportWert }),
+        ...(altersklasseWert !== undefined && { ageGroup: altersklasseWert }),
         ...(dto.trainerId !== undefined && { trainerId: dto.trainerId }),
+        ...(dto.abteilungId !== undefined && { abteilungId: dto.abteilungId || null }),
       },
     });
   }
