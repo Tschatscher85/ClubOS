@@ -19,6 +19,7 @@ interface Mitglied {
   status: string;
   joinDate: string;
   userId?: string | null;
+  teamMembers?: Array<{ team: { id: string; name: string; ageGroup: string } }>;
 }
 
 interface RollenInfo {
@@ -35,8 +36,9 @@ const STATUS_LABEL: Record<string, { text: string; variant: 'default' | 'seconda
 
 interface MitgliederTabelleProps {
   mitglieder: Mitglied[];
-  rollenMap?: Record<string, RollenInfo>; // userId → { vereinsRollen, farben }
-  onBearbeiten: (mitglied: Mitglied) => void;
+  rollenMap?: Record<string, RollenInfo>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onBearbeiten: (mitglied: any) => void;
   onLoeschen: (id: string) => void;
   onKlick?: (id: string) => void;
 }
@@ -64,7 +66,8 @@ export function MitgliederTabelle({
             <th className="h-12 px-4 text-left font-medium">Name</th>
             <th className="h-12 px-4 text-left font-medium hidden md:table-cell">Rolle</th>
             <th className="h-12 px-4 text-left font-medium hidden lg:table-cell">Sportarten</th>
-            <th className="h-12 px-4 text-left font-medium hidden lg:table-cell">Geburtsdatum</th>
+            <th className="h-12 px-4 text-left font-medium hidden lg:table-cell">Team</th>
+            <th className="h-12 px-4 text-left font-medium hidden xl:table-cell">Geburtsdatum</th>
             <th className="h-12 px-4 text-left font-medium hidden xl:table-cell">Eintritt</th>
             <th className="h-12 px-4 text-left font-medium">Status</th>
             <th className="h-12 px-4 text-right font-medium">Aktionen</th>
@@ -115,7 +118,20 @@ export function MitgliederTabelle({
                     {m.sport.length === 0 && <span className="text-muted-foreground">—</span>}
                   </div>
                 </td>
-                <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground">
+                <td className="px-4 py-3 hidden lg:table-cell">
+                  <div className="flex flex-wrap gap-1">
+                    {m.teamMembers && m.teamMembers.length > 0 ? (
+                      m.teamMembers.map((tm) => (
+                        <Badge key={tm.team.id} variant="outline" className="text-xs">
+                          {tm.team.name}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-4 py-3 hidden xl:table-cell text-muted-foreground">
                   {m.birthDate
                     ? new Date(m.birthDate).toLocaleDateString('de-DE')
                     : '—'}

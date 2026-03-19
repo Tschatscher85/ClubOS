@@ -21,6 +21,13 @@ import { MitgliedFormular } from '@/components/mitglieder/mitglied-formular';
 import { apiClient } from '@/lib/api-client';
 import { sportartenLaden, sportartLabel } from '@/lib/sportarten';
 
+interface TeamInfo {
+  id: string;
+  name: string;
+  sport: string;
+  ageGroup: string;
+}
+
 interface Mitglied {
   id: string;
   firstName: string;
@@ -35,6 +42,7 @@ interface Mitglied {
   status: string;
   joinDate: string;
   userId?: string | null;
+  teamMembers?: Array<{ team: TeamInfo }>;
 }
 
 interface Statistik {
@@ -94,6 +102,7 @@ export default function MitgliederInhalt() {
   const [sportFilter, setSportFilter] = useState('');
   const [rollenFilter, setRollenFilter] = useState('');
   const [geburtstagsMonat, setGeburtstagsMonat] = useState('');
+  const [teamFilter, setTeamFilter] = useState('');
   const [eintrittAb, setEintrittAb] = useState('');
   const [eintrittBis, setEintrittBis] = useState('');
 
@@ -191,6 +200,13 @@ export default function MitgliederInhalt() {
 
       if (statusFilter && m.status !== statusFilter) return false;
       if (sportFilter && !m.sport.includes(sportFilter)) return false;
+      if (teamFilter && m.teamMembers) {
+        const hatTeam = m.teamMembers.some((tm) => tm.team.id === teamFilter);
+        if (!hatTeam) return false;
+      } else if (teamFilter && !m.teamMembers) {
+        return false;
+      }
+
       if (rollenFilter && m.userId) {
         const rollen = rollenMap[m.userId]?.vereinsRollen || [];
         if (!rollen.includes(rollenFilter)) return false;
@@ -219,7 +235,18 @@ export default function MitgliederInhalt() {
 
       return true;
     });
-  }, [mitglieder, suchbegriff, statusFilter, sportFilter, rollenFilter, rollenMap, geburtstagsMonat, eintrittAb, eintrittBis]);
+  }, [mitglieder, suchbegriff, statusFilter, sportFilter, teamFilter, rollenFilter, rollenMap, geburtstagsMonat, eintrittAb, eintrittBis]);
+
+  // Team-Optionen aus den Mitglied-Daten extrahieren
+  const teamOptionen = useMemo(() => {
+    const teams = new Map<string, string>();
+    for (const m of mitglieder) {
+      for (const tm of m.teamMembers || []) {
+        teams.set(tm.team.id, `${tm.team.name} (${tm.team.ageGroup})`);
+      }
+    }
+    return Array.from(teams.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [mitglieder]);
 
   const ausstehendeMitglieder = useMemo(
     () => mitglieder.filter((m) => m.status === 'PENDING'),
@@ -534,6 +561,18 @@ export default function MitgliederInhalt() {
             <option value="">Alle Rollen</option>
             {verfuegbareRollen.map((rolle) => (
               <option key={rolle} value={rolle}>{rolle}</option>
+            ))}
+          </Select>
+        )}
+        {teamOptionen.length > 0 && (
+          <Select
+            value={teamFilter}
+            onChange={(e) => setTeamFilter(e.target.value)}
+            className="w-full sm:w-48"
+          >
+            <option value="">Alle Teams</option>
+            {teamOptionen.map(([id, label]) => (
+              <option key={id} value={id}>{label}</option>
             ))}
           </Select>
         )}
