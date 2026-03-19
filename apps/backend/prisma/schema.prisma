@@ -74,6 +74,8 @@ model Tenant {
   verbandsMitgliedsNr          String? // Mitgliedsnummer beim Verband
   // Aktive vordefinierte Sportarten (nur diese erscheinen in Formularen)
   aktiveSportarten             String[] @default([])
+  // Konfigurierbare Altersklassen (erscheinen in Team-Formularen)
+  altersklassen                String[] @default([])
   // Stripe Billing
   stripeCustomerId             String?
   stripeSubscriptionId         String?

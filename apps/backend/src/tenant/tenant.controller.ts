@@ -239,4 +239,23 @@ export class TenantController {
   async loeschen(@Param('id') id: string) {
     return this.tenantService.loeschen(id);
   }
+
+  // ==================== Altersklassen ====================
+
+  @Get('altersklassen')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER, Role.MEMBER, Role.PARENT)
+  @ApiOperation({ summary: 'Konfigurierte Altersklassen abrufen' })
+  async altersklassenAbrufen(@AktuellerBenutzer('tenantId') tenantId: string) {
+    return this.tenantService.altersklassenAbrufen(tenantId);
+  }
+
+  @Put('altersklassen')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Altersklassen konfigurieren' })
+  async altersklassenSetzen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Body() body: { altersklassen: string[] },
+  ) {
+    return this.tenantService.altersklassenSetzen(tenantId, body.altersklassen);
+  }
 }

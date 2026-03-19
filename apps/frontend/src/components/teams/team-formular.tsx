@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { apiClient } from '@/lib/api-client';
 import { sportartenLaden, sportartenFallback } from '@/lib/sportarten';
+import { altersklassenLaden, altersklassenFallback } from '@/lib/altersklassen';
 
 interface Team {
   id: string;
@@ -51,13 +52,7 @@ interface TeamFormularProps {
   team?: Team | null;
 }
 
-// Wird dynamisch geladen
-
-const ALTERSKLASSEN = [
-  'Bambini', 'U6', 'U7', 'U8', 'U9', 'U10', 'U11', 'U12',
-  'U13', 'U14', 'U15', 'U16', 'U17', 'U18', 'U19',
-  'Senioren', 'AH',
-];
+// Altersklassen werden dynamisch aus der API geladen
 
 export function TeamFormular({
   offen,
@@ -74,6 +69,8 @@ export function TeamFormular({
   const [trainerListe, setTrainerListe] = useState<{ id: string; name: string }[]>([]);
   const [abteilungen, setAbteilungen] = useState<Abteilung[]>([]);
   const [sportartenListe, setSportartenListe] = useState<{ wert: string; label: string }[]>(sportartenFallback());
+  const [altersklassenListe, setAltersklassenListe] = useState<string[]>(altersklassenFallback());
+  const [trainerSuche, setTrainerSuche] = useState('');
   const [ladend, setLadend] = useState(false);
   const [fehler, setFehler] = useState('');
 
@@ -94,6 +91,8 @@ export function TeamFormular({
         label: s.name,
       })));
     }).catch(() => {});
+
+    altersklassenLaden().then(setAltersklassenListe).catch(() => {});
 
     // Trainer laden: Versuche Verwaltungs-API, Fallback auf /benutzer
     Promise.all([
@@ -238,27 +237,37 @@ export function TeamFormular({
                 value={altersklasse}
                 onChange={(e) => setAltersklasse(e.target.value)}
               >
-                {ALTERSKLASSEN.map((a) => (
+                {altersklassenListe.map((a) => (
                   <option key={a} value={a}>{a}</option>
                 ))}
               </Select>
             </div>
           </div>
 
-          {/* Trainer - zeigt Namen statt E-Mails */}
+          {/* Trainer - mit Suchfeld */}
           <div className="space-y-2">
             <Label htmlFor="trainer">Trainer</Label>
+            {trainerListe.length > 5 && (
+              <Input
+                value={trainerSuche}
+                onChange={(e) => setTrainerSuche(e.target.value)}
+                placeholder="Trainer suchen..."
+                className="mb-1"
+              />
+            )}
             <Select
               id="trainer"
               value={trainerId}
               onChange={(e) => setTrainerId(e.target.value)}
             >
               <option value="">-- Kein Trainer zugewiesen --</option>
-              {trainerListe.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
+              {trainerListe
+                .filter((t) => !trainerSuche || t.name.toLowerCase().includes(trainerSuche.toLowerCase()))
+                .map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
             </Select>
             {trainerListe.length === 0 && (
               <p className="text-xs text-muted-foreground">

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send, Building2, Trophy, CreditCard, Shield, Users, Gift, Layout, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { AdressSuche } from '@/components/kalender/adress-suche';
+import { altersklassenLaden, altersklassenSpeichern, altersklassenFallback } from '@/lib/altersklassen';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -934,6 +935,9 @@ export default function EinstellungenPage() {
       {/* Sportstaetten / Hallen / Plaetze */}
       {istAdmin && <SportstaettenCard />}
 
+      {/* Altersklassen */}
+      {istAdmin && <AltersklassenCard />}
+
       {/* Passwort aendern */}
       <Card>
         <CardHeader>
@@ -1201,6 +1205,119 @@ function SportstaettenCard() {
                 Neue Sportstaette hinzufuegen
               </Button>
             )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ==================== Altersklassen-Verwaltung ====================
+
+function AltersklassenCard() {
+  const [altersklassen, setAltersklassen] = useState<string[]>([]);
+  const [ladend, setLadend] = useState(true);
+  const [neueKlasse, setNeueKlasse] = useState('');
+  const [gespeichert, setGespeichert] = useState(false);
+
+  useEffect(() => {
+    altersklassenLaden().then((daten) => {
+      setAltersklassen(daten);
+      setLadend(false);
+    });
+  }, []);
+
+  const handleHinzufuegen = () => {
+    if (!neueKlasse.trim() || altersklassen.includes(neueKlasse.trim())) return;
+    setAltersklassen([...altersklassen, neueKlasse.trim()]);
+    setNeueKlasse('');
+  };
+
+  const handleEntfernen = (index: number) => {
+    setAltersklassen(altersklassen.filter((_, i) => i !== index));
+  };
+
+  const handleVerschieben = (index: number, richtung: number) => {
+    const neu = [...altersklassen];
+    const ziel = index + richtung;
+    if (ziel < 0 || ziel >= neu.length) return;
+    [neu[index], neu[ziel]] = [neu[ziel], neu[index]];
+    setAltersklassen(neu);
+  };
+
+  const handleSpeichern = async () => {
+    try {
+      await altersklassenSpeichern(altersklassen);
+      setGespeichert(true);
+      setTimeout(() => setGespeichert(false), 3000);
+    } catch (error) {
+      console.error('Fehler:', error);
+    }
+  };
+
+  const handleZuruecksetzen = () => {
+    setAltersklassen(altersklassenFallback());
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Altersklassen
+        </CardTitle>
+        <CardDescription>
+          Konfigurieren Sie die Altersklassen die bei der Team-Erstellung zur Auswahl stehen.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {ladend ? (
+          <p className="text-sm text-muted-foreground">Laden...</p>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-2">
+              {altersklassen.map((klasse, index) => (
+                <div
+                  key={`${klasse}-${index}`}
+                  className="flex items-center gap-1 rounded-md border bg-muted/30 px-2 py-1"
+                >
+                  <span className="text-sm font-medium">{klasse}</span>
+                  <button
+                    onClick={() => handleEntfernen(index)}
+                    className="text-xs text-destructive hover:text-destructive/80 ml-1"
+                    title="Entfernen"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <Input
+                value={neueKlasse}
+                onChange={(e) => setNeueKlasse(e.target.value)}
+                placeholder="z.B. U21, Damen, Herren 2..."
+                className="max-w-xs"
+                onKeyDown={(e) => e.key === 'Enter' && handleHinzufuegen()}
+              />
+              <Button variant="outline" size="sm" onClick={handleHinzufuegen} disabled={!neueKlasse.trim()}>
+                Hinzufuegen
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={handleSpeichern}>
+                <Save className="h-4 w-4 mr-2" />
+                Altersklassen speichern
+              </Button>
+              <Button variant="ghost" onClick={handleZuruecksetzen}>
+                Zuruecksetzen
+              </Button>
+              {gespeichert && (
+                <span className="text-sm text-green-600">Gespeichert!</span>
+              )}
+            </div>
           </>
         )}
       </CardContent>

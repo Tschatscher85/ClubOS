@@ -325,4 +325,32 @@ export class TenantService {
 
     return { nachricht: 'SMTP-Einstellungen gespeichert.' };
   }
+
+  // ==================== Altersklassen ====================
+
+  private static readonly STANDARD_ALTERSKLASSEN = [
+    'Bambini', 'U6', 'U7', 'U8', 'U9', 'U10', 'U11', 'U12',
+    'U13', 'U14', 'U15', 'U16', 'U17', 'U18', 'U19',
+    'Senioren', 'AH',
+  ];
+
+  async altersklassenAbrufen(tenantId: string): Promise<string[]> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { altersklassen: true },
+    });
+    // Wenn leer: Standard-Altersklassen zurueckgeben
+    if (!tenant?.altersklassen || tenant.altersklassen.length === 0) {
+      return TenantService.STANDARD_ALTERSKLASSEN;
+    }
+    return tenant.altersklassen;
+  }
+
+  async altersklassenSetzen(tenantId: string, altersklassen: string[]) {
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { altersklassen },
+    });
+    return { nachricht: 'Altersklassen gespeichert.', altersklassen };
+  }
 }

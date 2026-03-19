@@ -5,6 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Pencil, Trash2, UserCheck, UserX } from 'lucide-react';
 import { sportartLabel } from '@/lib/sportarten';
 
+const INTERVALL_KURZ: Record<string, string> = {
+  MONATLICH: 'Monat',
+  QUARTALSWEISE: 'Quartal',
+  HALBJAEHRLICH: 'Halbjahr',
+  JAEHRLICH: 'Jahr',
+};
+
 interface Mitglied {
   id: string;
   firstName: string;
@@ -20,6 +27,9 @@ interface Mitglied {
   joinDate: string;
   userId?: string | null;
   teamMembers?: Array<{ team: { id: string; name: string; ageGroup: string } }>;
+  beitragsArt?: string | null;
+  beitragBetrag?: number | null;
+  beitragIntervall?: string | null;
 }
 
 interface RollenInfo {
@@ -69,6 +79,7 @@ export function MitgliederTabelle({
             <th className="h-12 px-4 text-left font-medium hidden lg:table-cell">Team</th>
             <th className="h-12 px-4 text-left font-medium hidden xl:table-cell">Geburtsdatum</th>
             <th className="h-12 px-4 text-left font-medium hidden xl:table-cell">Eintritt</th>
+            <th className="h-12 px-4 text-left font-medium hidden xl:table-cell">Beitrag</th>
             <th className="h-12 px-4 text-left font-medium">Status</th>
             <th className="h-12 px-4 text-right font-medium">Aktionen</th>
           </tr>
@@ -140,6 +151,11 @@ export function MitgliederTabelle({
                   {m.joinDate
                     ? new Date(m.joinDate).toLocaleDateString('de-DE')
                     : '—'}
+                </td>
+                <td className="px-4 py-3 hidden xl:table-cell text-muted-foreground">
+                  {m.beitragBetrag
+                    ? `${m.beitragBetrag.toFixed(2)} EUR${m.beitragIntervall ? ` / ${INTERVALL_KURZ[m.beitragIntervall] || m.beitragIntervall}` : ''}`
+                    : m.beitragsArt || '—'}
                 </td>
                 <td className="px-4 py-3">
                   <Badge variant={statusInfo.variant}>{statusInfo.text}</Badge>
