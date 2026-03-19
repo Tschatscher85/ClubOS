@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useBenutzer } from '@/hooks/use-auth';
+import { useAuthStore } from '@/stores/auth-store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -84,9 +85,11 @@ const STATUS_CONFIG: Record<string, { label: string; farbe: string; icon: typeof
 export default function AdminDashboard() {
   const router = useRouter();
   const benutzer = useBenutzer();
+  const { accessToken, profilLaden } = useAuthStore();
   const [vereine, setVereine] = useState<Verein[]>([]);
   const [statistiken, setStatistiken] = useState<Statistiken | null>(null);
   const [laden, setLaden] = useState(true);
+  const [bereit, setBereit] = useState(false);
   const [suchbegriff, setSuchbegriff] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('alle');
 
@@ -97,6 +100,15 @@ export default function AdminDashboard() {
   // Plan-Dialog
   const [planDialog, setPlanDialog] = useState<{ id: string; name: string; plan: string } | null>(null);
   const [neuerPlan, setNeuerPlan] = useState('');
+
+  // Auth initialisieren (diese Seite liegt ausserhalb des Dashboard-Layouts)
+  useEffect(() => {
+    if (!accessToken) {
+      router.replace('/anmelden');
+      return;
+    }
+    profilLaden().finally(() => setBereit(true));
+  }, [accessToken, router, profilLaden]);
 
   const laden_daten = useCallback(async () => {
     try {
@@ -114,12 +126,15 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
+    if (!bereit) return;
     if (benutzer && benutzer.rolle !== 'SUPERADMIN') {
       router.push('/dashboard');
       return;
     }
-    laden_daten();
-  }, [benutzer, router, laden_daten]);
+    if (benutzer) {
+      laden_daten();
+    }
+  }, [bereit, benutzer, router, laden_daten]);
 
   const vereinSperren = async () => {
     if (!sperrDialog) return;
@@ -202,7 +217,15 @@ export default function AdminDashboard() {
     return sucheTrifft && statusTrifft;
   });
 
-  if (benutzer && benutzer.rolle !== 'SUPERADMIN') {
+  if (!bereit || !benutzer) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Laden...</div>
+      </div>
+    );
+  }
+
+  if (benutzer.rolle !== 'SUPERADMIN') {
     return null;
   }
 
