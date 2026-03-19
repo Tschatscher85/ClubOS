@@ -482,7 +482,7 @@ Einladung-Wizard, Registrierung (+Empfehlungscode), Passwort-Vergessen,
 Passwort-Zuruecksetzen, E-Mail-Verifizierung, Onboarding-Wizard,
 Aufstellung oeffentlich (kein Login)
 
-### Erledigt (Stand: 18.03.2026):
+### Erledigt (Stand: 19.03.2026):
 - [x] Registrierungs-Seite (Frontend + Backend)
 - [x] Passwort vergessen Flow (E-Mail anfordern + neues Passwort setzen)
 - [x] Google OAuth (Backend + Frontend mit Google Sign-In Button)
@@ -513,8 +513,19 @@ Aufstellung oeffentlich (kein Login)
 - [x] Verletzungsprotokoll (Team-Widget + Mitglied-Detail, DSGVO Art.9)
 - [x] Spieler-Entwicklungsbogen (Radar-Chart mit Recharts, Sternebewertung)
 - [x] Affiliate-Programm (Einstellungen > Empfehlen, Registrierung mit Code)
+- [x] Sportarten 100% dynamisch (zentrale lib/sportarten.ts, API-Cache, alle 15+ Dateien migriert)
+- [x] Einstellungen > Sportarten: Vorauswahl (20 Sportarten per Klick), leere bereinigen
+- [x] Einstellungen > Kalender-Farben (Event-Typ-Farben konfigurierbar, localStorage)
+- [x] Kalender: Belegungen im Monatskalender sichtbar (aus Wochenplan)
+- [x] Event-Formular: Untergrund (Halle/Rasen/Kunstrasen), Wiederholung taegl./woechentl./monatl., Adresssuche OpenStreetMap, Orte aus Belegung
+- [x] Abteilungen: Bearbeiten + Loeschen Buttons
+- [x] Mitglied-Formular: Team-Zuordnung nach Abteilung gruppiert
+- [x] Turniere-Tab: Zeigt anstehende Spiele + Button "Neues Spiel"
 
-### Offen:
+### Offen / Roadmap:
+- [ ] Vereinskalender (oeffentlich fuer alle Mitglieder, teamuebergreifend, z.B. Sommerfest)
+- [ ] Sichtbarkeit pro Mitglied (Backend-Filter: Mitglieder sehen nur Events ihrer Teams)
+- [ ] Docker-Setup fuer Produktion (Dockerfile + docker-compose.prod.yml)
 - [ ] Mobile App (Expo React Native) — kommt als letztes
 - [ ] Vereinshomepage Frontend-Editor (Sektionen drag&drop, Vorschau)
 - [ ] Turnier-Landingpage Frontend-Editor
@@ -522,6 +533,12 @@ Aufstellung oeffentlich (kein Login)
 - [ ] 2-Faktor-Authentifizierung (TOTP)
 - [ ] Push-Notifications (Web mit Service Worker)
 - [ ] Subdomain-Routing (fckunchen.clubos.de → Vereinshomepage)
+
+### Deployment (aktuell):
+- Server: Hetzner Ubuntu VM (kein Docker)
+- Frontend: `cd apps/frontend && npm run build && npx next start -p 3000`
+- Backend: `cd apps/backend && npm run build && node dist/main.js`
+- Prozesse laufen direkt mit Node, kein PM2/systemd aktuell
 
 ---
 
