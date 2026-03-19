@@ -9,12 +9,16 @@ import {
   Radio,
   ExternalLink,
   ArrowLeft,
+  Globe,
+  Save,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { SpielFormular } from '@/components/turniere/spiel-formular';
 import { apiClient } from '@/lib/api-client';
@@ -54,6 +58,18 @@ export default function TurnierDetailPage() {
   const [turnier, setTurnier] = useState<Turnier | null>(null);
   const [ladend, setLadend] = useState(true);
   const [spielFormularOffen, setSpielFormularOffen] = useState(false);
+
+  // Landingpage
+  const [lpOffen, setLpOffen] = useState(false);
+  const [lpLadend, setLpLadend] = useState(false);
+  const [lpId, setLpId] = useState<string | null>(null);
+  const [lpDaten, setLpDaten] = useState({
+    slug: '',
+    titel: '',
+    beschreibung: '',
+    ort: '',
+    datum: '',
+  });
 
   const datenLaden = useCallback(async () => {
     try {
@@ -103,6 +119,45 @@ export default function TurnierDetailPage() {
       datenLaden();
     } catch (error) {
       console.error('Fehler:', error);
+    }
+  };
+
+  // Landingpage laden
+  useEffect(() => {
+    apiClient.get<{ id: string; slug: string; titel: string; beschreibung: string; ort: string; datum: string }>(`/homepage/admin/turnier-landingpage?tournamentId=${id}`)
+      .then((lp) => {
+        if (lp?.id) {
+          setLpId(lp.id);
+          setLpDaten({
+            slug: lp.slug || '',
+            titel: lp.titel || '',
+            beschreibung: lp.beschreibung || '',
+            ort: lp.ort || '',
+            datum: lp.datum || '',
+          });
+        }
+      })
+      .catch(() => {});
+  }, [id]);
+
+  const lpSpeichern = async () => {
+    setLpLadend(true);
+    try {
+      if (lpId) {
+        await apiClient.put(`/homepage/admin/turnier-landingpage/${lpId}`, lpDaten);
+      } else {
+        const neu = await apiClient.post<{ id: string }>('/homepage/admin/turnier-landingpage', {
+          tournamentId: id,
+          ...lpDaten,
+          slug: lpDaten.slug || turnier?.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '') || id,
+        });
+        setLpId(neu.id);
+      }
+      setLpOffen(false);
+    } catch (err) {
+      console.error('Landingpage-Fehler:', err);
+    } finally {
+      setLpLadend(false);
     }
   };
 
@@ -180,6 +235,85 @@ export default function TurnierDetailPage() {
           >
             Kopieren
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* Landingpage */}
+      <Card>
+        <CardContent className="py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm">
+              <Globe className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Turnier-Landingpage:</span>
+              {lpId ? (
+                <Badge variant="outline" className="text-green-600">Aktiv</Badge>
+              ) : (
+                <span className="text-muted-foreground">Nicht erstellt</span>
+              )}
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setLpOffen(!lpOffen)}>
+              {lpId ? 'Bearbeiten' : 'Erstellen'}
+            </Button>
+          </div>
+
+          {lpOffen && (
+            <div className="mt-4 space-y-3 border-t pt-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Titel</Label>
+                  <Input
+                    value={lpDaten.titel}
+                    onChange={(e) => setLpDaten({ ...lpDaten, titel: e.target.value })}
+                    placeholder={turnier?.name || 'Turniername'}
+                  />
+                </div>
+                <div>
+                  <Label>URL-Slug</Label>
+                  <Input
+                    value={lpDaten.slug}
+                    onChange={(e) => setLpDaten({ ...lpDaten, slug: e.target.value })}
+                    placeholder="hallencup-2026"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Beschreibung</Label>
+                <textarea
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm min-h-[80px]"
+                  value={lpDaten.beschreibung}
+                  onChange={(e) => setLpDaten({ ...lpDaten, beschreibung: e.target.value })}
+                  placeholder="Infos zum Turnier, Teilnehmer, Preise..."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Ort</Label>
+                  <Input
+                    value={lpDaten.ort}
+                    onChange={(e) => setLpDaten({ ...lpDaten, ort: e.target.value })}
+                    placeholder="Sporthalle Musterstadt"
+                  />
+                </div>
+                <div>
+                  <Label>Datum</Label>
+                  <Input
+                    type="date"
+                    value={lpDaten.datum}
+                    onChange={(e) => setLpDaten({ ...lpDaten, datum: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setLpOffen(false)}>
+                  Abbrechen
+                </Button>
+                <Button size="sm" onClick={lpSpeichern} disabled={lpLadend}>
+                  {lpLadend ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+                  Speichern
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

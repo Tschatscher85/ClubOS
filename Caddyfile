@@ -1,0 +1,42 @@
+# Vereinbase - Caddy Reverse Proxy + Automatisches SSL
+# Installation: sudo apt install -y caddy
+# Starten: sudo systemctl enable --now caddy
+# Caddyfile kopieren: sudo cp Caddyfile /etc/caddy/Caddyfile && sudo systemctl reload caddy
+
+# Hauptdomain + Wildcard-Subdomain
+vereinbase.de, *.vereinbase.de {
+	# Frontend (Next.js auf Port 3000)
+	reverse_proxy /api/* localhost:3001
+	reverse_proxy /uploads/* localhost:3001
+	reverse_proxy localhost:3000
+
+	# Sicherheits-Header
+	header {
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+
+	# Komprimierung
+	encode gzip zstd
+
+	# Logs
+	log {
+		output file /var/log/caddy/vereinbase.log
+		format json
+	}
+}
+
+# API-Subdomain (optional)
+api.vereinbase.de {
+	reverse_proxy localhost:3001
+
+	header {
+		Access-Control-Allow-Origin "*"
+		Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+		Access-Control-Allow-Headers "Authorization, Content-Type"
+	}
+
+	encode gzip
+}
