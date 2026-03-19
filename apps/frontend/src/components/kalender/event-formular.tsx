@@ -15,6 +15,8 @@ import {
 import { apiClient } from '@/lib/api-client';
 import { AdressSuche } from './adress-suche';
 import { sportartenLaden, sportartenFallback } from '@/lib/sportarten';
+import { veranstaltungstypenLaden, veranstaltungstypenFallback } from '@/lib/veranstaltungstypen';
+import type { VeranstaltungsTyp } from '@/lib/veranstaltungstypen';
 
 interface Team {
   id: string;
@@ -34,6 +36,7 @@ interface Halle {
   id: string;
   name: string;
   adresse: string | null;
+  untergruende?: string[];
 }
 
 interface EventData {
@@ -57,15 +60,7 @@ interface EventFormularProps {
   event?: EventData | null;
 }
 
-const EVENT_TYPEN = [
-  { wert: 'TRAINING', label: 'Training' },
-  { wert: 'MATCH', label: 'Spiel' },
-  { wert: 'TOURNAMENT', label: 'Turnier' },
-  { wert: 'EVENT', label: 'Veranstaltung (Fest, Jubilaeum etc.)' },
-  { wert: 'VOLUNTEER', label: 'Helfereinsatz (Aufbau, Abbau etc.)' },
-  { wert: 'TRIP', label: 'Ausflug' },
-  { wert: 'MEETING', label: 'Besprechung' },
-];
+// Wird dynamisch aus der API geladen
 
 const UNTERGRUND_TYPEN = [
   { wert: '', label: '-- Kein Untergrund --' },
@@ -104,6 +99,8 @@ export function EventFormular({
 
   // Sportstaetten (Hallen/Plaetze aus Vereins-Einstellungen)
   const [hallen, setHallen] = useState<Halle[]>([]);
+  // Dynamische Veranstaltungstypen
+  const [eventTypen, setEventTypen] = useState<VeranstaltungsTyp[]>(veranstaltungstypenFallback());
 
   // Wiederholung
   const [istWiederkehrend, setIstWiederkehrend] = useState(false);
@@ -148,6 +145,8 @@ export function EventFormular({
         setTeamId(alleTeams[0].id);
       }
     });
+
+    veranstaltungstypenLaden().then(setEventTypen).catch(() => {});
 
     sportartenLaden().then((daten) => {
       setSportartenOptionen(
@@ -207,7 +206,7 @@ export function EventFormular({
     }
   };
 
-  // Sportstaette auswaehlen -> Adresse uebernehmen
+  // Sportstaette auswaehlen -> Adresse + Untergrund uebernehmen
   const handleSportstaetteAendern = (halleId: string) => {
     if (!halleId) {
       setHallenName('');
@@ -219,6 +218,10 @@ export function EventFormular({
       setHallenName(halle.name);
       setHallenAdresse(halle.adresse || '');
       setOrt(halle.adresse || halle.name);
+      // Ersten Untergrund vorauswählen wenn vorhanden
+      if (halle.untergruende && halle.untergruende.length > 0 && !untergrund) {
+        setUntergrund(halle.untergruende[0]);
+      }
     }
   };
 
@@ -303,7 +306,7 @@ export function EventFormular({
           <div className="space-y-2">
             <Label htmlFor="typ">Art der Veranstaltung</Label>
             <Select id="typ" value={typ} onChange={(e) => setTyp(e.target.value)}>
-              {EVENT_TYPEN.map((t) => (
+              {eventTypen.map((t) => (
                 <option key={t.wert} value={t.wert}>{t.label}</option>
               ))}
             </Select>

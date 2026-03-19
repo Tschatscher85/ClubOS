@@ -76,6 +76,8 @@ model Tenant {
   aktiveSportarten             String[] @default([])
   // Konfigurierbare Altersklassen (erscheinen in Team-Formularen)
   altersklassen                String[] @default([])
+  // Konfigurierbare Veranstaltungstypen (zusaetzlich zu System-Typen)
+  veranstaltungsTypen          String[] @default([])
   // Stripe Billing
   stripeCustomerId             String?
   stripeSubscriptionId         String?
@@ -968,6 +970,7 @@ model Halle {
   mapsUrl       String?
   parkplatzInfo String?
   zugangscode   String?
+  untergruende  String[] @default([])
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

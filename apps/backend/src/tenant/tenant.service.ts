@@ -353,4 +353,40 @@ export class TenantService {
     });
     return { nachricht: 'Altersklassen gespeichert.', altersklassen };
   }
+
+  // ==================== Veranstaltungstypen ====================
+
+  private static readonly STANDARD_VERANSTALTUNGSTYPEN = [
+    { wert: 'TRAINING', label: 'Training' },
+    { wert: 'MATCH', label: 'Spiel' },
+    { wert: 'TOURNAMENT', label: 'Turnier' },
+    { wert: 'EVENT', label: 'Veranstaltung' },
+    { wert: 'VOLUNTEER', label: 'Helfereinsatz' },
+    { wert: 'TRIP', label: 'Ausflug' },
+    { wert: 'MEETING', label: 'Besprechung' },
+  ];
+
+  async veranstaltungstypenAbrufen(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { veranstaltungsTypen: true },
+    });
+    if (!tenant?.veranstaltungsTypen || tenant.veranstaltungsTypen.length === 0) {
+      return TenantService.STANDARD_VERANSTALTUNGSTYPEN;
+    }
+    // Gespeichert als JSON-Strings
+    try {
+      return tenant.veranstaltungsTypen.map((t) => JSON.parse(t));
+    } catch {
+      return TenantService.STANDARD_VERANSTALTUNGSTYPEN;
+    }
+  }
+
+  async veranstaltungstypenSetzen(tenantId: string, typen: Array<{ wert: string; label: string }>) {
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { veranstaltungsTypen: typen.map((t) => JSON.stringify(t)) },
+    });
+    return { nachricht: 'Veranstaltungstypen gespeichert.', typen };
+  }
 }

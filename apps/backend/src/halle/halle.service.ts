@@ -27,6 +27,7 @@ export class HalleService {
         mapsUrl: dto.mapsUrl,
         parkplatzInfo: dto.parkplatzInfo,
         zugangscode: dto.zugangscode,
+        untergruende: dto.untergruende ?? [],
       },
     });
   }
@@ -85,6 +86,7 @@ export class HalleService {
         ...(dto.mapsUrl !== undefined && { mapsUrl: dto.mapsUrl }),
         ...(dto.parkplatzInfo !== undefined && { parkplatzInfo: dto.parkplatzInfo }),
         ...(dto.zugangscode !== undefined && { zugangscode: dto.zugangscode }),
+        ...(dto.untergruende !== undefined && { untergruende: dto.untergruende }),
       },
     });
   }

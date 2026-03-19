@@ -5,6 +5,8 @@ import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, M
 import Link from 'next/link';
 import { AdressSuche } from '@/components/kalender/adress-suche';
 import { altersklassenLaden, altersklassenSpeichern, altersklassenFallback } from '@/lib/altersklassen';
+import { veranstaltungstypenLaden, veranstaltungstypenSpeichern, veranstaltungstypenFallback } from '@/lib/veranstaltungstypen';
+import type { VeranstaltungsTyp } from '@/lib/veranstaltungstypen';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -938,6 +940,9 @@ export default function EinstellungenPage() {
       {/* Altersklassen */}
       {istAdmin && <AltersklassenCard />}
 
+      {/* Veranstaltungstypen */}
+      {istAdmin && <VeranstaltungstypenCard />}
+
       {/* Passwort aendern */}
       <Card>
         <CardHeader>
@@ -1022,6 +1027,7 @@ interface Sportstaette {
   name: string;
   adresse: string | null;
   kapazitaet: number | null;
+  untergruende?: string[];
 }
 
 function SportstaettenCard() {
@@ -1032,7 +1038,13 @@ function SportstaettenCard() {
   const [formName, setFormName] = useState('');
   const [formAdresse, setFormAdresse] = useState('');
   const [formKapazitaet, setFormKapazitaet] = useState('');
+  const [formUntergruende, setFormUntergruende] = useState<string[]>([]);
   const [speichern, setSpeichern] = useState(false);
+
+  const UNTERGRUND_OPTIONEN = [
+    'Halle', 'Rasen', 'Kunstrasen', 'Asche', 'Hartplatz',
+    'Tartanbahn', 'Schwimmbad', 'Sonstiges',
+  ];
 
   const laden = async () => {
     try {
@@ -1054,6 +1066,7 @@ function SportstaettenCard() {
     setFormName('');
     setFormAdresse('');
     setFormKapazitaet('');
+    setFormUntergruende([]);
     setFormOffen(true);
   };
 
@@ -1062,6 +1075,7 @@ function SportstaettenCard() {
     setFormName(s.name);
     setFormAdresse(s.adresse || '');
     setFormKapazitaet(s.kapazitaet ? String(s.kapazitaet) : '');
+    setFormUntergruende(s.untergruende || []);
     setFormOffen(true);
   };
 
@@ -1073,6 +1087,7 @@ function SportstaettenCard() {
         name: formName,
         adresse: formAdresse || undefined,
         kapazitaet: formKapazitaet ? parseInt(formKapazitaet) : undefined,
+        untergruende: formUntergruende,
       };
       if (bearbeitenId) {
         await apiClient.put(`/hallen/${bearbeitenId}`, daten);
@@ -1135,7 +1150,12 @@ function SportstaettenCard() {
                     )}
                     {s.kapazitaet && (
                       <p className="text-xs text-muted-foreground">
-                        Kapazitaet: {s.kapazitaet} Personen
+                        Kapazität: {s.kapazitaet} Personen
+                      </p>
+                    )}
+                    {s.untergruende && s.untergruende.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Untergründe: {s.untergruende.join(', ')}
                       </p>
                     )}
                   </div>
@@ -1188,9 +1208,40 @@ function SportstaettenCard() {
                     placeholder="z.B. 200"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Untergründe (mehrere möglich)</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {UNTERGRUND_OPTIONEN.map((ug) => (
+                      <label
+                        key={ug}
+                        className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm cursor-pointer transition-colors ${
+                          formUntergruende.includes(ug.toUpperCase())
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'hover:bg-accent'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formUntergruende.includes(ug.toUpperCase())}
+                          onChange={(e) => {
+                            const wert = ug.toUpperCase();
+                            if (e.target.checked) {
+                              setFormUntergruende([...formUntergruende, wert]);
+                            } else {
+                              setFormUntergruende(formUntergruende.filter((u) => u !== wert));
+                            }
+                          }}
+                          className="sr-only"
+                        />
+                        {ug}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex gap-2">
                   <Button onClick={handleSpeichern} disabled={!formName || speichern} size="sm">
-                    {speichern ? 'Speichern...' : bearbeitenId ? 'Aktualisieren' : 'Hinzufuegen'}
+                    {speichern ? 'Speichern...' : bearbeitenId ? 'Aktualisieren' : 'Hinzufügen'}
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => setFormOffen(false)}>
                     Abbrechen
@@ -1313,6 +1364,124 @@ function AltersklassenCard() {
               </Button>
               <Button variant="ghost" onClick={handleZuruecksetzen}>
                 Zuruecksetzen
+              </Button>
+              {gespeichert && (
+                <span className="text-sm text-green-600">Gespeichert!</span>
+              )}
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ==================== Veranstaltungstypen-Verwaltung ====================
+
+function VeranstaltungstypenCard() {
+  const [typen, setTypen] = useState<VeranstaltungsTyp[]>([]);
+  const [ladend, setLadend] = useState(true);
+  const [neuesLabel, setNeuesLabel] = useState('');
+  const [gespeichert, setGespeichert] = useState(false);
+
+  useEffect(() => {
+    veranstaltungstypenLaden().then((daten) => {
+      setTypen(daten);
+      setLadend(false);
+    });
+  }, []);
+
+  const handleHinzufuegen = () => {
+    if (!neuesLabel.trim()) return;
+    const wert = neuesLabel.trim().toUpperCase().replace(/[^A-Z0-9]/g, '_');
+    if (typen.find((t) => t.wert === wert)) return;
+    setTypen([...typen, { wert, label: neuesLabel.trim() }]);
+    setNeuesLabel('');
+  };
+
+  const handleEntfernen = (index: number) => {
+    setTypen(typen.filter((_, i) => i !== index));
+  };
+
+  const handleLabelAendern = (index: number, label: string) => {
+    setTypen(typen.map((t, i) => i === index ? { ...t, label } : t));
+  };
+
+  const handleSpeichern = async () => {
+    try {
+      await veranstaltungstypenSpeichern(typen);
+      setGespeichert(true);
+      setTimeout(() => setGespeichert(false), 3000);
+    } catch (error) {
+      console.error('Fehler:', error);
+    }
+  };
+
+  const handleZuruecksetzen = () => {
+    setTypen(veranstaltungstypenFallback());
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Calendar className="h-5 w-5" />
+          Veranstaltungstypen
+        </CardTitle>
+        <CardDescription>
+          Passen Sie die Veranstaltungstypen an. Labels können umbenannt, neue Typen hinzugefügt oder bestehende entfernt werden.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {ladend ? (
+          <p className="text-sm text-muted-foreground">Laden...</p>
+        ) : (
+          <>
+            <div className="space-y-2">
+              {typen.map((typ, index) => (
+                <div
+                  key={typ.wert}
+                  className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2"
+                >
+                  <Badge variant="outline" className="text-xs shrink-0 font-mono">
+                    {typ.wert}
+                  </Badge>
+                  <Input
+                    value={typ.label}
+                    onChange={(e) => handleLabelAendern(index, e.target.value)}
+                    className="flex-1 h-8"
+                  />
+                  <button
+                    onClick={() => handleEntfernen(index)}
+                    className="text-xs text-destructive hover:text-destructive/80"
+                    title="Entfernen"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <Input
+                value={neuesLabel}
+                onChange={(e) => setNeuesLabel(e.target.value)}
+                placeholder="z.B. Vereinsfest, Generalversammlung..."
+                className="flex-1"
+                onKeyDown={(e) => e.key === 'Enter' && handleHinzufuegen()}
+              />
+              <Button variant="outline" size="sm" onClick={handleHinzufuegen} disabled={!neuesLabel.trim()}>
+                Hinzufügen
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={handleSpeichern}>
+                <Save className="h-4 w-4 mr-2" />
+                Typen speichern
+              </Button>
+              <Button variant="ghost" onClick={handleZuruecksetzen}>
+                Zurücksetzen
               </Button>
               {gespeichert && (
                 <span className="text-sm text-green-600">Gespeichert!</span>

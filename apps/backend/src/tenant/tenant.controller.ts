@@ -258,4 +258,23 @@ export class TenantController {
   ) {
     return this.tenantService.altersklassenSetzen(tenantId, body.altersklassen);
   }
+
+  // ==================== Veranstaltungstypen ====================
+
+  @Get('veranstaltungstypen')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER, Role.MEMBER, Role.PARENT)
+  @ApiOperation({ summary: 'Konfigurierte Veranstaltungstypen abrufen' })
+  async veranstaltungstypenAbrufen(@AktuellerBenutzer('tenantId') tenantId: string) {
+    return this.tenantService.veranstaltungstypenAbrufen(tenantId);
+  }
+
+  @Put('veranstaltungstypen')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Veranstaltungstypen konfigurieren' })
+  async veranstaltungstypenSetzen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Body() body: { typen: Array<{ wert: string; label: string }> },
+  ) {
+    return this.tenantService.veranstaltungstypenSetzen(tenantId, body.typen);
+  }
 }

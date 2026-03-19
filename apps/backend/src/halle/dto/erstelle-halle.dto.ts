@@ -1,4 +1,4 @@
-import { IsString, MinLength, IsOptional, IsInt, Min, IsIn, IsNumber } from 'class-validator';
+import { IsString, MinLength, IsOptional, IsInt, Min, IsIn, IsNumber, IsArray } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ErstelleHalleDto {
@@ -42,6 +42,12 @@ export class ErstelleHalleDto {
   @IsOptional()
   @IsString()
   zugangscode?: string;
+
+  @ApiPropertyOptional({ example: ['HALLE', 'KUNSTRASEN'], description: 'Verfuegbare Untergruende' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  untergruende?: string[];
 }
 
 export class AktualisiereHalleDto {
@@ -86,6 +92,12 @@ export class AktualisiereHalleDto {
   @IsOptional()
   @IsString()
   zugangscode?: string;
+
+  @ApiPropertyOptional({ example: ['HALLE', 'KUNSTRASEN'], description: 'Verfuegbare Untergruende' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  untergruende?: string[];
 }
 
 const WOCHENTAGE = ['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'] as const;
