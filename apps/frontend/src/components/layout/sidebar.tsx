@@ -15,6 +15,8 @@ import {
   Database,
   Settings,
   ShieldCheck,
+  UserCircle,
+  FileEdit,
 } from 'lucide-react';
 import { useTenant, useBenutzer } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -39,6 +41,7 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
     titel: '',
     eintraege: [
       { href: ROUTEN.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard, rollen: null },
+      { href: ROUTEN.MEIN_PROFIL, label: 'Mein Profil', icon: UserCircle, rollen: null },
     ],
   },
   {
@@ -71,6 +74,7 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
       { href: ROUTEN.WORKFLOWS, label: 'Workflows', icon: Zap, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'WORKFLOWS' },
       { href: ROUTEN.DFBNET, label: 'DFBnet Import/Export', icon: Database, rollen: ['SUPERADMIN', 'ADMIN'] },
       { href: ROUTEN.EINSTELLUNGEN, label: 'Einstellungen', icon: Settings, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'EINSTELLUNGEN' },
+      { href: ROUTEN.AENDERUNGSANTRAEGE, label: 'Änderungsanträge', icon: FileEdit, rollen: ['SUPERADMIN', 'ADMIN'] },
     ],
   },
   {

@@ -29,4 +29,6 @@ export const ROUTEN = {
   EINSTELLUNGEN: '/einstellungen',
   POSTEINGANG: '/posteingang',
   TRAININGSPLAENE: '/trainingsplaene',
+  MEIN_PROFIL: '/mein-profil',
+  AENDERUNGSANTRAEGE: '/einstellungen/aenderungsantraege',
 } as const;

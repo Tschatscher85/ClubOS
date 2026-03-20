@@ -247,12 +247,18 @@ model Member {
   createdAt                  DateTime       @default(now())
   updatedAt                  DateTime       @updatedAt
 
-  attendances        Attendance[]
-  teamMembers        TeamMember[]
-  kasseBuchungen     KasseBuchung[]
-  trikotVergaben     TrikotVergabe[]
-  verletzungen       Verletzung[]
-  entwicklungsboegen Entwicklungsbogen[]
+  // Selbstverwaltung
+  notfallKontakt     String?
+  notfallTelefon     String?
+  iban               String?
+
+  attendances          Attendance[]
+  teamMembers          TeamMember[]
+  kasseBuchungen       KasseBuchung[]
+  trikotVergaben       TrikotVergabe[]
+  verletzungen         Verletzung[]
+  entwicklungsboegen   Entwicklungsbogen[]
+  aenderungsantraege   MemberAenderungsantrag[]
 
   @@index([tenantId])
   @@index([email])
@@ -276,6 +282,32 @@ enum Ermaessigung {
   FAMILIE // Familienermaessigung (ab 2. Mitglied)
   SOZIAL // Sozialpass / ALG-Bescheid
   SONSTIGE // Individuell vereinbart
+}
+
+// ==================== Aenderungsantraege (Mitglieder-Selbstverwaltung) ====================
+
+model MemberAenderungsantrag {
+  id             String            @id @default(cuid())
+  tenantId       String
+  memberId       String
+  member         Member            @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  feld           String            // Welches Feld: phone, address, iban, notfallKontakt, notfallTelefon
+  alterWert      String?           // Alter Wert
+  neuerWert      String            // Neuer Wert
+  status         AenderungsStatus  @default(PENDING)
+  erstelltAm     DateTime          @default(now())
+  bearbeitetAm   DateTime?
+  bearbeitetVon  String?           // userId des Admins
+
+  @@index([tenantId])
+  @@index([memberId])
+  @@index([status])
+}
+
+enum AenderungsStatus {
+  PENDING
+  GENEHMIGT
+  ABGELEHNT
 }
 
 enum NachweisStatus {
