@@ -597,6 +597,15 @@ Wichtig:
   // ==================== Event-Landingpages ====================
 
   /**
+   * Event-Landingpage nach Event-ID laden
+   */
+  async eventLandingpageLaden(eventId: string) {
+    return this.prisma.eventLandingpage.findUnique({
+      where: { eventId },
+    });
+  }
+
+  /**
    * Event-Landingpage erstellen
    */
   async eventLandingpageErstellen(

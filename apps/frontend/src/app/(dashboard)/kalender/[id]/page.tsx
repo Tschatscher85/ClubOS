@@ -18,7 +18,12 @@ import {
   CloudSun,
   Pencil,
   Trash2,
+  Globe,
+  Copy,
+  ExternalLink,
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -162,6 +167,24 @@ export default function EventDetailPage() {
   const [anmeldungLadend, setAnmeldungLadend] = useState(false);
   const [bearbeitenOffen, setBearbeitenOffen] = useState(false);
 
+  // Landingpage
+  const [lpOffen, setLpOffen] = useState(false);
+  const [lpDaten, setLpDaten] = useState<{
+    id?: string;
+    slug: string;
+    titel: string;
+    beschreibung: string;
+    ort: string;
+    datum: string;
+    zeitplan: string;
+    anfahrt: string;
+    kontaktEmail: string;
+    kontaktTelefon: string;
+  } | null>(null);
+  const [lpLadend, setLpLadend] = useState(false);
+  const [lpErfolg, setLpErfolg] = useState('');
+  const [lpFehler, setLpFehler] = useState('');
+
   const datenLaden = useCallback(async () => {
     try {
       const [eventDaten, anmeldungDaten, kommentarDaten] = await Promise.all([
@@ -253,6 +276,94 @@ export default function EventDetailPage() {
   };
 
   const istAdmin = benutzer && ['TRAINER', 'ADMIN', 'SUPERADMIN'].includes(benutzer.rolle);
+  const istVorstand = benutzer && ['ADMIN', 'SUPERADMIN'].includes(benutzer.rolle);
+
+  // Landingpage-Status laden
+  useEffect(() => {
+    if (!istVorstand || !eventId) return;
+    apiClient.get<{ id: string; slug: string; titel: string; beschreibung: string | null; ort: string | null; datum: string | null; zeitplan: string | null; anfahrt: string | null; kontaktEmail: string | null; kontaktTelefon: string | null } | null>(
+      `/homepage/admin/event-landingpage/by-event/${eventId}`,
+    ).then((data) => {
+      if (data) {
+        setLpDaten({
+          id: data.id,
+          slug: data.slug,
+          titel: data.titel,
+          beschreibung: data.beschreibung || '',
+          ort: data.ort || '',
+          datum: data.datum || '',
+          zeitplan: data.zeitplan || '',
+          anfahrt: data.anfahrt || '',
+          kontaktEmail: data.kontaktEmail || '',
+          kontaktTelefon: data.kontaktTelefon || '',
+        });
+      }
+    }).catch(() => {
+      // Noch keine Landingpage vorhanden
+    });
+  }, [istVorstand, eventId]);
+
+  const handleLpErstellen = () => {
+    if (!event) return;
+    const autoSlug = event.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 50);
+    setLpDaten({
+      slug: autoSlug,
+      titel: event.title,
+      beschreibung: '',
+      ort: event.location || '',
+      datum: '',
+      zeitplan: '',
+      anfahrt: '',
+      kontaktEmail: '',
+      kontaktTelefon: '',
+    });
+    setLpOffen(true);
+  };
+
+  const handleLpSpeichern = async () => {
+    if (!lpDaten || !lpDaten.slug || !lpDaten.titel) return;
+    setLpLadend(true);
+    setLpFehler('');
+    try {
+      if (lpDaten.id) {
+        await apiClient.put(`/homepage/admin/event-landingpage/${lpDaten.id}`, {
+          titel: lpDaten.titel,
+          beschreibung: lpDaten.beschreibung || undefined,
+          ort: lpDaten.ort || undefined,
+          datum: lpDaten.datum || undefined,
+          zeitplan: lpDaten.zeitplan || undefined,
+          anfahrt: lpDaten.anfahrt || undefined,
+          kontaktEmail: lpDaten.kontaktEmail || undefined,
+          kontaktTelefon: lpDaten.kontaktTelefon || undefined,
+        });
+      } else {
+        const result = await apiClient.post<{ id: string }>('/homepage/admin/event-landingpage', {
+          eventId,
+          slug: lpDaten.slug,
+          titel: lpDaten.titel,
+          beschreibung: lpDaten.beschreibung || undefined,
+          ort: lpDaten.ort || undefined,
+          datum: lpDaten.datum || undefined,
+          zeitplan: lpDaten.zeitplan || undefined,
+          anfahrt: lpDaten.anfahrt || undefined,
+          kontaktEmail: lpDaten.kontaktEmail || undefined,
+          kontaktTelefon: lpDaten.kontaktTelefon || undefined,
+        });
+        setLpDaten((prev) => prev ? { ...prev, id: result.id } : prev);
+      }
+      setLpErfolg('Landingpage gespeichert!');
+      setTimeout(() => setLpErfolg(''), 3000);
+      setLpOffen(false);
+    } catch (error) {
+      setLpFehler(error instanceof Error ? error.message : 'Fehler beim Speichern.');
+    } finally {
+      setLpLadend(false);
+    }
+  };
 
   if (ladend) {
     return (
@@ -617,6 +728,163 @@ export default function EventDetailPage() {
             hallAddress: event.hallAddress,
           }}
         />
+      )}
+
+      {/* Landingpage / Werbung */}
+      {istVorstand && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              Landingpage / Werbung
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {lpDaten?.id && !lpOffen ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Badge variant="default" className="bg-green-600">Aktiv</Badge>
+                  <a
+                    href={`/event/${lpDaten.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                  >
+                    /event/{lpDaten.slug}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/event/${lpDaten.slug}`);
+                      setLpErfolg('Link kopiert!');
+                      setTimeout(() => setLpErfolg(''), 2000);
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                {lpErfolg && <span className="text-sm text-green-600">{lpErfolg}</span>}
+                <Button variant="outline" size="sm" onClick={() => setLpOffen(true)}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Landingpage bearbeiten
+                </Button>
+              </div>
+            ) : !lpOffen ? (
+              <div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Erstellen Sie eine oeffentliche Werbeseite fuer diese Veranstaltung.
+                  Ideal fuer Spiele, Turniere und Events - teilen Sie den Link mit Zuschauern, Eltern und Sponsoren.
+                </p>
+                <Button variant="outline" size="sm" onClick={handleLpErstellen}>
+                  <Globe className="h-4 w-4 mr-2" />
+                  Landingpage erstellen
+                </Button>
+              </div>
+            ) : null}
+
+            {lpOffen && lpDaten && (
+              <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                {lpFehler && <p className="text-sm text-destructive">{lpFehler}</p>}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">URL-Slug *</Label>
+                    <Input
+                      value={lpDaten.slug}
+                      onChange={(e) => setLpDaten({ ...lpDaten, slug: e.target.value })}
+                      placeholder="z.b. sommerturnier-2026"
+                      disabled={!!lpDaten.id}
+                    />
+                    {!lpDaten.id && (
+                      <p className="text-xs text-muted-foreground">/event/{lpDaten.slug || '...'}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Titel *</Label>
+                    <Input
+                      value={lpDaten.titel}
+                      onChange={(e) => setLpDaten({ ...lpDaten, titel: e.target.value })}
+                      placeholder="Titel der Veranstaltung"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Beschreibung (HTML)</Label>
+                  <Textarea
+                    value={lpDaten.beschreibung}
+                    onChange={(e) => setLpDaten({ ...lpDaten, beschreibung: e.target.value })}
+                    placeholder="Beschreibung fuer Besucher der Werbeseite..."
+                    rows={3}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Ort / Adresse</Label>
+                    <Input
+                      value={lpDaten.ort}
+                      onChange={(e) => setLpDaten({ ...lpDaten, ort: e.target.value })}
+                      placeholder="z.B. Jahnhalle Goeppingen"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Datum (Freitext)</Label>
+                    <Input
+                      value={lpDaten.datum}
+                      onChange={(e) => setLpDaten({ ...lpDaten, datum: e.target.value })}
+                      placeholder="z.B. 14.-15. Juni 2026"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Zeitplan / Ablauf (HTML)</Label>
+                  <Textarea
+                    value={lpDaten.zeitplan}
+                    onChange={(e) => setLpDaten({ ...lpDaten, zeitplan: e.target.value })}
+                    placeholder="z.B. 09:00 Einlass, 10:00 Anpfiff..."
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Anfahrt (HTML)</Label>
+                  <Textarea
+                    value={lpDaten.anfahrt}
+                    onChange={(e) => setLpDaten({ ...lpDaten, anfahrt: e.target.value })}
+                    placeholder="Anfahrtsbeschreibung, Parkplaetze..."
+                    rows={2}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Kontakt E-Mail</Label>
+                    <Input
+                      value={lpDaten.kontaktEmail}
+                      onChange={(e) => setLpDaten({ ...lpDaten, kontaktEmail: e.target.value })}
+                      placeholder="info@verein.de"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Kontakt Telefon</Label>
+                    <Input
+                      value={lpDaten.kontaktTelefon}
+                      onChange={(e) => setLpDaten({ ...lpDaten, kontaktTelefon: e.target.value })}
+                      placeholder="07161 12345"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button onClick={handleLpSpeichern} disabled={lpLadend || !lpDaten.slug || !lpDaten.titel} size="sm">
+                    {lpLadend ? 'Speichern...' : (lpDaten.id ? 'Speichern' : 'Landingpage erstellen')}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setLpOffen(false)}>
+                    Abbrechen
+                  </Button>
+                  {lpErfolg && <span className="text-sm text-green-600 self-center">{lpErfolg}</span>}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Kommentare */}

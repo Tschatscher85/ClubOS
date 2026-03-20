@@ -135,6 +135,16 @@ export class HomepageController {
     );
   }
 
+  @Get('admin/event-landingpage/by-event/:eventId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Event-Landingpage nach Event-ID laden' })
+  async eventLandingpageLaden(
+    @Param('eventId') eventId: string,
+  ) {
+    return this.homepageService.eventLandingpageLaden(eventId);
+  }
+
   @Put('admin/event-landingpage/:id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
