@@ -119,6 +119,7 @@ model Tenant {
   referral           Referral?
   beitragsklassen    Beitragsklasse[]
   umfragen           Umfrage[]
+  aushaenge          Aushang[]
 
   @@index([slug])
 }
@@ -386,6 +387,7 @@ model Team {
   aufstellungen      Aufstellung[]
   entwicklungsboegen Entwicklungsbogen[]
   umfragen           Umfrage[]
+  aushaenge          Aushang[]
 
   @@index([tenantId])
   @@index([abteilungId])
@@ -1634,4 +1636,31 @@ model UmfrageAntwort {
   beantwortetAm DateTime @default(now())
 
   @@index([umfrageId])
+}
+
+// ==================== Schwarzes Brett (Aushaenge) ====================
+
+model Aushang {
+  id           String           @id @default(cuid())
+  tenantId     String
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teamId       String?
+  team         Team?            @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  titel        String
+  inhalt       String           // HTML content
+  kategorie    AushangKategorie
+  bildUrl      String?
+  ablaufDatum  DateTime?        // Auto-hide after this date
+  erstelltVon  String           // userId
+  erstelltAm   DateTime         @default(now())
+
+  @@index([tenantId])
+  @@index([teamId])
+}
+
+enum AushangKategorie {
+  INFO
+  WICHTIG
+  TRAINING
+  AUSFALL
 }

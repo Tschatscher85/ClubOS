@@ -32,4 +32,5 @@ export const ROUTEN = {
   MEIN_PROFIL: '/mein-profil',
   AENDERUNGSANTRAEGE: '/einstellungen/aenderungsantraege',
   UMFRAGEN: '/umfragen',
+  SCHWARZES_BRETT: '/schwarzes-brett',
 } as const;

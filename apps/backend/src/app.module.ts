@@ -50,6 +50,7 @@ import { BillingModule } from './billing/billing.module';
 import { BeitragModule } from './beitrag/beitrag.module';
 import { AdminModule } from './admin/admin.module';
 import { UmfrageModule } from './umfrage/umfrage.module';
+import { AushangModule } from './aushang/aushang.module';
 import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
 import { TenantStatusMiddleware } from './common/middleware/tenant-status.middleware';
 import configuration from './config/configuration';
@@ -125,6 +126,7 @@ import configuration from './config/configuration';
     BeitragModule,
     AdminModule,
     UmfrageModule,
+    AushangModule,
   ],
   providers: [
     {

@@ -16,13 +16,17 @@ import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { HomepageService } from './homepage.service';
+import { AushangService } from '../aushang/aushang.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { AktuellerBenutzer } from '../common/decorators/aktueller-benutzer.decorator';
 
 @ApiTags('Homepage')
 @Controller('homepage')
 export class HomepageController {
-  constructor(private homepageService: HomepageService) {}
+  constructor(
+    private homepageService: HomepageService,
+    private aushangService: AushangService,
+  ) {}
 
   // ==================== Admin-Endpoints (geschuetzt) ====================
 
@@ -226,6 +230,17 @@ export class HomepageController {
     @Query('monat') monat?: string,
   ) {
     return this.homepageService.oeffentlicherKalender(slug, monat);
+  }
+
+  // ==================== Oeffentliches Schwarzes Brett ====================
+
+  @Get('public/:slug/aktuell')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Oeffentliche Aushaenge (Schwarzes Brett) laden' })
+  @ApiResponse({ status: 200, description: 'Aktive Aushaenge des Vereins' })
+  @ApiResponse({ status: 404, description: 'Verein nicht gefunden' })
+  async oeffentlicheAushaenge(@Param('slug') slug: string) {
+    return this.aushangService.oeffentlichAbrufen(slug);
   }
 
   // ==================== iCal Calendar Feed ====================
