@@ -472,7 +472,7 @@ Admin: /admin Dashboard (Superadmin)
 
 #### Infrastruktur (Deployment)
 - [x] PM2 Prozess-Management (ecosystem.config.js, Auto-Restart, Logging)
-- [ ] Docker-Setup fuer Produktion
+- [x] Docker-Setup (Dockerfiles + docker-compose.prod.yml + standalone Next.js)
 
 #### Mobile App
 - [ ] Expo React Native Setup (iOS + Android)
@@ -484,9 +484,9 @@ Admin: /admin Dashboard (Superadmin)
 - [x] Umlaute in 100+ UI-Strings korrigiert (löschen, für, Zurück, hinzufügen, etc.)
 
 #### Nice-to-Have
+- [x] Calendar Sync (iCal Feed /homepage/ical/:slug, Google Calendar/Apple/Outlook)
 - [ ] KI-Trainer-Assistent
 - [ ] E-Rechnung (ZUGFeRD)
-- [ ] Calendar Sync (iCal Feed, Google Calendar)
 
 ### Deployment (aktuell):
 - Server: Eigene Ubuntu VM (kein Docker)
