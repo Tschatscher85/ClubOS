@@ -468,7 +468,7 @@ export default function PosteingangInhalt() {
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span className="lg:hidden">Zurueck</span>
+          <span className="lg:hidden">Zurück</span>
         </button>
         <div className="flex items-center gap-1">
           <Button

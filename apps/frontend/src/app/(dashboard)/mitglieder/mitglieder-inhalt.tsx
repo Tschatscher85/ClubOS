@@ -259,7 +259,7 @@ export default function MitgliederInhalt() {
   };
 
   const handleLoeschen = async (id: string) => {
-    if (!confirm('Mitglied wirklich loeschen?')) return;
+    if (!confirm('Mitglied wirklich löschen?')) return;
     try {
       await apiClient.delete(`/mitglieder/${id}`);
       datenLaden();

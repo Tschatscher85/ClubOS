@@ -150,7 +150,7 @@ export default function BeitraegePage() {
   };
 
   const handleLoeschen = async (id: string) => {
-    if (!confirm('Beitragsklasse wirklich loeschen? Zugewiesene Mitglieder verlieren ihre Zuordnung.')) return;
+    if (!confirm('Beitragsklasse wirklich löschen? Zugewiesene Mitglieder verlieren ihre Zuordnung.')) return;
     try {
       await apiClient.delete(`/beitragsklassen/${id}`);
       laden();
@@ -318,7 +318,7 @@ export default function BeitraegePage() {
             <DialogDescription>
               {bearbeitungsKlasse
                 ? `${bearbeitungsKlasse.name} bearbeiten`
-                : 'Erstellen Sie eine neue Beitragsklasse fuer Ihren Verein'}
+                : 'Erstellen Sie eine neue Beitragsklasse für Ihren Verein'}
             </DialogDescription>
           </DialogHeader>
 
@@ -330,7 +330,7 @@ export default function BeitraegePage() {
                 id="bk-name"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                placeholder="z.B. Jugend Fussball"
+                placeholder="z.B. Jugend Fußball"
               />
             </div>
 

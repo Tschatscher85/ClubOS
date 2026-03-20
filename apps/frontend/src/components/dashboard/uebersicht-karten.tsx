@@ -34,7 +34,7 @@ export function UebersichtKarten() {
 
   const [mitglieder, setMitglieder] = useState<MitgliederStatistik | null>(null);
   const [teams, setTeams] = useState<TeamStatistik | null>(null);
-  const [naechstes, setNaechstes] = useState<NaechstesEvent | null | undefined>(undefined);
+  const [nächstes, setNaechstes] = useState<NaechstesEvent | null | undefined>(undefined);
   const [ungelesen, setUngelesen] = useState<number | null>(null);
   const [anwesenheit, setAnwesenheit] = useState<AnwesenheitsRate | null>(null);
 
@@ -42,7 +42,7 @@ export function UebersichtKarten() {
     apiClient.get<MitgliederStatistik>('/mitglieder/statistik').then(setMitglieder).catch(() => {});
     const teamEndpoint = istTrainer ? '/teams/meine' : '/teams/statistik';
     apiClient.get<TeamStatistik>(teamEndpoint).then(setTeams).catch(() => {});
-    apiClient.get<NaechstesEvent | null>('/veranstaltungen/naechstes').then((data) => {
+    apiClient.get<NaechstesEvent | null>('/veranstaltungen/nächstes').then((data) => {
       setNaechstes(data);
       if (data?._count?.attendances !== undefined) {
         setAnwesenheit({ gesamt: data._count.attendances, zugesagt: 0 });
@@ -51,8 +51,8 @@ export function UebersichtKarten() {
     apiClient.get<{ ungelesen: number }>('/nachrichten/ungelesen').then((d) => setUngelesen(d.ungelesen)).catch(() => {});
   }, [istTrainer]);
 
-  const eventText = naechstes
-    ? new Date(naechstes.date).toLocaleDateString('de-DE', {
+  const eventText = nächstes
+    ? new Date(nächstes.date).toLocaleDateString('de-DE', {
         weekday: 'short',
         day: '2-digit',
         month: '2-digit',
@@ -77,8 +77,8 @@ export function UebersichtKarten() {
     {
       titel: 'Naechstes Event',
       wert: eventText,
-      beschreibung: naechstes
-        ? `${naechstes.title} (${naechstes.team.name})`
+      beschreibung: nächstes
+        ? `${nächstes.title} (${nächstes.team.name})`
         : 'Noch keine geplant',
       icon: Calendar,
     },
@@ -88,12 +88,12 @@ export function UebersichtKarten() {
       beschreibung: 'Ungelesene Nachrichten',
       icon: MessageSquare,
     },
-    ...(naechstes && naechstes._count
+    ...(nächstes && nächstes._count
       ? [
           {
             titel: 'Anwesenheit',
-            wert: String(naechstes._count.attendances),
-            beschreibung: `Anmeldungen fuer ${naechstes.title}`,
+            wert: String(nächstes._count.attendances),
+            beschreibung: `Anmeldungen fuer ${nächstes.title}`,
             icon: ClipboardCheck,
           },
         ]

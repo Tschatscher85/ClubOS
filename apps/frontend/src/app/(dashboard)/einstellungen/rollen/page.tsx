@@ -77,7 +77,7 @@ export default function RollenVorlagenPage() {
   >({});
   const [speichernLadend, setSpeichernLadend] = useState<string | null>(null);
 
-  // Dialog fuer neue Rolle
+  // Dialog für neue Rolle
   const [dialogOffen, setDialogOffen] = useState(false);
   const [neueName, setNeueName] = useState('');
   const [neueBeschreibung, setNeueBeschreibung] = useState('');
@@ -107,7 +107,7 @@ export default function RollenVorlagenPage() {
     setTimeout(() => setErfolg(''), 5000);
   };
 
-  // Berechtigung fuer eine bestehende Rolle toggeln
+  // Berechtigung für eine bestehende Rolle toggeln
   const toggleBerechtigung = (rolleId: string, key: string) => {
     setGeaenderteBerechtigungen((prev) => {
       const vorlage = vorlagen.find((v) => v.id === rolleId);
@@ -160,12 +160,12 @@ export default function RollenVorlagenPage() {
   };
 
   const handleLoeschen = async (rolleId: string) => {
-    if (!confirm('Rolle wirklich loeschen? Dies kann nicht rueckgaengig gemacht werden.')) return;
+    if (!confirm('Rolle wirklich löschen? Dies kann nicht rückgängig gemacht werden.')) return;
     setFehler('');
     try {
       await apiClient.delete(`/rollen-vorlagen/${rolleId}`);
       await laden();
-      zeigeErfolg('Rolle geloescht.');
+      zeigeErfolg('Rolle gelöscht.');
     } catch (error) {
       setFehler(error instanceof Error ? error.message : 'Fehler beim Loeschen.');
     }
@@ -226,7 +226,7 @@ export default function RollenVorlagenPage() {
           <div>
             <h1 className="text-2xl font-bold">Vereinsrollen</h1>
             <p className="text-muted-foreground">
-              Rollen-Vorlagen fuer Ihren Verein. Jede Rolle definiert welche Bereiche ein Benutzer
+              Rollen-Vorlagen für Ihren Verein. Jede Rolle definiert welche Bereiche ein Benutzer
               sehen und nutzen darf.
             </p>
           </div>
@@ -243,7 +243,7 @@ export default function RollenVorlagenPage() {
             <DialogHeader>
               <DialogTitle>Neue Rolle erstellen</DialogTitle>
               <DialogDescription>
-                Erstellen Sie eine neue Rollen-Vorlage fuer Ihren Verein.
+                Erstellen Sie eine neue Rollen-Vorlage für Ihren Verein.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 mt-2">

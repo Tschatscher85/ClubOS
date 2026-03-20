@@ -893,7 +893,7 @@ export default function MitgliedDetailPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Erstellt einen Login-Zugang fuer dieses Mitglied. Ein temporaeres
+              Erstellt einen Login-Zugang für dieses Mitglied. Ein temporaeres
               Passwort wird generiert.
               {!mitglied.email && !mitglied.parentEmail && (
                 <span className="block mt-1 text-destructive">

@@ -167,7 +167,7 @@ export default function KalenderInhalt() {
 
   const handleLoeschen = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Veranstaltung wirklich loeschen?')) return;
+    if (!confirm('Veranstaltung wirklich löschen?')) return;
     try {
       await apiClient.delete(`/veranstaltungen/${id}`);
       datenLaden();
@@ -201,8 +201,8 @@ export default function KalenderInhalt() {
     }
 
     while (tage.length < 42) {
-      const naechsterTag = tage.length - startTag - letzterTag.getDate() + 1;
-      tage.push({ datum: new Date(jahr, monat + 1, naechsterTag), istAktuellerMonat: false });
+      const nächsterTag = tage.length - startTag - letzterTag.getDate() + 1;
+      tage.push({ datum: new Date(jahr, monat + 1, nächsterTag), istAktuellerMonat: false });
     }
 
     return tage;
@@ -450,7 +450,7 @@ export default function KalenderInhalt() {
         <div className="space-y-2">
           {kommendeEvents.length === 0 && gefilterteBelegungen.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              Keine kommenden Veranstaltungen{hatFilter ? ' fuer diesen Filter' : ''}.
+              Keine kommenden Veranstaltungen{hatFilter ? ' für diesen Filter' : ''}.
             </div>
           ) : (
             <>
@@ -565,7 +565,7 @@ export default function KalenderInhalt() {
 
             {nachDatum.size === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                Keine kommenden Termine{hatFilter ? ' fuer diesen Filter' : ''}.
+                Keine kommenden Termine{hatFilter ? ' für diesen Filter' : ''}.
               </div>
             ) : (
               <div className="space-y-6">

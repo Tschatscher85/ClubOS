@@ -268,7 +268,7 @@ export default function KassePage() {
   };
 
   const katalogEintragLoeschen = async (id: string) => {
-    if (!confirm('Strafkatalog-Eintrag wirklich loeschen?')) return;
+    if (!confirm('Strafkatalog-Eintrag wirklich löschen?')) return;
     try {
       await apiClient.delete(`/kasse/${teamId}/katalog/${id}`);
       kassenDatenLaden();
@@ -764,7 +764,7 @@ export default function KassePage() {
               <Input
                 value={formGrund}
                 onChange={(e) => setFormGrund(e.target.value)}
-                placeholder="z.B. Getraenke fuer Mannschaftsabend"
+                placeholder="z.B. Getränke für Mannschaftsabend"
                 className="mt-1"
               />
             </div>

@@ -1098,10 +1098,10 @@ function AbteilungenCard() {
   };
 
   const handleLoeschen = async (id: string, name: string) => {
-    if (!confirm(`Abteilung "${name}" wirklich loeschen? Zugeordnete Teams verlieren ihre Abteilungszuordnung.`)) return;
+    if (!confirm(`Abteilung "${name}" wirklich löschen? Zugeordnete Teams verlieren ihre Abteilungszuordnung.`)) return;
     try {
       await apiClient.delete(`/abteilungen/${id}`);
-      setErfolg('Abteilung geloescht.');
+      setErfolg('Abteilung gelöscht.');
       setTimeout(() => setErfolg(''), 3000);
       laden();
     } catch (error) {
@@ -1115,7 +1115,7 @@ function AbteilungenCard() {
         id="abteilungen"
         titel="Abteilungen"
         icon={Building2}
-        beschreibung="Sportabteilungen Ihres Vereins verwalten (z.B. Fussball, Handball, Turnen)."
+        beschreibung="Sportabteilungen Ihres Vereins verwalten (z.B. Fußball, Handball, Turnen)."
         kinder={
           ladend ? <p className="text-sm text-muted-foreground">Laden...</p> : (
             <>
@@ -1165,7 +1165,7 @@ function AbteilungenCard() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Neue Abteilung erstellen</DialogTitle>
-            <DialogDescription>Legen Sie eine neue Sportabteilung fuer Ihren Verein an.</DialogDescription>
+            <DialogDescription>Legen Sie eine neue Sportabteilung für Ihren Verein an.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -1174,7 +1174,7 @@ function AbteilungenCard() {
                 id="abt-name"
                 value={neuerName}
                 onChange={(e) => setNeuerName(e.target.value)}
-                placeholder="z.B. Fussball, Handball"
+                placeholder="z.B. Fußball, Handball"
               />
             </div>
             <div className="space-y-2">
@@ -1390,10 +1390,10 @@ function TeamsCard() {
   };
 
   const handleLoeschen = async (id: string, name: string) => {
-    if (!confirm(`Team "${name}" wirklich loeschen?`)) return;
+    if (!confirm(`Team "${name}" wirklich löschen?`)) return;
     try {
       await apiClient.delete(`/teams/${id}`);
-      setErfolg('Team geloescht.');
+      setErfolg('Team gelöscht.');
       setTimeout(() => setErfolg(''), 3000);
       laden();
     } catch (error) {
@@ -1653,7 +1653,7 @@ function SportstaettenCard() {
     );
   };
 
-  const handleUntergrundHinzufuegen = () => {
+  const handleUntergrundHinzufügen = () => {
     const trimmed = neuerUntergrund.trim();
     if (!trimmed) return;
     const wert = trimmed.toUpperCase();
@@ -1848,7 +1848,7 @@ function SportstaettenCard() {
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
-                          handleUntergrundHinzufuegen();
+                          handleUntergrundHinzufügen();
                         }
                       }}
                     />
@@ -1856,7 +1856,7 @@ function SportstaettenCard() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={handleUntergrundHinzufuegen}
+                      onClick={handleUntergrundHinzufügen}
                       disabled={!neuerUntergrund.trim()}
                     >
                       <Plus className="h-4 w-4 mr-1" />
@@ -1944,7 +1944,7 @@ function AltersklassenCard() {
     await speichernUndMelden(neueKlassen);
   };
 
-  const handleHinzufuegen = async () => {
+  const handleHinzufügen = async () => {
     if (!neueKlasse.trim() || altersklassen.includes(neueKlasse.trim())) return;
     const neueKlassen = [...altersklassen, neueKlasse.trim()];
     setAltersklassen(neueKlassen);
@@ -2022,9 +2022,9 @@ function AltersklassenCard() {
                   onChange={(e) => setNeueKlasse(e.target.value)}
                   placeholder="z.B. U21, Damen, Herren 2..."
                   className="flex-1"
-                  onKeyDown={(e) => e.key === 'Enter' && handleHinzufuegen()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleHinzufügen()}
                 />
-                <Button variant="outline" size="sm" onClick={handleHinzufuegen} disabled={!neueKlasse.trim()}>
+                <Button variant="outline" size="sm" onClick={handleHinzufügen} disabled={!neueKlasse.trim()}>
                   <Plus className="h-4 w-4 mr-1" />
                   Hinzufügen
                 </Button>
@@ -2102,7 +2102,7 @@ function VeranstaltungstypenCard() {
     await speichernUndMelden(neueTypen);
   };
 
-  const handleHinzufuegen = async () => {
+  const handleHinzufügen = async () => {
     if (!neuesLabel.trim()) return;
     const wert = 'CUSTOM_' + neuesLabel.trim().toUpperCase().replace(/[^A-Z0-9]/g, '_');
     if (typen.find((t) => t.wert === wert)) return;
@@ -2222,9 +2222,9 @@ function VeranstaltungstypenCard() {
                   onChange={(e) => setNeuesLabel(e.target.value)}
                   placeholder="z.B. Vereinsfest, Generalversammlung..."
                   className="flex-1"
-                  onKeyDown={(e) => e.key === 'Enter' && handleHinzufuegen()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleHinzufügen()}
                 />
-                <Button variant="outline" size="sm" onClick={handleHinzufuegen} disabled={!neuesLabel.trim()}>
+                <Button variant="outline" size="sm" onClick={handleHinzufügen} disabled={!neuesLabel.trim()}>
                   <Plus className="h-4 w-4 mr-1" />
                   Hinzufügen
                 </Button>
@@ -2303,7 +2303,7 @@ function SportartenCard() {
     }
   };
 
-  const handleSportartHinzufuegen = async (name: string, icon: string) => {
+  const handleSportartHinzufügen = async (name: string, icon: string) => {
     if (!name.trim()) return;
     setFehler('');
     try {
@@ -2391,9 +2391,9 @@ function SportartenCard() {
                   onChange={(e) => setNeuerName(e.target.value)}
                   placeholder="z.B. Badminton"
                   className="flex-1"
-                  onKeyDown={(e) => e.key === 'Enter' && handleSportartHinzufuegen(neuerName, neuesIcon)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSportartHinzufügen(neuerName, neuesIcon)}
                 />
-                <Button variant="outline" size="sm" onClick={() => handleSportartHinzufuegen(neuerName, neuesIcon)} disabled={!neuerName.trim()}>
+                <Button variant="outline" size="sm" onClick={() => handleSportartHinzufügen(neuerName, neuesIcon)} disabled={!neuerName.trim()}>
                   <Plus className="h-4 w-4 mr-1" />
                   Hinzufügen
                 </Button>
@@ -2411,7 +2411,7 @@ function SportartenCard() {
                     {verfuegbareVorauswahl.map((v) => (
                       <button
                         key={v.name}
-                        onClick={() => handleSportartHinzufuegen(v.name, v.icon)}
+                        onClick={() => handleSportartHinzufügen(v.name, v.icon)}
                         className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm hover:bg-primary/10 hover:border-primary transition-colors"
                       >
                         <span>{v.icon}</span> <span>{v.name}</span> <Plus className="h-3 w-3 text-muted-foreground" />

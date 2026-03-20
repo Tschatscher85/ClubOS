@@ -23,7 +23,7 @@ interface BillingStatus {
   plan: string;
   planDetails: { name: string; preis: string } | null;
   stripeAktiv: boolean;
-  naechsteZahlung: string | null;
+  nächsteZahlung: string | null;
   aboStatus: string | null;
   trialEndsAt: string | null;
   testTageVerbleibend: number | null;
@@ -85,7 +85,7 @@ const TARIFE = [
       'Subdomain (verein.vereinbase.de)',
       'Sponsoren-Modul',
       'Erweiterte Berechtigungen',
-      'Prioritaets-Support',
+      'Prioritäts-Support',
       'Empfehlungsprogramm',
     ],
   },
@@ -232,9 +232,9 @@ export default function AbonnementPage() {
             </CardTitle>
             <CardDescription>
               {status.planDetails?.preis || 'Kostenlos'}
-              {status.naechsteZahlung && (
+              {status.nächsteZahlung && (
                 <> — Naechste Zahlung am{' '}
-                  {new Date(status.naechsteZahlung).toLocaleDateString('de-DE')}
+                  {new Date(status.nächsteZahlung).toLocaleDateString('de-DE')}
                 </>
               )}
             </CardDescription>

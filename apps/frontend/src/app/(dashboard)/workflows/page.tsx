@@ -151,7 +151,7 @@ export default function WorkflowsPage() {
   };
 
   const handleLoeschen = async (id: string) => {
-    if (!confirm('Workflow wirklich loeschen?')) return;
+    if (!confirm('Workflow wirklich löschen?')) return;
     try {
       await apiClient.delete(`/workflows/${id}`);
       datenLaden();
@@ -343,7 +343,7 @@ export default function WorkflowsPage() {
               <Input
                 value={beschreibung}
                 onChange={(e) => setBeschreibung(e.target.value)}
-                placeholder="z.B. Alle Unterlagen fuer neue Fussball-Mitglieder"
+                placeholder="z.B. Alle Unterlagen für neue Fußball-Mitglieder"
               />
             </div>
 

@@ -165,7 +165,7 @@ export default function AdminDashboard() {
       setNeuerPlan('');
       laden_daten();
     } catch (err) {
-      console.error('Plan aendern fehlgeschlagen:', err);
+      console.error('Plan ändern fehlgeschlagen:', err);
     }
   };
 

@@ -125,7 +125,7 @@ export default function SponsorenPage() {
   };
 
   const handleLoeschen = async (id: string) => {
-    if (!confirm('Sponsor wirklich loeschen?')) return;
+    if (!confirm('Sponsor wirklich löschen?')) return;
     try {
       await apiClient.delete(`/sponsoren/${id}`);
       datenLaden();

@@ -162,7 +162,7 @@ export default function AbteilungenInhalt() {
   };
 
   const handleLoeschen = async (id: string, name: string) => {
-    if (!confirm(`Abteilung "${name}" wirklich loeschen? Zugeordnete Teams verlieren ihre Abteilungszuordnung.`)) return;
+    if (!confirm(`Abteilung "${name}" wirklich löschen? Zugeordnete Teams verlieren ihre Abteilungszuordnung.`)) return;
     try {
       await apiClient.delete(`/abteilungen/${id}`);
       datenLaden();
@@ -228,7 +228,7 @@ export default function AbteilungenInhalt() {
       {abteilungen.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           Noch keine Abteilungen vorhanden. Erstellen Sie die erste Abteilung
-          (z.B. Fussball, Handball).
+          (z.B. Fußball, Handball).
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -318,7 +318,7 @@ export default function AbteilungenInhalt() {
           <DialogHeader>
             <DialogTitle>Neue Abteilung erstellen</DialogTitle>
             <DialogDescription>
-              Erstellen Sie eine Abteilung fuer eine Sportart (z.B. Fussball,
+              Erstellen Sie eine Abteilung für eine Sportart (z.B. Fußball,
               Handball). Teams koennen dann der Abteilung zugeordnet werden.
             </DialogDescription>
           </DialogHeader>
@@ -328,7 +328,7 @@ export default function AbteilungenInhalt() {
               <Input
                 value={neuerName}
                 onChange={(e) => setNeuerName(e.target.value)}
-                placeholder="z.B. Fussball"
+                placeholder="z.B. Fußball"
               />
             </div>
             <div className="space-y-2">

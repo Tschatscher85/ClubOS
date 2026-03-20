@@ -109,7 +109,7 @@ export default function NachrichtenInhalt() {
   };
 
   const handleLoeschen = async (id: string) => {
-    if (!confirm('Nachricht loeschen?')) return;
+    if (!confirm('Nachricht löschen?')) return;
     try {
       await apiClient.delete(`/nachrichten/${id}`);
       datenLaden();

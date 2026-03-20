@@ -174,7 +174,7 @@ export default function TrikotPage() {
   };
 
   const handleLoeschen = async (trikotId: string) => {
-    if (!confirm('Trikot wirklich loeschen? Alle Vergabe-Historie geht verloren.'))
+    if (!confirm('Trikot wirklich löschen? Alle Vergabe-Historie geht verloren.'))
       return;
     try {
       await apiClient.delete(`/trikots/${trikotId}`);
@@ -244,7 +244,7 @@ export default function TrikotPage() {
             <DialogHeader>
               <DialogTitle>Neues Trikot anlegen</DialogTitle>
               <DialogDescription>
-                Erstellen Sie ein neues Trikot fuer dieses Team.
+                Erstellen Sie ein neues Trikot für dieses Team.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 mt-4">

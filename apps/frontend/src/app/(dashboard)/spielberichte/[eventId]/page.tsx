@@ -62,7 +62,7 @@ interface SpielberichtData {
   roteKarten: Eintrag[] | null;
   trainerNotiz: string | null;
   kiText: string | null;
-  veroeffentlicht: boolean;
+  veröffentlicht: boolean;
 }
 
 type WizardSchritt = 'ergebnis' | 'torschuetzen' | 'karten' | 'notiz' | 'bericht';
@@ -170,9 +170,9 @@ export default function SpielberichtSeite() {
     try {
       await apiClient.put(`/spielberichte/${eventId}`, {
         kiText,
-        veroeffentlicht: true,
+        veröffentlicht: true,
       });
-      setErfolg('Spielbericht erfolgreich veroeffentlicht!');
+      setErfolg('Spielbericht erfolgreich veröffentlicht!');
       setTimeout(() => setErfolg(''), 3000);
     } catch (error) {
       setFehler((error as Error).message || 'Fehler beim Veroeffentlichen.');
@@ -194,7 +194,7 @@ export default function SpielberichtSeite() {
     }
   };
 
-  const eintragHinzufuegen = (
+  const eintragHinzufügen = (
     liste: Eintrag[],
     setListe: (l: Eintrag[]) => void,
     name: string,
@@ -431,7 +431,7 @@ export default function SpielberichtSeite() {
                 variant="outline"
                 size="icon"
                 onClick={() =>
-                  eintragHinzufuegen(
+                  eintragHinzufügen(
                     torschuetzen,
                     setTorschuetzen,
                     neuerTorName,
@@ -511,7 +511,7 @@ export default function SpielberichtSeite() {
                   variant="outline"
                   size="icon"
                   onClick={() =>
-                    eintragHinzufuegen(
+                    eintragHinzufügen(
                       gelbeKarten,
                       setGelbeKarten,
                       neueGelbName,
@@ -570,7 +570,7 @@ export default function SpielberichtSeite() {
                   variant="outline"
                   size="icon"
                   onClick={() =>
-                    eintragHinzufuegen(
+                    eintragHinzufügen(
                       roteKarten,
                       setRoteKarten,
                       neueRotName,
@@ -737,7 +737,7 @@ export default function SpielberichtSeite() {
                     {veroeffentlichend ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Wird veroeffentlicht...
+                        Wird veröffentlicht...
                       </>
                     ) : (
                       <>
@@ -749,9 +749,9 @@ export default function SpielberichtSeite() {
                 )}
               </div>
 
-              {vorhandenerBericht?.veroeffentlicht && (
+              {vorhandenerBericht?.veröffentlicht && (
                 <div className="rounded-md bg-green-50 dark:bg-green-950 p-3 text-sm text-green-700 dark:text-green-300">
-                  Dieser Spielbericht wurde bereits veroeffentlicht.
+                  Dieser Spielbericht wurde bereits veröffentlicht.
                 </div>
               )}
             </CardContent>

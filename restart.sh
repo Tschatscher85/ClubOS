@@ -1,49 +1,52 @@
 #!/bin/bash
-# ClubOS Neustart-Script
-# Stoppt alle alten Prozesse, baut Frontend neu, startet alles sauber
+# Vereinbase Neustart-Script (PM2)
+# Stoppt alle alten Prozesse, baut Frontend + Backend neu, startet via PM2
 
 set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
 
-echo "=== ClubOS Neustart ==="
+echo "=== Vereinbase Neustart ==="
 echo ""
 
 # 1. Alte Prozesse beenden
-echo "[1/4] Alte Prozesse beenden..."
+echo "[1/5] Alte Prozesse beenden..."
+npx pm2 stop all 2>/dev/null || true
+npx pm2 delete all 2>/dev/null || true
 fuser -k 3000/tcp 2>/dev/null || true
 fuser -k 3001/tcp 2>/dev/null || true
-# Auch nest --watch und turbo Prozesse killen
 pkill -f "nest start" 2>/dev/null || true
 pkill -f "turbo run dev" 2>/dev/null || true
 sleep 2
 
-# 2. Frontend bauen
-echo "[2/4] Frontend bauen..."
+# 2. Backend bauen
+echo "[2/5] Backend bauen..."
+cd "$SCRIPT_DIR/apps/backend"
+npm run build
+
+# 3. Frontend bauen
+echo "[3/5] Frontend bauen..."
 cd "$SCRIPT_DIR/apps/frontend"
 npx next build
 
-# 3. Backend starten
-echo "[3/4] Backend starten..."
-cd "$SCRIPT_DIR/apps/backend"
-node dist/main.js &
-BACKEND_PID=$!
+# 4. Mit PM2 starten
+echo "[4/5] PM2 starten..."
+cd "$SCRIPT_DIR"
+npx pm2 start ecosystem.config.js
 
-# 4. Frontend starten
-echo "[4/4] Frontend starten..."
-cd "$SCRIPT_DIR/apps/frontend"
-npx next start -p 3000 &
-FRONTEND_PID=$!
-
-sleep 5
+# 5. Status anzeigen
+echo "[5/5] Status pruefen..."
+sleep 3
+npx pm2 status
 
 echo ""
-echo "=== ClubOS laeuft ==="
-echo "Frontend:  http://localhost:3000  (PID: $FRONTEND_PID)"
-echo "Backend:   http://localhost:3001  (PID: $BACKEND_PID)"
+echo "=== Vereinbase laeuft ==="
+echo "Frontend:  http://localhost:3000"
+echo "Backend:   http://localhost:3001"
 echo "API-Docs:  http://localhost:3001/api/docs"
 echo ""
-echo "Beenden mit: kill $BACKEND_PID $FRONTEND_PID"
-echo "Oder:        fuser -k 3000/tcp 3001/tcp"
-
-# Warten bis einer der Prozesse stirbt
-wait
+echo "Befehle:"
+echo "  npx pm2 status       - Status anzeigen"
+echo "  npx pm2 logs         - Logs anzeigen"
+echo "  npx pm2 restart all  - Neustart ohne Build"
+echo "  npx pm2 stop all     - Alles stoppen"

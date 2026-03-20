@@ -307,7 +307,7 @@ export default function EinladungOeffentlichSeite() {
       }
     }
 
-    // Wenn nicht letztes Formular, zum naechsten wechseln
+    // Wenn nicht letztes Formular, zum nächsten wechseln
     if (aktuellesFormular < einladung.templates.length - 1) {
       setErledigteFormulare((prev) => [...prev, template.id]);
       setAktuellesFormular(aktuellesFormular + 1);

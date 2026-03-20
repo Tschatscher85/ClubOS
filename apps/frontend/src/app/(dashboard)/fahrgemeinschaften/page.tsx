@@ -106,7 +106,7 @@ export default function FahrgemeinschaftenPage() {
   };
 
   const handleLoeschen = async (id: string) => {
-    if (!confirm('Fahrt wirklich loeschen?')) return;
+    if (!confirm('Fahrt wirklich löschen?')) return;
     try {
       await apiClient.delete(`/fahrgemeinschaften/${id}`);
       datenLaden();

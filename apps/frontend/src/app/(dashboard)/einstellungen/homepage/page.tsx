@@ -399,7 +399,7 @@ function BearbeitungsPanel({
               <Textarea value={inhalt} onChange={(e) => setInhalt(e.target.value)} placeholder="Kurzer Text ueber dieser Sektion..." rows={3} />
             </div>
             <p className="text-sm text-muted-foreground">
-              Die Daten fuer diese Sektion werden automatisch aus dem System geladen.
+              Die Daten für diese Sektion werden automatisch aus dem System geladen.
             </p>
             <div className="flex gap-2">
               <Button onClick={handleSektionSpeichern} disabled={ladend}>
@@ -648,20 +648,20 @@ export default function HomepageEditorPage() {
 
   // Sektion loeschen
   const handleLoeschen = async (sektion: HomepageSektion) => {
-    if (!confirm(`Sektion "${sektion.titel || SEKTIONS_TYP_INFO[sektion.typ].label}" wirklich loeschen?`)) return;
+    if (!confirm(`Sektion "${sektion.titel || SEKTIONS_TYP_INFO[sektion.typ].label}" wirklich löschen?`)) return;
 
     try {
       await apiClient.delete(`/homepage/admin/sektionen/${sektion.id}`);
       setSektionen((prev) => prev.filter((s) => s.id !== sektion.id));
       if (ausgewaehlteId === sektion.id) setAusgewaehlteId(null);
-      zeigeErfolg('Sektion geloescht.');
+      zeigeErfolg('Sektion gelöscht.');
     } catch {
       setFehler('Fehler beim Loeschen der Sektion.');
     }
   };
 
-  // Neue Sektion hinzufuegen
-  const handleNeueSektionHinzufuegen = async (typ: SektionsTyp) => {
+  // Neue Sektion hinzufügen
+  const handleNeueSektionHinzufügen = async (typ: SektionsTyp) => {
     if (!homepage) return;
 
     try {
@@ -675,7 +675,7 @@ export default function HomepageEditorPage() {
       setNeueSektion(false);
       zeigeErfolg('Neue Sektion hinzugefuegt.');
     } catch {
-      setFehler('Fehler beim Hinzufuegen der Sektion.');
+      setFehler('Fehler beim Hinzufügen der Sektion.');
     }
   };
 
@@ -725,7 +725,7 @@ export default function HomepageEditorPage() {
       setHomepage(aktualisiert);
       zeigeErfolg(
         aktualisiert.istAktiv
-          ? 'Homepage ist jetzt oeffentlich sichtbar.'
+          ? 'Homepage ist jetzt öffentlich sichtbar.'
           : 'Homepage ist jetzt deaktiviert.',
       );
     } catch {
@@ -855,7 +855,7 @@ export default function HomepageEditorPage() {
                           key={typ}
                           variant="outline"
                           size="sm"
-                          onClick={() => handleNeueSektionHinzufuegen(typ)}
+                          onClick={() => handleNeueSektionHinzufügen(typ)}
                           className="text-xs"
                         >
                           <TypIcon className="h-3 w-3 mr-1" />

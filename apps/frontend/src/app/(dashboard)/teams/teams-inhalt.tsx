@@ -45,7 +45,7 @@ export default function TeamsInhalt() {
   }, [datenLaden]);
 
   const handleLoeschen = async (id: string) => {
-    if (!confirm('Team wirklich loeschen?')) return;
+    if (!confirm('Team wirklich löschen?')) return;
     try {
       await apiClient.delete(`/teams/${id}`);
       datenLaden();

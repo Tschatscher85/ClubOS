@@ -170,7 +170,7 @@ export default function DfbnetPage() {
           <div className="text-sm text-blue-800">
             <p className="font-semibold mb-1">Hinweis zum DFBnet</p>
             <p>
-              DFBnet bietet keine oeffentliche API an. Der Datenaustausch
+              DFBnet bietet keine öffentliche API an. Der Datenaustausch
               erfolgt ausschliesslich ueber CSV-Dateien (Semikolon-getrennt).
               Exportieren Sie Ihre Mitgliederdaten im DFBnet unter{' '}
               <span className="font-medium">

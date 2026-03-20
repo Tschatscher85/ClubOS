@@ -62,8 +62,8 @@ export function SpielFormular({
     <Dialog open={offen} onOpenChange={onSchliessen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Spiel hinzufuegen</DialogTitle>
-          <DialogDescription>Spielpaarung zum Turnier hinzufuegen</DialogDescription>
+          <DialogTitle>Spiel hinzufügen</DialogTitle>
+          <DialogDescription>Spielpaarung zum Turnier hinzufügen</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -118,7 +118,7 @@ export function SpielFormular({
               Abbrechen
             </Button>
             <Button type="submit" disabled={ladend}>
-              {ladend ? 'Hinzufuegen...' : 'Spiel hinzufuegen'}
+              {ladend ? 'Hinzufügen...' : 'Spiel hinzufügen'}
             </Button>
           </div>
         </form>

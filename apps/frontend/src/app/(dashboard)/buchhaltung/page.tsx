@@ -230,7 +230,7 @@ export default function BuchhaltungPage() {
   };
 
   const handleBulkErstellen = async (beitragId: string) => {
-    if (!confirm('Rechnungen fuer alle aktiven Mitglieder erstellen?')) return;
+    if (!confirm('Rechnungen für alle aktiven Mitglieder erstellen?')) return;
     try {
       await apiClient.post(`/buchhaltung/rechnungen/erstellen/${beitragId}`, {});
       datenLaden();
@@ -413,7 +413,7 @@ export default function BuchhaltungPage() {
                       {b.sportart && <Badge variant="outline">{b.sportart}</Badge>}
                     </div>
                     <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => handleBulkErstellen(b.id)}>
-                      Rechnungen fuer alle Mitglieder erstellen
+                      Rechnungen für alle Mitglieder erstellen
                     </Button>
                   </CardContent>
                 </Card>

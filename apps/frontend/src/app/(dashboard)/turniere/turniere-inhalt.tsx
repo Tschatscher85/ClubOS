@@ -51,7 +51,7 @@ function formatDatum(iso: string): string {
 
 export default function TurniereInhalt() {
   const [turniere, setTurniere] = useState<Turnier[]>([]);
-  const [naechsteSpiele, setNaechsteSpiele] = useState<SpielEvent[]>([]);
+  const [nächsteSpiele, setNaechsteSpiele] = useState<SpielEvent[]>([]);
   const [ladend, setLadend] = useState(true);
   const [turnierFormularOffen, setTurnierFormularOffen] = useState(false);
   const [eventFormularOffen, setEventFormularOffen] = useState(false);
@@ -83,7 +83,7 @@ export default function TurniereInhalt() {
   }, [datenLaden]);
 
   const handleLoeschen = async (id: string) => {
-    if (!confirm('Turnier wirklich loeschen?')) return;
+    if (!confirm('Turnier wirklich löschen?')) return;
     try {
       await apiClient.delete(`/turniere/${id}`);
       datenLaden();
@@ -107,7 +107,7 @@ export default function TurniereInhalt() {
       {/* Aktionen */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {turniere.length} Turniere · {naechsteSpiele.length} anstehende Spiele
+          {turniere.length} Turniere · {nächsteSpiele.length} anstehende Spiele
         </p>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setEventFormularOffen(true)}>
@@ -122,11 +122,11 @@ export default function TurniereInhalt() {
       </div>
 
       {/* Naechste Spiele */}
-      {naechsteSpiele.length > 0 && (
+      {nächsteSpiele.length > 0 && (
         <div className="space-y-3">
           <h3 className="font-semibold text-sm text-muted-foreground">Anstehende Spiele</h3>
           <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-            {naechsteSpiele.map((spiel) => (
+            {nächsteSpiele.map((spiel) => (
               <div
                 key={spiel.id}
                 onClick={() => router.push(`/kalender/${spiel.id}`)}
@@ -153,7 +153,7 @@ export default function TurniereInhalt() {
       )}
 
       {/* Turniere */}
-      {turniere.length === 0 && naechsteSpiele.length === 0 ? (
+      {turniere.length === 0 && nächsteSpiele.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           Noch keine Turniere oder Spiele vorhanden. Erstellen Sie ein Turnier oder
           planen Sie ein Spiel ueber den Kalender-Tab.

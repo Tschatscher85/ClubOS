@@ -114,9 +114,9 @@ export function OeffentlicherKalender({ verein, initialEvents, initialMonat }: P
 
     // Nachmonat auffuellen (bis 42 Tage = 6 Wochen)
     while (tage.length < 42) {
-      const naechster = tage.length - startWochentag - letzterTag.getDate() + 1;
+      const nächster = tage.length - startWochentag - letzterTag.getDate() + 1;
       tage.push({
-        datum: new Date(jahr, monat + 1, naechster),
+        datum: new Date(jahr, monat + 1, nächster),
         imMonat: false,
       });
     }

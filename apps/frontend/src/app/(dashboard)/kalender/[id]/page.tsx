@@ -266,7 +266,7 @@ export default function EventDetailPage() {
   };
 
   const handleLoeschen = async () => {
-    if (!confirm('Veranstaltung wirklich loeschen?')) return;
+    if (!confirm('Veranstaltung wirklich löschen?')) return;
     try {
       await apiClient.delete(`/veranstaltungen/${eventId}`);
       router.push('/kalender');
@@ -610,7 +610,7 @@ export default function EventDetailPage() {
           {/* Absage-Grund Eingabe */}
           {zeigeAbsageGrund && (
             <div className="mt-4 space-y-2 p-3 bg-muted rounded-md">
-              <p className="text-sm font-medium">Grund fuer die Absage:</p>
+              <p className="text-sm font-medium">Grund für die Absage:</p>
               <Textarea
                 value={absageGrund}
                 onChange={(e) => setAbsageGrund(e.target.value)}
@@ -774,7 +774,7 @@ export default function EventDetailPage() {
             ) : !lpOffen ? (
               <div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Erstellen Sie eine oeffentliche Werbeseite fuer diese Veranstaltung.
+                  Erstellen Sie eine öffentliche Werbeseite für diese Veranstaltung.
                   Ideal fuer Spiele, Turniere und Events - teilen Sie den Link mit Zuschauern, Eltern und Sponsoren.
                 </p>
                 <Button variant="outline" size="sm" onClick={handleLpErstellen}>

@@ -232,7 +232,7 @@ export default function RessourcenPage() {
   };
 
   const handleRessourceLoeschen = async (id: string) => {
-    if (!confirm('Ressource wirklich loeschen? Alle zugehoerigen Buchungen werden ebenfalls geloescht.')) return;
+    if (!confirm('Ressource wirklich löschen? Alle zugehörigen Buchungen werden ebenfalls gelöscht.')) return;
     try {
       await apiClient.delete(`/ressourcen/${id}`);
       ressourcenLaden();

@@ -316,7 +316,7 @@ export default function EntwicklungPage() {
   ]);
 
   const handleLoeschen = useCallback(async (id: string) => {
-    if (!window.confirm('Diesen Entwicklungsbogen wirklich loeschen?')) return;
+    if (!window.confirm('Diesen Entwicklungsbogen wirklich löschen?')) return;
     try {
       await apiClient.delete(`/entwicklung/${id}`);
       datenLaden();
@@ -423,7 +423,7 @@ export default function EntwicklungPage() {
         </Card>
       )}
 
-      {/* Formular fuer neuen Bogen */}
+      {/* Formular für neuen Bogen */}
       {formularOffen && (
         <Card>
           <CardHeader>
@@ -515,7 +515,7 @@ export default function EntwicklungPage() {
                   onChange={(e) => setZiele(e.target.value)}
                   rows={3}
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground"
-                  placeholder="Welche Ziele werden fuer die naechste Phase gesetzt?"
+                  placeholder="Welche Ziele werden für die nächste Phase gesetzt?"
                 />
               </div>
               <div className="space-y-2">

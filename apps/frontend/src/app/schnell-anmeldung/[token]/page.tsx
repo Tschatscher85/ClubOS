@@ -134,14 +134,14 @@ export default function SchnellAnmeldungSeite() {
             <CardHeader>
               <CardTitle>Absage-Grund</CardTitle>
               <CardDescription>
-                Bitte geben Sie einen Grund fuer Ihre Absage an.
+                Bitte geben Sie einen Grund für Ihre Absage an.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-4">
                 <div>
                   <Textarea
-                    placeholder="Grund fuer die Absage..."
+                    placeholder="Grund für die Absage..."
                     value={grund}
                     onChange={(e) => {
                       setGrund(e.target.value);

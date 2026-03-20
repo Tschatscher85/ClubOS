@@ -326,7 +326,7 @@ export default function AufstellungPage() {
 
   const handleSpeichern = async () => {
     if (!name.trim()) {
-      alert('Bitte einen Namen fuer die Aufstellung eingeben.');
+      alert('Bitte einen Namen für die Aufstellung eingeben.');
       return;
     }
 
@@ -371,7 +371,7 @@ export default function AufstellungPage() {
   };
 
   const handleLoeschen = async (id: string) => {
-    if (!confirm('Aufstellung wirklich loeschen?')) return;
+    if (!confirm('Aufstellung wirklich löschen?')) return;
     try {
       await apiClient.delete(`/aufstellungen/${id}`);
       if (aktuelleId === id) {

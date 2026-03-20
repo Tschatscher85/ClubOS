@@ -160,7 +160,7 @@ export default function FormulareInhalt() {
 
   // ==================== Manuelle Vorlage ====================
 
-  const handleFeldHinzufuegen = useCallback(() => {
+  const handleFeldHinzufügen = useCallback(() => {
     setVorlageFelder((prev) => [...prev, { label: '', typ: 'text', pflicht: false }]);
   }, []);
 
@@ -303,7 +303,7 @@ export default function FormulareInhalt() {
     });
   }, []);
 
-  const handleErkanntesFeldHinzufuegen = useCallback(() => {
+  const handleErkanntesFeldHinzufügen = useCallback(() => {
     setErkannteFelder((prev) => [
       ...(prev || []),
       { name: '', label: '', typ: 'text', pflicht: false },
@@ -437,7 +437,7 @@ export default function FormulareInhalt() {
                         size="sm"
                         className="text-destructive hover:text-destructive"
                         onClick={async () => {
-                          if (!confirm(`Vorlage "${vorlage.name}" wirklich loeschen?`)) return;
+                          if (!confirm(`Vorlage "${vorlage.name}" wirklich löschen?`)) return;
                           try {
                             await apiClient.delete(`/formulare/vorlagen/${vorlage.id}`);
                             datenLaden();
@@ -547,7 +547,7 @@ export default function FormulareInhalt() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleErkanntesFeldHinzufuegen}
+                    onClick={handleErkanntesFeldHinzufügen}
                   >
                     <Plus className="h-3 w-3 mr-1" />
                     Feld
@@ -759,10 +759,10 @@ export default function FormulareInhalt() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleFeldHinzufuegen}
+                  onClick={handleFeldHinzufügen}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  Feld hinzufuegen
+                  Feld hinzufügen
                 </Button>
               </div>
 

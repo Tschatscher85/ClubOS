@@ -88,7 +88,7 @@ export default function VeranstaltungenInhalt() {
   }, [datenLaden]);
 
   const handleLoeschen = async (id: string) => {
-    if (!confirm('Turnier wirklich loeschen?')) return;
+    if (!confirm('Turnier wirklich löschen?')) return;
     try {
       await apiClient.delete(`/turniere/${id}`);
       datenLaden();
@@ -116,7 +116,7 @@ export default function VeranstaltungenInhalt() {
 
   return (
     <div className="space-y-6">
-      {/* Aktionen - EIN Button fuer alles */}
+      {/* Aktionen - EIN Button für alles */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           {alleEvents.length} anstehende Termine · {turniere.length} Turniere

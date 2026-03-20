@@ -149,7 +149,7 @@ export default function BelegungsplanInhalt() {
   };
 
   const handleHalleLoeschen = async (id: string) => {
-    if (!confirm('Ort wirklich loeschen? Alle Belegungen dieses Orts werden ebenfalls geloescht.')) return;
+    if (!confirm('Ort wirklich löschen? Alle Belegungen dieses Orts werden ebenfalls gelöscht.')) return;
     try {
       await apiClient.delete(`/hallen/${id}`);
       datenLaden();
@@ -210,7 +210,7 @@ export default function BelegungsplanInhalt() {
   };
 
   const handleBelegungLoeschen = async (id: string) => {
-    if (!confirm('Belegung loeschen?')) return;
+    if (!confirm('Belegung löschen?')) return;
     try {
       await apiClient.delete(`/hallen/belegung/${id}`);
       datenLaden();

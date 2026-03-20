@@ -140,7 +140,7 @@ export default function SportartenPage() {
     }
   };
 
-  const handleSchnellHinzufuegen = async (name: string, icon: string) => {
+  const handleSchnellHinzufügen = async (name: string, icon: string) => {
     setFehler('');
     setErfolg('');
     try {
@@ -151,7 +151,7 @@ export default function SportartenPage() {
       setTimeout(() => setErfolg(''), 3000);
     } catch (error) {
       setFehler(
-        error instanceof Error ? error.message : 'Fehler beim Hinzufuegen.',
+        error instanceof Error ? error.message : 'Fehler beim Hinzufügen.',
       );
     }
   };
@@ -181,12 +181,12 @@ export default function SportartenPage() {
   };
 
   const handleLoeschen = async (id: string) => {
-    if (!confirm('Sportart wirklich loeschen?')) return;
+    if (!confirm('Sportart wirklich löschen?')) return;
     setFehler('');
     setErfolg('');
     try {
       await apiClient.delete(`/sportarten/custom/${id}`);
-      setErfolg('Sportart geloescht.');
+      setErfolg('Sportart gelöscht.');
       sportartenCacheLeeren();
       setTimeout(() => setErfolg(''), 5000);
       await laden();
@@ -208,7 +208,7 @@ export default function SportartenPage() {
       for (const s of leere) {
         await apiClient.delete(`/sportarten/custom/${s.id}`);
       }
-      setErfolg(`${leere.length} leere Sportarten geloescht.`);
+      setErfolg(`${leere.length} leere Sportarten gelöscht.`);
       sportartenCacheLeeren();
       setTimeout(() => setErfolg(''), 5000);
       await laden();
@@ -266,7 +266,7 @@ export default function SportartenPage() {
         <CardHeader>
           <CardTitle>Vordefinierte Sportarten</CardTitle>
           <CardDescription>
-            Klicken Sie auf eine Sportart um sie fuer Ihren Verein zu aktivieren/deaktivieren.
+            Klicken Sie auf eine Sportart um sie für Ihren Verein zu aktivieren/deaktivieren.
             Nur aktive Sportarten erscheinen in Formularen.
             {vordefinierteAlle.filter((s) => s.istAktiv).length > 0 && (
               <span className="block mt-1 font-medium text-foreground">
@@ -307,7 +307,7 @@ export default function SportartenPage() {
             <div>
               <CardTitle>Eigene Sportarten</CardTitle>
               <CardDescription>
-                Zusaetzliche Sportarten fuer Ihren Verein. Erscheinen automatisch in Team-, Mitglied- und Abteilungs-Formularen.
+                Zusaetzliche Sportarten für Ihren Verein. Erscheinen automatisch in Team-, Mitglied- und Abteilungs-Formularen.
               </CardDescription>
             </div>
             {istAdmin && (
@@ -391,14 +391,14 @@ export default function SportartenPage() {
                 className="flex items-center gap-2 text-sm text-primary hover:underline"
               >
                 <Zap className="h-4 w-4" />
-                {vorauswahlOffen ? 'Vorauswahl verbergen' : 'Sportart schnell hinzufuegen'}
+                {vorauswahlOffen ? 'Vorauswahl verbergen' : 'Sportart schnell hinzufügen'}
               </button>
               {vorauswahlOffen && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {verfuegbareVorauswahl.map((v) => (
                     <button
                       key={v.name}
-                      onClick={() => handleSchnellHinzufuegen(v.name, v.icon)}
+                      onClick={() => handleSchnellHinzufügen(v.name, v.icon)}
                       className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm hover:bg-primary/10 hover:border-primary transition-colors"
                     >
                       <span>{v.icon}</span>

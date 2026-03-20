@@ -143,7 +143,7 @@ export default function TeamDetailPage() {
   const [ladend, setLadend] = useState(true);
   const [alleMitglieder, setAlleMitglieder] = useState<VerfuegbaresMitglied[]>([]);
   const [gewaehltesMitglied, setGewaehltesMitglied] = useState('');
-  const [hinzufuegenLadend, setHinzufuegenLadend] = useState(false);
+  const [hinzufügenLadend, setHinzufügenLadend] = useState(false);
   const [mitgliederSuche, setMitgliederSuche] = useState('');
 
   // Verletzungen
@@ -200,9 +200,9 @@ export default function TeamDetailPage() {
     verletzungenLaden();
   }, [datenLaden, mitgliederLaden, verletzungenLaden]);
 
-  const handleHinzufuegen = async () => {
+  const handleHinzufügen = async () => {
     if (!gewaehltesMitglied) return;
-    setHinzufuegenLadend(true);
+    setHinzufügenLadend(true);
     try {
       await apiClient.post(`/teams/${teamId}/mitglieder`, {
         memberId: gewaehltesMitglied,
@@ -212,7 +212,7 @@ export default function TeamDetailPage() {
     } catch (error) {
       console.error('Fehler:', error);
     } finally {
-      setHinzufuegenLadend(false);
+      setHinzufügenLadend(false);
     }
   };
 
@@ -447,7 +447,7 @@ export default function TeamDetailPage() {
         {/* Tab: Kader */}
         <TabsContent value="kader">
           <div className="space-y-4">
-            {/* Mitglied hinzufuegen */}
+            {/* Mitglied hinzufügen */}
             <Card>
               <CardContent className="pt-4 space-y-3">
                 <div className="relative">
@@ -473,11 +473,11 @@ export default function TeamDetailPage() {
                     ))}
                   </Select>
                   <Button
-                    onClick={handleHinzufuegen}
-                    disabled={!gewaehltesMitglied || hinzufuegenLadend}
+                    onClick={handleHinzufügen}
+                    disabled={!gewaehltesMitglied || hinzufügenLadend}
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
-                    {hinzufuegenLadend ? 'Wird hinzugefuegt...' : 'Hinzufuegen'}
+                    {hinzufügenLadend ? 'Wird hinzugefuegt...' : 'Hinzufügen'}
                   </Button>
                 </div>
               </CardContent>
@@ -527,7 +527,7 @@ export default function TeamDetailPage() {
         <TabsContent value="kalender">
           {team.events.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              Noch keine Veranstaltungen fuer dieses Team.
+              Noch keine Veranstaltungen für dieses Team.
             </div>
           ) : (
             <div className="space-y-2">
@@ -686,7 +686,7 @@ export default function TeamDetailPage() {
             </div>
             {statusUpdateStatus === 'FIT' && (
               <div className="space-y-2">
-                <Label htmlFor="status-zurueck">Zurueck am</Label>
+                <Label htmlFor="status-zurueck">Zurück am</Label>
                 <Input
                   id="status-zurueck"
                   type="date"

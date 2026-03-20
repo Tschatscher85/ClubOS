@@ -189,7 +189,7 @@ export default function DokumenteInhalt() {
   };
 
   const handleLoeschen = async (id: string) => {
-    if (!confirm('Dokument wirklich loeschen?')) return;
+    if (!confirm('Dokument wirklich löschen?')) return;
     try {
       await apiClient.delete(`/dokumente/${id}`);
       await datenLaden();
@@ -278,7 +278,7 @@ export default function DokumenteInhalt() {
         <div className="text-center py-12 text-muted-foreground">
           {dokumente.length === 0
             ? 'Noch keine Dokumente hochgeladen.'
-            : 'Keine Dokumente fuer die ausgewaehlten Filter gefunden.'}
+            : 'Keine Dokumente für die ausgewählten Filter gefunden.'}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

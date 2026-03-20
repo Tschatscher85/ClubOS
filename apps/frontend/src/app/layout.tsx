@@ -6,8 +6,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Vereinbase - Die Plattform fuer Sportvereine',
-  description: 'Multi-Tenant SaaS-Plattform fuer Sportvereine in Deutschland',
+  title: 'Vereinbase - Die Plattform für Sportvereine',
+  description: 'Multi-Tenant SaaS-Plattform für Sportvereine in Deutschland',
 };
 
 export default function RootLayout({

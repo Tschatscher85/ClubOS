@@ -85,7 +85,7 @@ const ALLE_BERECHTIGUNGEN = [
 /** Standard-Farbe fuer Rollen ohne eigene Farbe */
 const STANDARD_ROLLEN_FARBE = '#6b7280';
 
-/** Berechnet die vereinigten Berechtigungen aller ausgewaehlten Rollen */
+/** Berechnet die vereinigten Berechtigungen aller ausgewählten Rollen */
 function berechneRollenBerechtigungen(
   ausgewaehlteRollen: string[],
   vorlagen: RollenVorlage[],
@@ -145,13 +145,13 @@ export default function BenutzerVerwaltungPage() {
     laden();
   }, [laden]);
 
-  // Berechtigungen, die durch die ausgewaehlten Rollen im Erstellen-Dialog abgedeckt sind
+  // Berechtigungen, die durch die ausgewählten Rollen im Erstellen-Dialog abgedeckt sind
   const erstellenRollenBerechtigungen = useMemo(
     () => berechneRollenBerechtigungen(neueRollen, rollenVorlagen),
     [neueRollen, rollenVorlagen],
   );
 
-  // Berechtigungen, die durch die ausgewaehlten Rollen im Bearbeiten-Dialog abgedeckt sind
+  // Berechtigungen, die durch die ausgewählten Rollen im Bearbeiten-Dialog abgedeckt sind
   const bearbeitenRollenBerechtigungen = useMemo(
     () => berechneRollenBerechtigungen(bearbeitenRollen, rollenVorlagen),
     [bearbeitenRollen, rollenVorlagen],
@@ -223,7 +223,7 @@ export default function BenutzerVerwaltungPage() {
   };
 
   const handleLoeschen = async (id: string) => {
-    if (!confirm('Benutzer wirklich loeschen? Dies kann nicht rueckgaengig gemacht werden.')) return;
+    if (!confirm('Benutzer wirklich löschen? Dies kann nicht rückgängig gemacht werden.')) return;
     try {
       await apiClient.delete(`/benutzer/verwaltung/${id}`);
       await laden();
@@ -265,7 +265,7 @@ export default function BenutzerVerwaltungPage() {
     setBearbeitenZusatzOffen(false);
   };
 
-  /** Bestimmt die Systemrolle aus den ausgewaehlten Vereinsrollen (hoechste Prioritaet) */
+  /** Bestimmt die Systemrolle aus den ausgewählten Vereinsrollen (hoechste Prioritaet) */
   function bestimmeSystemRolle(rollen: string[], vorlagen: RollenVorlage[]): string {
     const prioritaet: Record<string, number> = {
       SUPERADMIN: 4,
@@ -284,7 +284,7 @@ export default function BenutzerVerwaltungPage() {
     return hoechste;
   }
 
-  /** Gibt die Farbe fuer eine Vereinsrolle zurueck */
+  /** Gibt die Farbe für eine Vereinsrolle zurueck */
   function rollenFarbe(rollenName: string): string {
     const vorlage = rollenVorlagen.find((v) => v.name === rollenName);
     return vorlage?.farbe || STANDARD_ROLLEN_FARBE;
@@ -495,7 +495,7 @@ export default function BenutzerVerwaltungPage() {
               <Textarea
                 value={neueNotizen}
                 onChange={(e) => setNeueNotizen(e.target.value)}
-                placeholder="z.B. Zustaendig fuer U12-Mannschaft"
+                placeholder="z.B. Zuständig für U12-Mannschaft"
                 rows={2}
               />
             </div>
@@ -504,7 +504,7 @@ export default function BenutzerVerwaltungPage() {
             <div className="space-y-3">
               <Label className="text-base font-semibold">Vereinsrollen</Label>
               <p className="text-sm text-muted-foreground">
-                Waehle eine oder mehrere Rollen fuer diesen Benutzer.
+                Waehle eine oder mehrere Rollen für diesen Benutzer.
                 Jede Rolle bringt eigene Berechtigungen mit.
               </p>
               <div className="grid grid-cols-2 gap-2">
@@ -601,7 +601,7 @@ export default function BenutzerVerwaltungPage() {
                 {erstellenZusatzOffen && (
                   <div className="space-y-2">
                     <p className="text-xs text-muted-foreground">
-                      Einzelne Berechtigungen hinzufuegen, die nicht durch die ausgewaehlten Rollen
+                      Einzelne Berechtigungen hinzufügen, die nicht durch die ausgewählten Rollen
                       abgedeckt sind.
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -795,7 +795,7 @@ export default function BenutzerVerwaltungPage() {
                 {bearbeitenZusatzOffen && (
                   <div className="space-y-2">
                     <p className="text-xs text-muted-foreground">
-                      Einzelne Berechtigungen hinzufuegen, die nicht durch die ausgewaehlten Rollen
+                      Einzelne Berechtigungen hinzufügen, die nicht durch die ausgewählten Rollen
                       abgedeckt sind.
                     </p>
                     <div className="flex flex-wrap gap-2">
