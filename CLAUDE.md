@@ -501,13 +501,8 @@ Admin: /admin Dashboard (Superadmin)
 ## 🔑 Test-Zugangsdaten (Entwicklung)
 
 ```
-Passwort fuer alle: Vereinbase2024!
+Siehe .env und Seed-Daten. Passwoerter NICHT im Repository speichern!
 
-Superadmin:  admin@vereinbase.de
-Admin:       vorstand@fckunchen.de
-Trainer:     trainer@fckunchen.de
-Mitglied:    spieler@fckunchen.de
-Elternteil:  eltern@fckunchen.de
+Rollen:      SUPERADMIN, ADMIN, TRAINER, MEMBER, PARENT
+Testdaten:   npx prisma db seed --schema=apps/backend/prisma/schema.prisma
 ```
-
-Testdaten laden: `npx prisma db seed --schema=apps/backend/prisma/schema.prisma`

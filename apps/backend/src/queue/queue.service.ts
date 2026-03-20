@@ -59,7 +59,24 @@ export class QueueService {
     @InjectQueue('erinnerung') private readonly erinnerungQueue: Queue,
     @InjectQueue('benachrichtigung')
     private readonly benachrichtigungQueue: Queue,
-  ) {}
+    @InjectQueue('geburtstag')
+    private readonly geburtstagQueue: Queue,
+  ) {
+    // Geburtstags-CronJob: taeglich um 08:00 Uhr
+    this.geburtstagQueue.add(
+      'taeglich-pruefen',
+      {},
+      {
+        repeat: { pattern: '0 8 * * *' }, // Jeden Tag um 08:00
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
+    ).then(() => {
+      this.logger.log('Geburtstags-CronJob registriert (taeglich 08:00)');
+    }).catch((err) => {
+      this.logger.warn(`Geburtstags-CronJob Registrierung: ${err.message}`);
+    });
+  }
 
   /**
    * Fuegt einen Einladungs-E-Mail-Job zur Queue hinzu.

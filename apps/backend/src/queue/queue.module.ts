@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { QueueService } from './queue.service';
 import { EmailProcessor } from './email.processor';
 import { ReminderProcessor } from './reminder.processor';
+import { GeburtstagProcessor } from './geburtstag.processor';
 import { EinladungModule } from '../einladung/einladung.module';
 
 @Module({
@@ -26,10 +27,11 @@ import { EinladungModule } from '../einladung/einladung.module';
       { name: 'email' },
       { name: 'erinnerung' },
       { name: 'benachrichtigung' },
+      { name: 'geburtstag' },
     ),
     EinladungModule,
   ],
-  providers: [QueueService, EmailProcessor, ReminderProcessor],
+  providers: [QueueService, EmailProcessor, ReminderProcessor, GeburtstagProcessor],
   exports: [QueueService],
 })
 export class QueueModule {}
