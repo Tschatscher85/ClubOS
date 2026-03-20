@@ -62,28 +62,59 @@ export class KiService {
       return { provider, apiKey: tenant.kiApiKey, modell };
     }
 
-    // Fallback auf .env-Konfiguration
+    // Fallback auf Plattform-Konfiguration (aus DB, vom Superadmin gesetzt)
+    const plattformConfig = await this.prisma.plattformConfig.findUnique({
+      where: { id: 'singleton' },
+    });
+
+    // Provider-Auswahl: Tenant-Einstellung > Plattform-Standard
+    const gewuenschterProvider = (tenant.kiProvider as KiProvider) || plattformConfig?.standardProvider || 'anthropic';
+
+    if (plattformConfig) {
+      if (gewuenschterProvider === 'anthropic' && plattformConfig.anthropicApiKey) {
+        return {
+          provider: 'anthropic',
+          apiKey: plattformConfig.anthropicApiKey,
+          modell: tenant.kiModell || plattformConfig.standardModell || STANDARD_MODELLE.anthropic,
+        };
+      }
+      if (gewuenschterProvider === 'openai' && plattformConfig.openaiApiKey) {
+        return {
+          provider: 'openai',
+          apiKey: plattformConfig.openaiApiKey,
+          modell: tenant.kiModell || plattformConfig.standardModell || STANDARD_MODELLE.openai,
+        };
+      }
+      // Fallback: anderen Provider versuchen
+      if (plattformConfig.anthropicApiKey) {
+        return {
+          provider: 'anthropic',
+          apiKey: plattformConfig.anthropicApiKey,
+          modell: tenant.kiModell || STANDARD_MODELLE.anthropic,
+        };
+      }
+      if (plattformConfig.openaiApiKey) {
+        return {
+          provider: 'openai',
+          apiKey: plattformConfig.openaiApiKey,
+          modell: tenant.kiModell || STANDARD_MODELLE.openai,
+        };
+      }
+    }
+
+    // Letzter Fallback: .env-Konfiguration
     const anthropicKey = this.configService.get<string>('ANTHROPIC_API_KEY');
     const openaiKey = this.configService.get<string>('OPENAI_API_KEY');
 
     if (anthropicKey) {
-      return {
-        provider: 'anthropic',
-        apiKey: anthropicKey,
-        modell: tenant.kiModell || STANDARD_MODELLE.anthropic,
-      };
+      return { provider: 'anthropic', apiKey: anthropicKey, modell: tenant.kiModell || STANDARD_MODELLE.anthropic };
     }
-
     if (openaiKey) {
-      return {
-        provider: 'openai',
-        apiKey: openaiKey,
-        modell: tenant.kiModell || STANDARD_MODELLE.openai,
-      };
+      return { provider: 'openai', apiKey: openaiKey, modell: tenant.kiModell || STANDARD_MODELLE.openai };
     }
 
     throw new BadRequestException(
-      'KI ist nicht konfiguriert. Bitte hinterlegen Sie einen API-Key in den Vereinseinstellungen oder setzen Sie ANTHROPIC_API_KEY bzw. OPENAI_API_KEY in der Umgebung.',
+      'KI ist nicht konfiguriert. Bitte hinterlegen Sie API-Keys in den Plattform-Einstellungen (Admin-Dashboard) oder in den Vereinseinstellungen.',
     );
   }
 

@@ -70,13 +70,27 @@ export class AdminController {
     return this.adminService.impersonate(id);
   }
 
-  /** KI pro Verein freischalten / sperren */
+  /** KI pro Verein freischalten / sperren + Provider waehlen */
   @Put('vereine/:id/ki')
   async kiToggle(
     @Param('id') id: string,
-    @Body('freigeschaltet') freigeschaltet: boolean,
+    @Body() body: { freigeschaltet: boolean; provider?: string },
   ) {
-    return this.adminService.kiToggle(id, freigeschaltet);
+    return this.adminService.kiToggle(id, body.freigeschaltet, body.provider);
+  }
+
+  /** Plattform KI-Einstellungen laden */
+  @Get('ki-einstellungen')
+  async plattformKiLaden() {
+    return this.adminService.plattformKiLaden();
+  }
+
+  /** Plattform KI-Einstellungen speichern */
+  @Put('ki-einstellungen')
+  async plattformKiSpeichern(
+    @Body() daten: { anthropicApiKey?: string; openaiApiKey?: string; standardProvider?: string; standardModell?: string },
+  ) {
+    return this.adminService.plattformKiSpeichern(daten);
   }
 
   /** Vereins-Daten exportieren */

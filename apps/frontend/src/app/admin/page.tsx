@@ -16,6 +16,10 @@ import {
   BarChart3,
   Search,
   ArrowLeft,
+  Brain,
+  Eye,
+  EyeOff,
+  Save,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useBenutzer } from '@/hooks/use-auth';
@@ -34,6 +38,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 
 interface Verein {
   id: string;
@@ -102,6 +107,16 @@ export default function AdminDashboard() {
   const [planDialog, setPlanDialog] = useState<{ id: string; name: string; plan: string } | null>(null);
   const [neuerPlan, setNeuerPlan] = useState('');
 
+  // Plattform KI-Einstellungen
+  const [kiAnthropicKey, setKiAnthropicKey] = useState('');
+  const [kiOpenaiKey, setKiOpenaiKey] = useState('');
+  const [kiStandardProvider, setKiStandardProvider] = useState('anthropic');
+  const [kiZeigeAnthropicKey, setKiZeigeAnthropicKey] = useState(false);
+  const [kiZeigeOpenaiKey, setKiZeigeOpenaiKey] = useState(false);
+  const [kiLadend, setKiLadend] = useState(false);
+  const [kiErfolg, setKiErfolg] = useState('');
+  const [kiOffen, setKiOffen] = useState(false);
+
   // Auth initialisieren (diese Seite liegt ausserhalb des Dashboard-Layouts)
   useEffect(() => {
     if (!accessToken) {
@@ -126,6 +141,41 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  const kiEinstellungenLaden = useCallback(async () => {
+    try {
+      const data = await apiClient.get<{
+        anthropicApiKey: string | null;
+        openaiApiKey: string | null;
+        standardProvider: string;
+        hatAnthropicKey: boolean;
+        hatOpenaiKey: boolean;
+      }>('/admin/ki-einstellungen');
+      setKiAnthropicKey(data.anthropicApiKey || '');
+      setKiOpenaiKey(data.openaiApiKey || '');
+      setKiStandardProvider(data.standardProvider || 'anthropic');
+    } catch {
+      // Noch keine Konfiguration vorhanden
+    }
+  }, []);
+
+  const kiEinstellungenSpeichern = async () => {
+    setKiLadend(true);
+    try {
+      await apiClient.put('/admin/ki-einstellungen', {
+        anthropicApiKey: kiAnthropicKey,
+        openaiApiKey: kiOpenaiKey,
+        standardProvider: kiStandardProvider,
+      });
+      setKiErfolg('KI-Einstellungen gespeichert!');
+      setTimeout(() => setKiErfolg(''), 3000);
+      kiEinstellungenLaden();
+    } catch (err) {
+      console.error('KI-Einstellungen speichern fehlgeschlagen:', err);
+    } finally {
+      setKiLadend(false);
+    }
+  };
+
   useEffect(() => {
     if (!bereit) return;
     if (benutzer && benutzer.rolle !== 'SUPERADMIN') {
@@ -134,8 +184,9 @@ export default function AdminDashboard() {
     }
     if (benutzer) {
       laden_daten();
+      kiEinstellungenLaden();
     }
-  }, [bereit, benutzer, router, laden_daten]);
+  }, [bereit, benutzer, router, laden_daten, kiEinstellungenLaden]);
 
   const vereinSperren = async () => {
     if (!sperrDialog) return;
@@ -360,6 +411,94 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* Plattform KI-Einstellungen */}
+        <Card>
+          <CardHeader
+            className="cursor-pointer select-none"
+            onClick={() => setKiOffen(!kiOffen)}
+          >
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Brain className="h-5 w-5 text-purple-600" />
+                Plattform KI-Einstellungen
+              </CardTitle>
+              <Badge variant="outline" className="text-xs">
+                {kiAnthropicKey && !kiAnthropicKey.startsWith('****') ? '' : kiAnthropicKey ? 'Anthropic ✓' : ''}
+                {kiAnthropicKey && kiOpenaiKey ? ' + ' : ''}
+                {kiOpenaiKey && !kiOpenaiKey.startsWith('****') ? '' : kiOpenaiKey ? 'OpenAI ✓' : ''}
+                {!kiAnthropicKey && !kiOpenaiKey ? 'Nicht konfiguriert' : ''}
+              </Badge>
+            </div>
+          </CardHeader>
+          {kiOffen && (
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Ihre API-Keys werden für alle Vereine genutzt, bei denen Sie KI freigeschaltet haben.
+                Vereine können optional einen eigenen Key hinterlegen (überschreibt Ihren Key).
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Anthropic API Key (Claude)</Label>
+                  <div className="relative">
+                    <Input
+                      type={kiZeigeAnthropicKey ? 'text' : 'password'}
+                      value={kiAnthropicKey}
+                      onChange={(e) => setKiAnthropicKey(e.target.value)}
+                      placeholder="sk-ant-..."
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onClick={() => setKiZeigeAnthropicKey(!kiZeigeAnthropicKey)}
+                    >
+                      {kiZeigeAnthropicKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">OpenAI API Key (GPT)</Label>
+                  <div className="relative">
+                    <Input
+                      type={kiZeigeOpenaiKey ? 'text' : 'password'}
+                      value={kiOpenaiKey}
+                      onChange={(e) => setKiOpenaiKey(e.target.value)}
+                      placeholder="sk-..."
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onClick={() => setKiZeigeOpenaiKey(!kiZeigeOpenaiKey)}
+                    >
+                      {kiZeigeOpenaiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Standard-Provider</Label>
+                <select
+                  value={kiStandardProvider}
+                  onChange={(e) => setKiStandardProvider(e.target.value)}
+                  className="flex h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="anthropic">Anthropic (Claude) - empfohlen</option>
+                  <option value="openai">OpenAI (GPT)</option>
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Wird verwendet wenn der Verein keinen eigenen Provider gewählt hat.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button onClick={kiEinstellungenSpeichern} disabled={kiLadend} size="sm">
+                  <Save className="h-4 w-4 mr-2" />
+                  {kiLadend ? 'Speichern...' : 'Speichern'}
+                </Button>
+                {kiErfolg && <span className="text-sm text-green-600">{kiErfolg}</span>}
+              </div>
+            </CardContent>
+          )}
+        </Card>
 
         {/* Filter */}
         <div className="flex gap-3 items-center flex-wrap">

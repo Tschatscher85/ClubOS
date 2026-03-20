@@ -122,6 +122,17 @@ model Tenant {
   @@index([slug])
 }
 
+// ==================== Plattform-Konfiguration (Superadmin) ====================
+
+model PlattformConfig {
+  id                  String   @id @default("singleton")
+  anthropicApiKey     String?  // Plattform Anthropic API Key
+  openaiApiKey        String?  // Plattform OpenAI API Key
+  standardProvider    String   @default("anthropic") // anthropic oder openai
+  standardModell      String?  // Standard-Modell (optional)
+  updatedAt           DateTime @updatedAt
+}
+
 enum Plan {
   STARTER
   PRO

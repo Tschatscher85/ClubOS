@@ -239,15 +239,72 @@ export class AdminService {
     };
   }
 
-  /** KI pro Verein freischalten / sperren */
-  async kiToggle(id: string, freigeschaltet: boolean) {
+  // ==================== Plattform KI-Einstellungen ====================
+
+  /** Plattform KI-Konfiguration laden (Keys maskiert) */
+  async plattformKiLaden() {
+    const config = await this.prisma.plattformConfig.findUnique({
+      where: { id: 'singleton' },
+    });
+    if (!config) {
+      return { anthropicApiKey: null, openaiApiKey: null, standardProvider: 'anthropic', standardModell: null };
+    }
+    return {
+      anthropicApiKey: config.anthropicApiKey ? `****${config.anthropicApiKey.slice(-4)}` : null,
+      openaiApiKey: config.openaiApiKey ? `****${config.openaiApiKey.slice(-4)}` : null,
+      standardProvider: config.standardProvider,
+      standardModell: config.standardModell,
+      hatAnthropicKey: !!config.anthropicApiKey,
+      hatOpenaiKey: !!config.openaiApiKey,
+    };
+  }
+
+  /** Plattform KI-Konfiguration speichern */
+  async plattformKiSpeichern(daten: {
+    anthropicApiKey?: string;
+    openaiApiKey?: string;
+    standardProvider?: string;
+    standardModell?: string;
+  }) {
+    const updateData: Record<string, unknown> = {};
+
+    // Nur aktualisieren wenn nicht maskiert (****)
+    if (daten.anthropicApiKey !== undefined && !daten.anthropicApiKey.startsWith('****')) {
+      updateData.anthropicApiKey = daten.anthropicApiKey || null;
+    }
+    if (daten.openaiApiKey !== undefined && !daten.openaiApiKey.startsWith('****')) {
+      updateData.openaiApiKey = daten.openaiApiKey || null;
+    }
+    if (daten.standardProvider) {
+      updateData.standardProvider = daten.standardProvider;
+    }
+    if (daten.standardModell !== undefined) {
+      updateData.standardModell = daten.standardModell || null;
+    }
+
+    return this.prisma.plattformConfig.upsert({
+      where: { id: 'singleton' },
+      update: updateData,
+      create: {
+        id: 'singleton',
+        ...updateData,
+        standardProvider: (updateData.standardProvider as string) || 'anthropic',
+      },
+    });
+  }
+
+  /** KI pro Verein freischalten / sperren + Provider waehlen */
+  async kiToggle(id: string, freigeschaltet: boolean, provider?: string) {
     const verein = await this.prisma.tenant.findUnique({ where: { id } });
     if (!verein) throw new NotFoundException('Verein nicht gefunden');
 
+    const data: Record<string, unknown> = { kiFreigeschaltet: freigeschaltet };
+    if (provider) data.kiProvider = provider;
+
     return this.prisma.tenant.update({
       where: { id },
-      data: { kiFreigeschaltet: freigeschaltet },
-      select: { id: true, name: true, kiFreigeschaltet: true },
+      data,
+      select: { id: true, name: true, kiFreigeschaltet: true, kiProvider: true },
     });
   }
 
