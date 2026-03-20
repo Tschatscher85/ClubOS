@@ -261,6 +261,7 @@ model Member {
   verletzungen         Verletzung[]
   entwicklungsboegen   Entwicklungsbogen[]
   aenderungsantraege   MemberAenderungsantrag[]
+  warteliste           Warteliste[]
 
   @@index([tenantId])
   @@index([email])
@@ -375,6 +376,8 @@ model Team {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
+  maxKader           Int?       // null = unbegrenzt
+
   events             Event[]
   messages           Message[]
   teamMembers        TeamMember[]
@@ -388,6 +391,7 @@ model Team {
   entwicklungsboegen Entwicklungsbogen[]
   umfragen           Umfrage[]
   aushaenge          Aushang[]
+  warteliste         Warteliste[]
 
   @@index([tenantId])
   @@index([abteilungId])
@@ -407,6 +411,32 @@ model TeamMember {
   @@unique([teamId, memberId])
   @@index([teamId])
   @@index([memberId])
+}
+
+// ==================== Warteliste ====================
+
+model Warteliste {
+  id               String            @id @default(cuid())
+  teamId           String
+  team             Team              @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  mitgliedId       String
+  member           Member            @relation(fields: [mitgliedId], references: [id])
+  tenantId         String
+  angemeldetAm     DateTime          @default(now())
+  benachrichtigtAm DateTime?
+  bestaetigtBis    DateTime?         // 48h Frist nach Einladung
+  status           WartelistenStatus @default(WARTEND)
+
+  @@unique([teamId, mitgliedId])
+  @@index([teamId])
+  @@index([tenantId])
+}
+
+enum WartelistenStatus {
+  WARTEND
+  EINGELADEN
+  BESTAETIGT
+  ABGELAUFEN
 }
 
 enum Sport {

@@ -24,7 +24,7 @@ export class TeamService {
     return this.prisma.team.findMany({
       where: { tenantId },
       include: {
-        _count: { select: { events: true, teamMembers: true } },
+        _count: { select: { events: true, teamMembers: true, warteliste: true } },
       },
       orderBy: { name: 'asc' },
     });
@@ -54,7 +54,21 @@ export class TeamService {
           },
           orderBy: { createdAt: 'asc' },
         },
-        _count: { select: { events: true, teamMembers: true } },
+        warteliste: {
+          include: {
+            member: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                memberNumber: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: { angemeldetAm: 'asc' },
+        },
+        _count: { select: { events: true, teamMembers: true, warteliste: true } },
       },
     });
 
@@ -162,6 +176,17 @@ export class TeamService {
 
     return this.prisma.teamMember.delete({
       where: { id: eintrag.id },
+    });
+  }
+
+  // ==================== Max-Kader ====================
+
+  async maxKaderSetzen(tenantId: string, teamId: string, maxKader: number | null) {
+    await this.nachIdAbrufen(tenantId, teamId);
+
+    return this.prisma.team.update({
+      where: { id: teamId },
+      data: { maxKader },
     });
   }
 

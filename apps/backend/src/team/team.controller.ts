@@ -14,6 +14,7 @@ import { Role } from '@prisma/client';
 import { TeamService } from './team.service';
 import { ErstelleTeamDto, AktualisiereTeamDto } from './dto/erstelle-team.dto';
 import { MitgliedHinzufuegenDto } from './dto/team-mitglied.dto';
+import { WartelisteService } from '../warteliste/warteliste.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RollenGuard } from '../common/guards/rollen.guard';
 import { TenantGuard } from '../common/guards/tenant.guard';
@@ -28,7 +29,10 @@ import { Berechtigungen } from '../common/decorators/berechtigungen.decorator';
 @Berechtigungen('TEAMS')
 @ApiBearerAuth()
 export class TeamController {
-  constructor(private teamService: TeamService) {}
+  constructor(
+    private teamService: TeamService,
+    private wartelisteService: WartelisteService,
+  ) {}
 
   @Post()
   @Rollen(Role.SUPERADMIN, Role.ADMIN)
@@ -140,6 +144,23 @@ export class TeamController {
     @Param('memberId') memberId: string,
   ) {
     await this.teamService.mitgliedEntfernen(tenantId, teamId, memberId);
+    // Auto-Einladung: Naechsten auf der Warteliste einladen
+    try {
+      await this.wartelisteService.nachMitgliedEntfernung(teamId);
+    } catch {
+      // Wartelisten-Fehler soll Entfernung nicht blockieren
+    }
     return { nachricht: 'Mitglied erfolgreich aus dem Team entfernt.' };
+  }
+
+  @Put(':id/max-kader')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
+  @ApiOperation({ summary: 'Maximale Kadergroesse setzen' })
+  async maxKaderSetzen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') teamId: string,
+    @Body() body: { maxKader: number | null },
+  ) {
+    return this.teamService.maxKaderSetzen(tenantId, teamId, body.maxKader);
   }
 }

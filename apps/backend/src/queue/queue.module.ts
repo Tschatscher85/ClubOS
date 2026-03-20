@@ -1,11 +1,13 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { ConfigService } from '@nestjs/config';
 import { QueueService } from './queue.service';
 import { EmailProcessor } from './email.processor';
 import { ReminderProcessor } from './reminder.processor';
 import { GeburtstagProcessor } from './geburtstag.processor';
+import { WartelisteProcessor } from './warteliste.processor';
 import { EinladungModule } from '../einladung/einladung.module';
+import { WartelisteModule } from '../warteliste/warteliste.module';
 
 @Module({
   imports: [
@@ -28,10 +30,12 @@ import { EinladungModule } from '../einladung/einladung.module';
       { name: 'erinnerung' },
       { name: 'benachrichtigung' },
       { name: 'geburtstag' },
+      { name: 'warteliste' },
     ),
     EinladungModule,
+    forwardRef(() => WartelisteModule),
   ],
-  providers: [QueueService, EmailProcessor, ReminderProcessor, GeburtstagProcessor],
+  providers: [QueueService, EmailProcessor, ReminderProcessor, GeburtstagProcessor, WartelisteProcessor],
   exports: [QueueService],
 })
 export class QueueModule {}

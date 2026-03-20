@@ -18,6 +18,12 @@ import {
   HeartPulse,
   Plus,
   Info,
+  ListOrdered,
+  Mail,
+  Pencil,
+  Check,
+  X,
+  Timer,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -64,15 +70,34 @@ interface EventData {
   hallName: string | null;
 }
 
+interface WartelistenEintrag {
+  id: string;
+  teamId: string;
+  mitgliedId: string;
+  angemeldetAm: string;
+  benachrichtigtAm: string | null;
+  bestaetigtBis: string | null;
+  status: 'WARTEND' | 'EINGELADEN' | 'BESTAETIGT' | 'ABGELAUFEN';
+  member: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    memberNumber: string;
+    email: string | null;
+  };
+}
+
 interface TeamDetail {
   id: string;
   name: string;
   sport: string;
   ageGroup: string;
   trainerId: string;
+  maxKader: number | null;
   events: EventData[];
   teamMembers: TeamMitglied[];
-  _count: { events: number; teamMembers: number };
+  warteliste: WartelistenEintrag[];
+  _count: { events: number; teamMembers: number; warteliste: number };
 }
 
 interface VerfuegbaresMitglied {
@@ -118,6 +143,13 @@ const REHA_STATUS_CONFIG: Record<string, { label: string; farbe: string; bgFarbe
   FIT: { label: 'Fit', farbe: 'text-green-700', bgFarbe: 'bg-green-100 border-green-300' },
 };
 
+const WARTELISTEN_STATUS_CONFIG: Record<string, { label: string; farbe: string; bgFarbe: string }> = {
+  WARTEND: { label: 'Wartend', farbe: 'text-blue-700', bgFarbe: 'bg-blue-100 border-blue-300' },
+  EINGELADEN: { label: 'Eingeladen', farbe: 'text-amber-700', bgFarbe: 'bg-amber-100 border-amber-300' },
+  BESTAETIGT: { label: 'Bestaetigt', farbe: 'text-green-700', bgFarbe: 'bg-green-100 border-green-300' },
+  ABGELAUFEN: { label: 'Abgelaufen', farbe: 'text-red-700', bgFarbe: 'bg-red-100 border-red-300' },
+};
+
 function formatDatum(iso: string): string {
   return new Date(iso).toLocaleDateString('de-DE', {
     weekday: 'short',
@@ -134,6 +166,15 @@ function formatUhrzeit(iso: string): string {
   });
 }
 
+function verbleibendeStunden(bis: string): string {
+  const diff = new Date(bis).getTime() - Date.now();
+  if (diff <= 0) return 'Abgelaufen';
+  const stunden = Math.floor(diff / (1000 * 60 * 60));
+  const minuten = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  if (stunden > 0) return `Noch ${stunden}h ${minuten}min`;
+  return `Noch ${minuten}min`;
+}
+
 export default function TeamDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -143,8 +184,17 @@ export default function TeamDetailPage() {
   const [ladend, setLadend] = useState(true);
   const [alleMitglieder, setAlleMitglieder] = useState<VerfuegbaresMitglied[]>([]);
   const [gewaehltesMitglied, setGewaehltesMitglied] = useState('');
-  const [hinzufügenLadend, setHinzufügenLadend] = useState(false);
+  const [hinzufuegenLadend, setHinzufuegenLadend] = useState(false);
   const [mitgliederSuche, setMitgliederSuche] = useState('');
+
+  // Warteliste
+  const [wartelisteMitglied, setWartelisteMitglied] = useState('');
+  const [wartelisteHinzufuegenLadend, setWartelisteHinzufuegenLadend] = useState(false);
+
+  // MaxKader bearbeiten
+  const [maxKaderBearbeiten, setMaxKaderBearbeiten] = useState(false);
+  const [maxKaderWert, setMaxKaderWert] = useState('');
+  const [maxKaderSpeichernd, setMaxKaderSpeichernd] = useState(false);
 
   // Verletzungen
   const [verletzungen, setVerletzungen] = useState<VerletzungDaten[]>([]);
@@ -200,9 +250,9 @@ export default function TeamDetailPage() {
     verletzungenLaden();
   }, [datenLaden, mitgliederLaden, verletzungenLaden]);
 
-  const handleHinzufügen = async () => {
+  const handleHinzufuegen = async () => {
     if (!gewaehltesMitglied) return;
-    setHinzufügenLadend(true);
+    setHinzufuegenLadend(true);
     try {
       await apiClient.post(`/teams/${teamId}/mitglieder`, {
         memberId: gewaehltesMitglied,
@@ -212,7 +262,7 @@ export default function TeamDetailPage() {
     } catch (error) {
       console.error('Fehler:', error);
     } finally {
-      setHinzufügenLadend(false);
+      setHinzufuegenLadend(false);
     }
   };
 
@@ -225,6 +275,61 @@ export default function TeamDetailPage() {
       console.error('Fehler:', error);
     }
   };
+
+  // ==================== Warteliste Handlers ====================
+
+  const handleWartelisteHinzufuegen = async () => {
+    if (!wartelisteMitglied) return;
+    setWartelisteHinzufuegenLadend(true);
+    try {
+      await apiClient.post(`/warteliste/team/${teamId}`, {
+        mitgliedId: wartelisteMitglied,
+      });
+      setWartelisteMitglied('');
+      datenLaden();
+    } catch (error) {
+      console.error('Fehler:', error);
+    } finally {
+      setWartelisteHinzufuegenLadend(false);
+    }
+  };
+
+  const handleWartelisteEntfernen = async (id: string) => {
+    if (!confirm('Eintrag wirklich von der Warteliste entfernen?')) return;
+    try {
+      await apiClient.delete(`/warteliste/${id}`);
+      datenLaden();
+    } catch (error) {
+      console.error('Fehler:', error);
+    }
+  };
+
+  const handleManuellEinladen = async () => {
+    try {
+      await apiClient.post(`/warteliste/team/${teamId}/naechsten-einladen`, {});
+      datenLaden();
+    } catch (error) {
+      console.error('Fehler:', error);
+    }
+  };
+
+  const handleMaxKaderSpeichern = async () => {
+    setMaxKaderSpeichernd(true);
+    try {
+      const wert = maxKaderWert.trim() === '' ? null : parseInt(maxKaderWert, 10);
+      await apiClient.put(`/teams/${teamId}/max-kader`, {
+        maxKader: wert,
+      });
+      setMaxKaderBearbeiten(false);
+      datenLaden();
+    } catch (error) {
+      console.error('Fehler:', error);
+    } finally {
+      setMaxKaderSpeichernd(false);
+    }
+  };
+
+  // ==================== Verletzung Handlers ====================
 
   const handleVerletzungErfassen = async () => {
     if (!neueVerletzungMemberId || !neueVerletzungArt || !neueVerletzungKoerperteil) return;
@@ -300,6 +405,7 @@ export default function TeamDetailPage() {
   }
 
   const bereitsImTeam = new Set(team.teamMembers.map((tm) => tm.memberId));
+  const aufWarteliste = new Set(team.warteliste.map((w) => w.mitgliedId));
   const verfuegbareMitglieder = alleMitglieder
     .filter((m) => !bereitsImTeam.has(m.id))
     .filter((m) => {
@@ -310,7 +416,19 @@ export default function TeamDetailPage() {
       );
     });
 
+  // Fuer Warteliste: nur Mitglieder die nicht im Team und nicht auf Warteliste sind
+  const wartelisteVerfuegbar = alleMitglieder
+    .filter((m) => !bereitsImTeam.has(m.id) && !aufWarteliste.has(m.id));
+
   const aktiveVerletzungen = verletzungen.filter((v) => v.status !== 'FIT');
+
+  const aktiveWarteliste = team.warteliste.filter(
+    (w) => w.status === 'WARTEND' || w.status === 'EINGELADEN',
+  );
+
+  const teamIstVoll = team.maxKader !== null && team._count.teamMembers >= team.maxKader;
+
+  const zeigeWarteliste = team.maxKader !== null || aktiveWarteliste.length > 0;
 
   return (
     <div className="space-y-6">
@@ -331,8 +449,15 @@ export default function TeamDetailPage() {
                 <Badge variant="outline">{team.ageGroup}</Badge>
                 <Badge variant="outline">
                   <Users className="h-3 w-3 mr-1" />
-                  {team._count.teamMembers} Spieler
+                  {team._count.teamMembers}
+                  {team.maxKader !== null ? `/${team.maxKader}` : ''} Spieler
                 </Badge>
+                {aktiveWarteliste.length > 0 && (
+                  <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-300">
+                    <ListOrdered className="h-3 w-3 mr-1" />
+                    {aktiveWarteliste.length} auf Warteliste
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
@@ -433,6 +558,164 @@ export default function TeamDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Warteliste Widget */}
+      {zeigeWarteliste && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <ListOrdered className="h-5 w-5 text-amber-500" />
+                Warteliste
+                {aktiveWarteliste.length > 0 && (
+                  <Badge className="ml-1 bg-amber-100 text-amber-800 border-amber-300 border">
+                    {aktiveWarteliste.length}
+                  </Badge>
+                )}
+              </CardTitle>
+              <div className="flex items-center gap-3">
+                {/* maxKader Anzeige / Bearbeitung */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Max. Kader:</span>
+                  {maxKaderBearbeiten ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        min={0}
+                        className="w-20 h-8"
+                        value={maxKaderWert}
+                        onChange={(e) => setMaxKaderWert(e.target.value)}
+                        placeholder="unbegrenzt"
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={handleMaxKaderSpeichern}
+                        disabled={maxKaderSpeichernd}
+                      >
+                        <Check className="h-4 w-4 text-green-600" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={() => setMaxKaderBearbeiten(false)}
+                      >
+                        <X className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium">
+                        {team.maxKader !== null ? team.maxKader : 'Unbegrenzt'}
+                      </span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={() => {
+                          setMaxKaderWert(team.maxKader?.toString() || '');
+                          setMaxKaderBearbeiten(true);
+                        }}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                {aktiveWarteliste.some((w) => w.status === 'WARTEND') && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleManuellEinladen}
+                  >
+                    <Mail className="h-4 w-4 mr-1" />
+                    Manuell einladen
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {aktiveWarteliste.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Keine Eintraege auf der Warteliste.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {aktiveWarteliste.map((eintrag, index) => {
+                  const statusConfig = WARTELISTEN_STATUS_CONFIG[eintrag.status];
+                  return (
+                    <div
+                      key={eintrag.id}
+                      className="flex items-center justify-between rounded-md border px-4 py-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-mono text-muted-foreground w-6">
+                          #{index + 1}
+                        </span>
+                        <div>
+                          <p className="text-sm font-medium">
+                            {eintrag.member.firstName} {eintrag.member.lastName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Angemeldet am {new Date(eintrag.angemeldetAm).toLocaleDateString('de-DE')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {eintrag.status === 'EINGELADEN' && eintrag.bestaetigtBis && (
+                          <span className="text-xs text-amber-700 flex items-center gap-1">
+                            <Timer className="h-3 w-3" />
+                            {verbleibendeStunden(eintrag.bestaetigtBis)}
+                          </span>
+                        )}
+                        <Badge className={`${statusConfig.bgFarbe} ${statusConfig.farbe} border`}>
+                          {statusConfig.label}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleWartelisteEntfernen(eintrag.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Zur Warteliste hinzufuegen */}
+            {teamIstVoll && wartelisteVerfuegbar.length > 0 && (
+              <div className="flex gap-3 mt-4 pt-4 border-t">
+                <Select
+                  className="flex-1"
+                  value={wartelisteMitglied}
+                  onChange={(e) => setWartelisteMitglied(e.target.value)}
+                >
+                  <option value="">Mitglied zur Warteliste hinzufuegen...</option>
+                  {wartelisteVerfuegbar.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.firstName} {m.lastName} ({m.memberNumber})
+                    </option>
+                  ))}
+                </Select>
+                <Button
+                  onClick={handleWartelisteHinzufuegen}
+                  disabled={!wartelisteMitglied || wartelisteHinzufuegenLadend}
+                  variant="outline"
+                >
+                  <ListOrdered className="h-4 w-4 mr-2" />
+                  {wartelisteHinzufuegenLadend ? 'Wird hinzugefuegt...' : 'Auf Warteliste'}
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Tabs */}
       <Tabs defaultValue="kader">
         <TabsList>
@@ -447,7 +730,7 @@ export default function TeamDetailPage() {
         {/* Tab: Kader */}
         <TabsContent value="kader">
           <div className="space-y-4">
-            {/* Mitglied hinzufügen */}
+            {/* Mitglied hinzufuegen */}
             <Card>
               <CardContent className="pt-4 space-y-3">
                 <div className="relative">
@@ -473,11 +756,11 @@ export default function TeamDetailPage() {
                     ))}
                   </Select>
                   <Button
-                    onClick={handleHinzufügen}
-                    disabled={!gewaehltesMitglied || hinzufügenLadend}
+                    onClick={handleHinzufuegen}
+                    disabled={!gewaehltesMitglied || hinzufuegenLadend}
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
-                    {hinzufügenLadend ? 'Wird hinzugefuegt...' : 'Hinzufügen'}
+                    {hinzufuegenLadend ? 'Wird hinzugefuegt...' : 'Hinzufuegen'}
                   </Button>
                 </div>
               </CardContent>
@@ -527,7 +810,7 @@ export default function TeamDetailPage() {
         <TabsContent value="kalender">
           {team.events.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              Noch keine Veranstaltungen für dieses Team.
+              Noch keine Veranstaltungen fuer dieses Team.
             </div>
           ) : (
             <div className="space-y-2">
@@ -686,7 +969,7 @@ export default function TeamDetailPage() {
             </div>
             {statusUpdateStatus === 'FIT' && (
               <div className="space-y-2">
-                <Label htmlFor="status-zurueck">Zurück am</Label>
+                <Label htmlFor="status-zurueck">Zurueck am</Label>
                 <Input
                   id="status-zurueck"
                   type="date"

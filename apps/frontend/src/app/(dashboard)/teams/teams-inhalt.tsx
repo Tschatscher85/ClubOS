@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, Plus, Pencil, Trash2, Users } from 'lucide-react';
+import { Shield, Plus, Pencil, Trash2, Users, ListOrdered } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,8 @@ interface Team {
   sport: string;
   ageGroup: string;
   trainerId: string;
-  _count: { events: number; teamMembers: number };
+  maxKader: number | null;
+  _count: { events: number; teamMembers: number; warteliste: number };
 }
 
 export default function TeamsInhalt() {
@@ -130,9 +131,16 @@ export default function TeamsInhalt() {
                 <div className="flex gap-4 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Users className="h-3.5 w-3.5" />
-                    {team._count.teamMembers} Spieler
+                    {team._count.teamMembers}
+                    {team.maxKader !== null ? `/${team.maxKader}` : ''} Spieler
                   </span>
                   <span>{team._count.events} Veranstaltungen</span>
+                  {team._count.warteliste > 0 && (
+                    <span className="flex items-center gap-1 text-amber-700">
+                      <ListOrdered className="h-3.5 w-3.5" />
+                      {team._count.warteliste} auf Warteliste
+                    </span>
+                  )}
                 </div>
               </CardContent>
             </Card>
