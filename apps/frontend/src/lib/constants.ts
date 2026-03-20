@@ -31,4 +31,5 @@ export const ROUTEN = {
   TRAININGSPLAENE: '/trainingsplaene',
   MEIN_PROFIL: '/mein-profil',
   AENDERUNGSANTRAEGE: '/einstellungen/aenderungsantraege',
+  UMFRAGEN: '/umfragen',
 } as const;

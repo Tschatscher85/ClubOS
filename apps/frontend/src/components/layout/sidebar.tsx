@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   UserCircle,
   FileEdit,
+  BarChart3,
 } from 'lucide-react';
 import { useTenant, useBenutzer } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -57,6 +58,7 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
       { href: ROUTEN.KALENDER, label: 'Kalender & Spielbetrieb', icon: Calendar, rollen: null, berechtigung: 'KALENDER' },
       { href: ROUTEN.NACHRICHTEN, label: 'Nachrichten', icon: MessageSquare, rollen: null, berechtigung: 'NACHRICHTEN' },
       { href: ROUTEN.FAHRGEMEINSCHAFTEN, label: 'Fahrtenbörse', icon: Car, rollen: null, berechtigung: 'FAHRGEMEINSCHAFTEN' },
+      { href: ROUTEN.UMFRAGEN, label: 'Umfragen', icon: BarChart3, rollen: null },
     ],
   },
   {

@@ -118,6 +118,7 @@ model Tenant {
   entwicklungsboegen Entwicklungsbogen[]
   referral           Referral?
   beitragsklassen    Beitragsklasse[]
+  umfragen           Umfrage[]
 
   @@index([slug])
 }
@@ -384,6 +385,7 @@ model Team {
   trainingsplaene    Trainingsplan[]
   aufstellungen      Aufstellung[]
   entwicklungsboegen Entwicklungsbogen[]
+  umfragen           Umfrage[]
 
   @@index([tenantId])
   @@index([abteilungId])
@@ -1601,4 +1603,35 @@ model WebPushSubscription {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// ==================== Umfragen (Doodle-Ersatz / Quick Polls) ====================
+
+model Umfrage {
+  id          String           @id @default(cuid())
+  tenantId    String
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teamId      String?
+  team        Team?            @relation(fields: [teamId], references: [id])
+  frage       String
+  optionen    String[]
+  endetAm     DateTime?
+  erstelltVon String
+  erstelltAm  DateTime         @default(now())
+  antworten   UmfrageAntwort[]
+
+  @@index([tenantId])
+  @@index([teamId])
+}
+
+model UmfrageAntwort {
+  id            String   @id @default(cuid())
+  umfrageId     String
+  umfrage       Umfrage  @relation(fields: [umfrageId], references: [id], onDelete: Cascade)
+  mitgliedId    String?
+  mitgliedName  String?
+  option        String
+  beantwortetAm DateTime @default(now())
+
+  @@index([umfrageId])
 }
