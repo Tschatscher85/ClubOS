@@ -702,4 +702,123 @@ Wichtig:
       },
     };
   }
+
+  // ==================== iCal Calendar Feed ====================
+
+  /**
+   * Generiert einen iCal-Feed (RFC 5545) fuer einen Verein oder ein Team.
+   * Kann in Google Calendar, Apple Calendar, Outlook abonniert werden.
+   */
+  async icalFeed(slug: string, teamId?: string): Promise<string> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { slug },
+      select: { id: true, name: true, slug: true, email: true },
+    });
+    if (!tenant) {
+      throw new NotFoundException('Verein nicht gefunden');
+    }
+
+    // Events der naechsten 12 Monate + letzten 1 Monat laden
+    const jetzt = new Date();
+    const vorEinemMonat = new Date(jetzt);
+    vorEinemMonat.setMonth(vorEinemMonat.getMonth() - 1);
+    const inZwoelfMonaten = new Date(jetzt);
+    inZwoelfMonaten.setMonth(inZwoelfMonaten.getMonth() + 12);
+
+    const where: Record<string, unknown> = {
+      tenantId: tenant.id,
+      date: {
+        gte: vorEinemMonat,
+        lte: inZwoelfMonaten,
+      },
+    };
+    if (teamId) {
+      where.teamId = teamId;
+    }
+
+    const events = await this.prisma.event.findMany({
+      where,
+      include: {
+        team: { select: { name: true } },
+      },
+      orderBy: { date: 'asc' },
+      take: 500,
+    });
+
+    // Team-Name fuer Kalender-Titel
+    let kalenderName = tenant.name;
+    if (teamId && events.length > 0) {
+      kalenderName = `${tenant.name} - ${events[0].team.name}`;
+    }
+
+    // iCal generieren (RFC 5545)
+    const zeilen: string[] = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      `PRODID:-//Vereinbase//${tenant.slug}//DE`,
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      `X-WR-CALNAME:${this.icalEscape(kalenderName)}`,
+      `X-WR-TIMEZONE:Europe/Berlin`,
+    ];
+
+    for (const event of events) {
+      const start = this.icalDatum(new Date(event.date));
+      const ende = event.endDate
+        ? this.icalDatum(new Date(event.endDate))
+        : this.icalDatum(new Date(new Date(event.date).getTime() + 90 * 60000)); // +90 Min Default
+
+      zeilen.push('BEGIN:VEVENT');
+      zeilen.push(`UID:${event.id}@${tenant.slug}.vereinbase.de`);
+      zeilen.push(`DTSTAMP:${this.icalDatum(new Date())}`);
+      zeilen.push(`DTSTART:${start}`);
+      zeilen.push(`DTEND:${ende}`);
+      zeilen.push(`SUMMARY:${this.icalEscape(event.title)}`);
+
+      if (event.location) {
+        let ort = event.location;
+        if (event.hallName) ort = `${event.hallName}, ${ort}`;
+        zeilen.push(`LOCATION:${this.icalEscape(ort)}`);
+      }
+
+      if (event.notes) {
+        zeilen.push(`DESCRIPTION:${this.icalEscape(event.notes)}`);
+      }
+
+      // Kategorie nach Event-Typ
+      const typLabel: Record<string, string> = {
+        TRAINING: 'Training',
+        MATCH: 'Spiel',
+        TOURNAMENT: 'Turnier',
+        EVENT: 'Veranstaltung',
+        VOLUNTEER: 'Helfereinsatz',
+        TRIP: 'Ausflug',
+        MEETING: 'Besprechung',
+      };
+      zeilen.push(`CATEGORIES:${typLabel[event.type] || event.type}`);
+
+      if (event.team?.name) {
+        zeilen.push(`X-TEAM:${this.icalEscape(event.team.name)}`);
+      }
+
+      zeilen.push('END:VEVENT');
+    }
+
+    zeilen.push('END:VCALENDAR');
+    return zeilen.join('\r\n');
+  }
+
+  /** Datum ins iCal-Format (UTC) */
+  private icalDatum(d: Date): string {
+    return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  }
+
+  /** Text fuer iCal escapen (Kommas, Semikolons, Zeilenumbrueche) */
+  private icalEscape(text: string): string {
+    return text
+      .replace(/\\/g, '\\\\')
+      .replace(/;/g, '\\;')
+      .replace(/,/g, '\\,')
+      .replace(/\n/g, '\\n');
+  }
 }

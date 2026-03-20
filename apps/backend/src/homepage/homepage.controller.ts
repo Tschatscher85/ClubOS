@@ -7,10 +7,12 @@ import {
   Body,
   Param,
   Query,
+  Res,
   UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { HomepageService } from './homepage.service';
@@ -224,5 +226,44 @@ export class HomepageController {
     @Query('monat') monat?: string,
   ) {
     return this.homepageService.oeffentlicherKalender(slug, monat);
+  }
+
+  // ==================== iCal Calendar Feed ====================
+
+  @Get('ical/:slug')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'iCal-Feed fuer den gesamten Verein (alle Teams)' })
+  @ApiResponse({ status: 200, description: 'iCalendar-Datei (.ics)' })
+  @ApiResponse({ status: 404, description: 'Verein nicht gefunden' })
+  async icalFeedVerein(
+    @Param('slug') slug: string,
+    @Res() res: Response,
+  ) {
+    const ical = await this.homepageService.icalFeed(slug);
+    res.set({
+      'Content-Type': 'text/calendar; charset=utf-8',
+      'Content-Disposition': `inline; filename="${slug}.ics"`,
+      'Cache-Control': 'public, max-age=900',
+    });
+    res.send(ical);
+  }
+
+  @Get('ical/:slug/:teamId')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'iCal-Feed fuer ein einzelnes Team' })
+  @ApiResponse({ status: 200, description: 'iCalendar-Datei (.ics)' })
+  @ApiResponse({ status: 404, description: 'Team nicht gefunden' })
+  async icalFeedTeam(
+    @Param('slug') slug: string,
+    @Param('teamId') teamId: string,
+    @Res() res: Response,
+  ) {
+    const ical = await this.homepageService.icalFeed(slug, teamId);
+    res.set({
+      'Content-Type': 'text/calendar; charset=utf-8',
+      'Content-Disposition': `inline; filename="${slug}-${teamId}.ics"`,
+      'Cache-Control': 'public, max-age=900',
+    });
+    res.send(ical);
   }
 }

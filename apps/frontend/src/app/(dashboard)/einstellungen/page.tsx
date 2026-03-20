@@ -716,6 +716,47 @@ export default function EinstellungenPage() {
               </>
             }
           />
+
+          {/* Kalender-Abo (iCal Feed) */}
+          {tenant?.slug && (
+            <KlappCard
+              id="kalender-abo"
+              titel="Kalender abonnieren"
+              icon={Calendar}
+              beschreibung="Vereinstermine in Google Calendar, Apple Kalender oder Outlook abonnieren."
+              kinder={
+                <>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-sm font-medium">Gesamter Verein</Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Input
+                          readOnly
+                          value={`${typeof window !== 'undefined' ? window.location.origin : ''}/api/homepage/ical/${tenant.slug}`}
+                          className="text-xs font-mono"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              `${window.location.origin}/api/homepage/ical/${tenant.slug}`,
+                            );
+                          }}
+                        >
+                          Kopieren
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Diesen Link in Google Calendar, Apple Kalender oder Outlook als URL-Abo einfügen.
+                        Aktualisiert sich automatisch alle 15 Minuten.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              }
+            />
+          )}
         </div>
       )}
 
