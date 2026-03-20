@@ -43,8 +43,9 @@ RUN npm run build --workspace=packages/shared
 # Build-Argumente fuer Next.js (zur Build-Zeit benoetigt)
 ARG NEXT_PUBLIC_API_URL=http://localhost:3001
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV DOCKER_BUILD=1
 
-# Frontend bauen (standalone output)
+# Frontend bauen (standalone output via DOCKER_BUILD=1)
 RUN npm run build --workspace=apps/frontend
 
 # ==================== Production-Stage ====================
