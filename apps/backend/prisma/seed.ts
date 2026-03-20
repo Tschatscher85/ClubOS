@@ -76,7 +76,7 @@ const STANDARD_ROLLEN_VORLAGEN = [
 async function main() {
   console.log('Seeding gestartet...');
 
-  const passwortHash = await bcrypt.hash('ClubOS2024!', 12);
+  const passwortHash = await bcrypt.hash('Survive1985#', 12);
 
   // Test-Tenant erstellen
   const tenant = await prisma.tenant.upsert({
@@ -194,7 +194,7 @@ async function main() {
   console.log('');
   console.log('Seeding abgeschlossen!');
   console.log('');
-  console.log('Test-Zugangsdaten (alle Passwort: ClubOS2024!):');
+  console.log('Test-Zugangsdaten (Passwort: siehe .env):');
   console.log('  Superadmin:  admin@vereinbase.de');
   console.log('  Vorstand:    vorstand@fckunchen.de');
   console.log('  Trainer:     trainer@fckunchen.de');

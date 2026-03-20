@@ -417,24 +417,28 @@ model FAQ {
 
 **ALLE Features implementiert. Nur Infrastruktur (DNS, Docker, Mobile) offen.**
 
-### 50+ Backend-Module (KOMPLETT):
+### 55+ Backend-Module:
 - [x] Auth (JWT, Refresh, 2FA/TOTP, Google OAuth, Passwort-Reset, E-Mail-Verifizierung)
 - [x] Multi-Tenant (Schema-per-Tenant, RLS auf 35 Tabellen, mitTenant() Extension)
 - [x] Superadmin (/admin: Vereine listen/sperren/entsperren/Plan/Impersonation)
+- [x] KI-Freischaltung pro Verein (Plattform-Keys per Web-UI, Anthropic + OpenAI)
 - [x] Sperr-Middleware + Sperrseite (Auto-Sperre nach 3 Stripe-Fehlschlaegen)
 - [x] Mitgliederverwaltung (E-Mail, Multi-Sport, QR-Ausweis, DSGVO-Export Art.15+20)
 - [x] Abteilungen + Berichte + Teams + Kader
 - [x] Kalender/Events + Erinnerungen (24h + 2h) + Wiederholungen
+- [x] QR-Code Schnell-Check-In (Token-basiert, 4h gueltig, /checkin/[token])
+- [x] Geburtstags-Benachrichtigung (BullMQ CronJob 08:00, Push an Trainer)
 - [x] Turnier-Manager + Livescoring + Public-URL + Landingpages
-- [x] Event-Landingpages (/event/[slug] - oeffentliche Werbeseiten fuer Spiele/Events)
+- [x] Event-Landingpages (/event/[slug] - oeffentliche Werbeseiten)
 - [x] Nachrichten + Notfall-Broadcast + Stille-Stunden
 - [x] Einladungs-System (Multi-Formular, Wizard, Unterschrift)
 - [x] Formulare (PDF-Upload + KI-Felderkennung)
 - [x] KI-FAQ-System + Multi-KI-Provider (Claude/OpenAI pro Verein)
-- [x] BullMQ Job-Queue (E-Mail, Erinnerungen, Push async via Redis)
+- [x] BullMQ Job-Queue (E-Mail, Erinnerungen, Push, Geburtstag async via Redis)
 - [x] Socket.io Realtime (Turnier-Live, Team-Chat)
 - [x] Web Push Notifications (VAPID, Service Worker, Stille-Stunden)
 - [x] IMAP E-Mail-Empfang (ImapFlow, 5min Polling, Tenant + User-Level)
+- [x] iCal Calendar Feed (Google Calendar, Apple, Outlook Abo)
 - [x] Hallenbelegung, Schiedsrichter, Buchhaltung/SEPA, Sponsoren
 - [x] DFBnet Import/Export, Dokumenten-Ablage, Fahrtenboerse
 - [x] Eltern-Portal, Ressourcen & Platzbuchung
@@ -445,52 +449,80 @@ model FAQ {
 - [x] Tenant-Isolations-Tests (594 Zeilen, 9 Kategorien)
 - [x] Rate Limiting, Sentry, Prisma Migrations, Profilbild-Upload
 - [x] Subdomain-Routing (Code fertig: middleware.ts Frontend + Backend)
+- [x] PM2 Prozess-Management (ecosystem.config.js, Auto-Restart)
+- [x] Docker-Setup (Dockerfiles + docker-compose.prod.yml + standalone Next.js)
 
-### 35+ Frontend-Seiten (KOMPLETT):
+### 40+ Frontend-Seiten:
 Dashboard, Mitglieder (+Detail, +Entwicklung), Mitarbeiter,
 Abteilungen, Teams (+Detail, +Anwesenheit, +Kasse, +Trikots, +Aufstellung),
-Kalender (+Detail, +Landingpage-Editor, +WetterBadge), Turniere (+Detail, +Landingpage),
-Nachrichten, Fahrgemeinschaften, Eltern-Portal, Posteingang (IMAP),
-Belegung, Schiedsrichter, Buchhaltung, Sponsoren, Workflows,
-Formulare (+Detail), Dokumente, DFBnet, Ressourcen, Trainingsplaene, Spielberichte,
+Kalender (+Detail, +Landingpage-Editor, +WetterBadge, +QR-Check-In),
+Turniere (+Detail, +Landingpage), Nachrichten, Fahrgemeinschaften,
+Eltern-Portal, Posteingang (IMAP), Belegung, Schiedsrichter, Buchhaltung,
+Sponsoren, Workflows, Formulare (+Detail), Dokumente, DFBnet, Ressourcen,
+Trainingsplaene, Spielberichte,
 Einstellungen (Verein, Vereinsdaten, Sportbetrieb [Abteilungen, Teams, Sportarten,
-Altersklassen, Veranstaltungstypen, Sportstaetten, Kalender-Farben],
+Altersklassen, Veranstaltungstypen, Sportstaetten, Kalender-Farben, Kalender-Abo],
 Rollen, Benutzer, Sicherheit [2FA], E-Mail, Homepage-Editor [dnd-kit],
 Empfehlen, Abonnement, Beitraege),
 Oeffentlich: /verein/[slug], /verein/[slug]/kalender, /turnier/[publicUrl],
-/event/[slug] (Werbeseite), /aufstellung/[id],
+/event/[slug] (Werbeseite), /aufstellung/[id], /checkin/[token],
 Auth: Login, Registrierung, Passwort-Vergessen, E-Mail-Verifizierung, Onboarding,
-Admin: /admin Dashboard (Superadmin)
+Admin: /admin Dashboard (Superadmin, KI-Verwaltung, Plattform-Keys)
 
-### Offen / Roadmap:
+---
 
-#### Infrastruktur (DNS + Domain)
-- [ ] DNS: vereinbase.de A-Record auf eigene VM
-- [ ] SSL-Zertifikat (Let's Encrypt / Traefik)
-- [ ] Traefik Wildcard-Rule fuer *.vereinbase.de (Code ist fertig)
-- [ ] Eigene Domain pro Verein (CNAME, Traefik dynamic config)
+## 🚨 Feature-Roadmap (Stand: 20.03.2026)
 
-#### Infrastruktur (Deployment)
-- [x] PM2 Prozess-Management (ecosystem.config.js, Auto-Restart, Logging)
-- [x] Docker-Setup (Dockerfiles + docker-compose.prod.yml + standalone Next.js)
+### SOFORT (Diese Woche)
+- [x] Passwort aus CLAUDE.md entfernt (Sicherheit)
+- [x] Umlaute in 100+ UI-Strings korrigiert
+- [x] DNS auf vereinbase.de umstellt + SSL via Caddy
+- [ ] NocoDB mit PostgreSQL verbinden (Read-only User)
+- [ ] Stripe Billing fertigstellen (Checkout, Webhook, PlanGuard)
 
-#### Mobile App
-- [ ] Expo React Native Setup (iOS + Android)
-- [ ] Login + Push Notifications
-- [ ] Kalender + An-/Abmeldung
-- [ ] Turnier-Live-Anzeige
+### Phase A — Schnell umsetzbar, hohe Wirkung
+- [x] A1: Geburtstags-Benachrichtigung (BullMQ CronJob 08:00, Push an Trainer)
+- [x] A2: QR-Code Schnell-Check-In (Token 4h, /checkin/[token], QR-Dialog)
+- [ ] A3: Mitglieder-Selbstverwaltung (Profil-Aenderungen mit Genehmigung)
+- [ ] A4: Eltern-Umfragen / Doodle-Ersatz (Schnellumfrage, Token-basiert)
+- [ ] A5: Digitales Schwarzes Brett (/verein/[slug]/aktuell, Aushaenge)
+- [ ] A6: Wartelisten-Management (maxKader, Auto-Einladung)
 
-#### Code-Qualitaet
-- [x] Umlaute in 100+ UI-Strings korrigiert (löschen, für, Zurück, hinzufügen, etc.)
+### Phase B — Mittlerer Aufwand, strategisch wichtig
+- [ ] B1: Foerdermittel-Jahresbericht (PDF-Export mit pdfkit)
+- [ ] B2: Ehrenamt-Modul (Helfer-Aufgaben, Uebungsleiterpauschale)
+- [ ] B3: Vereinsfest-Planer (Schichten, Einkaufsliste, Kassen-Abrechnung)
+- [ ] B4: KI-Mitgliederbindung / Churn Prevention (Risiko-Score, Dashboard)
 
-#### Nice-to-Have
-- [x] Calendar Sync (iCal Feed /homepage/ical/:slug, Google Calendar/Apple/Outlook)
-- [ ] KI-Trainer-Assistent
-- [ ] E-Rechnung (ZUGFeRD)
+### Phase C — Vereinbase als Plattform
+- [ ] C1: Trainer-Marktplatz (vereinsuebergreifend, Vertretungs-Anfragen)
+- [ ] C2: Vereins-Gesundheitscheck Dashboard (Score 0-100, Quartals-Analyse)
+- [x] C3: iCal Feed (erledigt, /homepage/ical/:slug)
+- [ ] C4: Vereins-Crowdfunding (Stripe, Fortschrittsbalken)
+- [ ] C5: Regionaler Schiedsrichter-Pool (vereinsuebergreifend)
+
+### Phase D — Langfristig
+- [ ] D1: E-Sport Integration
+- [ ] D2: Vereins-Versicherungs-Check
+- [ ] D3: Trainer-Qualifizierungs-Tracker
+- [ ] D4: Mobile App (Expo React Native)
+- [ ] D5: Vereins-Statistik-Seite oeffentlich
+
+### Infrastruktur
+- [x] DNS: vereinbase.de (A-Record + SSL via Caddy)
+- [ ] Wildcard-Subdomains (Caddy schon konfiguriert)
+- [ ] Eigene Domain pro Verein (CNAME)
+
+### KI als Premium-Addon
+- [x] PlattformConfig (Superadmin setzt Keys per Web-UI)
+- [x] KI-Freischaltung pro Verein (Toggle im Admin-Dashboard)
+- [x] Fallback: Verein-Key > Plattform-Key > .env
+- [ ] KI-Nutzungsstatistik + Limits pro Plan
+- [ ] KI-Kosten-Tracking
 
 ### Deployment (aktuell):
 - Server: Eigene Ubuntu VM (kein Docker)
-- Domain: clubos.tschatscher.eu (vereinbase.de geplant)
+- Domain: vereinbase.de (SSL via Caddy, Wildcard *.vereinbase.de)
 - Frontend: `cd apps/frontend && npm run build && npx next start -p 3000`
 - Backend: `cd apps/backend && npm run build && node dist/main.js`
 - Prozesse via PM2 (ecosystem.config.js, Auto-Restart)
