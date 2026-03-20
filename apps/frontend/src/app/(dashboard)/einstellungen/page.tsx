@@ -1,13 +1,20 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send, Building2, Trophy, CreditCard, Shield, Users, Gift, Layout, Calendar, MapPin, Plus, ChevronDown, ChevronRight, Pencil, X, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { AdressSuche } from '@/components/kalender/adress-suche';
 import { altersklassenLaden, altersklassenSpeichern, altersklassenFallback } from '@/lib/altersklassen';
 import { veranstaltungstypenLaden, veranstaltungstypenSpeichern, veranstaltungstypenFallback } from '@/lib/veranstaltungstypen';
-import { sportartenCacheLeeren } from '@/lib/sportarten';
+import { sportartenCacheLeeren, sportartenLaden, sportartLabel } from '@/lib/sportarten';
 import type { VeranstaltungsTyp } from '@/lib/veranstaltungstypen';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -665,6 +672,8 @@ export default function EinstellungenPage() {
       {/* ============ TAB: Sportbetrieb ============ */}
       {aktiveTab === 'sportbetrieb' && istAdmin && (
         <div className="space-y-4">
+          <AbteilungenCard />
+          <TeamsCard />
           <SportartenCard />
           <AltersklassenCard />
           <VeranstaltungstypenCard />
@@ -975,6 +984,605 @@ export default function EinstellungenPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// ==================== Abteilungen-Verwaltung ====================
+
+interface EinstAbteilung {
+  id: string;
+  name: string;
+  sport: string;
+  beschreibung: string | null;
+  _count: { teams: number };
+}
+
+function AbteilungenCard() {
+  const [abteilungen, setAbteilungen] = useState<EinstAbteilung[]>([]);
+  const [sportarten, setSportarten] = useState<Sportart[]>([]);
+  const [ladend, setLadend] = useState(true);
+  const [fehler, setFehler] = useState('');
+  const [erfolg, setErfolg] = useState('');
+
+  // Erstellen
+  const [dialogOffen, setDialogOffen] = useState(false);
+  const [neuerName, setNeuerName] = useState('');
+  const [neueSportart, setNeueSportart] = useState('');
+  const [neueBeschreibung, setNeueBeschreibung] = useState('');
+  const [erstellend, setErstellend] = useState(false);
+
+  // Bearbeiten
+  const [bearbeitenAbt, setBearbeitenAbt] = useState<EinstAbteilung | null>(null);
+  const [bearbeitenName, setBearbeitenName] = useState('');
+  const [bearbeitenSportart, setBearbeitenSportart] = useState('');
+  const [bearbeitenBeschreibung, setBearbeitenBeschreibung] = useState('');
+  const [bearbeitenOffen, setBearbeitenOffen] = useState(false);
+  const [speichernd, setSpeichernd] = useState(false);
+
+  const laden = useCallback(async () => {
+    try {
+      const [abtDaten, sportDaten] = await Promise.all([
+        apiClient.get<EinstAbteilung[]>('/abteilungen'),
+        sportartenLaden(),
+      ]);
+      setAbteilungen(abtDaten);
+      setSportarten(sportDaten);
+      if (sportDaten.length > 0 && !neueSportart) {
+        setNeueSportart(sportDaten[0].name.toUpperCase().replace(/[^A-Z]/g, '') || sportDaten[0].name);
+      }
+    } catch {
+      setFehler('Fehler beim Laden der Abteilungen.');
+    } finally {
+      setLadend(false);
+    }
+  }, []);
+
+  useEffect(() => { laden(); }, [laden]);
+
+  const sportOptionen = sportarten.map((s) => ({
+    wert: s.istVordefiniert ? s.name.toUpperCase().replace(/[^A-Z]/g, '') || s.name : s.name,
+    label: s.name,
+  }));
+
+  const handleErstellen = async () => {
+    if (!neuerName.trim()) return;
+    setErstellend(true);
+    setFehler('');
+    try {
+      await apiClient.post('/abteilungen', {
+        name: neuerName,
+        sport: neueSportart,
+        beschreibung: neueBeschreibung || undefined,
+      });
+      setDialogOffen(false);
+      setNeuerName('');
+      setNeueBeschreibung('');
+      setErfolg('Abteilung erstellt.');
+      setTimeout(() => setErfolg(''), 3000);
+      laden();
+    } catch (error) {
+      setFehler(error instanceof Error ? error.message : 'Fehler beim Erstellen.');
+    } finally {
+      setErstellend(false);
+    }
+  };
+
+  const handleBearbeitenStarten = (abt: EinstAbteilung) => {
+    setBearbeitenAbt(abt);
+    setBearbeitenName(abt.name);
+    setBearbeitenSportart(abt.sport);
+    setBearbeitenBeschreibung(abt.beschreibung || '');
+    setBearbeitenOffen(true);
+  };
+
+  const handleBearbeitenSpeichern = async () => {
+    if (!bearbeitenAbt || !bearbeitenName.trim()) return;
+    setSpeichernd(true);
+    setFehler('');
+    try {
+      await apiClient.put(`/abteilungen/${bearbeitenAbt.id}`, {
+        name: bearbeitenName,
+        sport: bearbeitenSportart,
+        beschreibung: bearbeitenBeschreibung || undefined,
+      });
+      setBearbeitenOffen(false);
+      setBearbeitenAbt(null);
+      setErfolg('Abteilung gespeichert.');
+      setTimeout(() => setErfolg(''), 3000);
+      laden();
+    } catch (error) {
+      setFehler(error instanceof Error ? error.message : 'Fehler beim Speichern.');
+    } finally {
+      setSpeichernd(false);
+    }
+  };
+
+  const handleLoeschen = async (id: string, name: string) => {
+    if (!confirm(`Abteilung "${name}" wirklich loeschen? Zugeordnete Teams verlieren ihre Abteilungszuordnung.`)) return;
+    try {
+      await apiClient.delete(`/abteilungen/${id}`);
+      setErfolg('Abteilung geloescht.');
+      setTimeout(() => setErfolg(''), 3000);
+      laden();
+    } catch (error) {
+      setFehler(error instanceof Error ? error.message : 'Fehler beim Loeschen.');
+    }
+  };
+
+  return (
+    <>
+      <KlappCard
+        id="abteilungen"
+        titel="Abteilungen"
+        icon={Building2}
+        beschreibung="Sportabteilungen Ihres Vereins verwalten (z.B. Fussball, Handball, Turnen)."
+        kinder={
+          ladend ? <p className="text-sm text-muted-foreground">Laden...</p> : (
+            <>
+              {fehler && <p className="text-sm text-destructive">{fehler}</p>}
+              {erfolg && <p className="text-sm text-green-600">{erfolg}</p>}
+
+              {abteilungen.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Noch keine Abteilungen vorhanden.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {abteilungen.map((abt) => (
+                    <div key={abt.id} className="flex items-center gap-3 rounded-md border bg-muted/30 px-3 py-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{abt.name}</span>
+                          <Badge variant="secondary" className="text-xs">{sportartLabel(abt.sport)}</Badge>
+                          <span className="text-xs text-muted-foreground">{abt._count.teams} Teams</span>
+                        </div>
+                        {abt.beschreibung && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{abt.beschreibung}</p>
+                        )}
+                      </div>
+                      <button type="button" onClick={() => handleBearbeitenStarten(abt)} className="text-muted-foreground hover:text-foreground">
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button type="button" onClick={() => handleLoeschen(abt.id, abt.name)} className="text-destructive hover:text-destructive/80">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Button variant="outline" size="sm" onClick={() => setDialogOffen(true)}>
+                <Plus className="h-4 w-4 mr-1" />
+                Neue Abteilung
+              </Button>
+            </>
+          )
+        }
+      />
+
+      {/* Erstellen-Dialog */}
+      <Dialog open={dialogOffen} onOpenChange={setDialogOffen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Neue Abteilung erstellen</DialogTitle>
+            <DialogDescription>Legen Sie eine neue Sportabteilung fuer Ihren Verein an.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="abt-name">Name *</Label>
+              <Input
+                id="abt-name"
+                value={neuerName}
+                onChange={(e) => setNeuerName(e.target.value)}
+                placeholder="z.B. Fussball, Handball"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="abt-sport">Sportart</Label>
+              <Select id="abt-sport" value={neueSportart} onChange={(e) => setNeueSportart(e.target.value)}>
+                {sportOptionen.map((s) => (
+                  <option key={s.wert} value={s.wert}>{s.label}</option>
+                ))}
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="abt-beschreibung">Beschreibung</Label>
+              <Textarea
+                id="abt-beschreibung"
+                value={neueBeschreibung}
+                onChange={(e) => setNeueBeschreibung(e.target.value)}
+                placeholder="Optionale Beschreibung"
+                rows={2}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDialogOffen(false)}>Abbrechen</Button>
+              <Button onClick={handleErstellen} disabled={erstellend || !neuerName.trim()}>
+                {erstellend ? 'Erstellen...' : 'Erstellen'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bearbeiten-Dialog */}
+      <Dialog open={bearbeitenOffen} onOpenChange={setBearbeitenOffen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Abteilung bearbeiten</DialogTitle>
+            <DialogDescription>Aenderungen an der Abteilung vornehmen.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="abt-edit-name">Name *</Label>
+              <Input
+                id="abt-edit-name"
+                value={bearbeitenName}
+                onChange={(e) => setBearbeitenName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="abt-edit-sport">Sportart</Label>
+              <Select id="abt-edit-sport" value={bearbeitenSportart} onChange={(e) => setBearbeitenSportart(e.target.value)}>
+                {sportOptionen.map((s) => (
+                  <option key={s.wert} value={s.wert}>{s.label}</option>
+                ))}
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="abt-edit-beschreibung">Beschreibung</Label>
+              <Textarea
+                id="abt-edit-beschreibung"
+                value={bearbeitenBeschreibung}
+                onChange={(e) => setBearbeitenBeschreibung(e.target.value)}
+                rows={2}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setBearbeitenOffen(false)}>Abbrechen</Button>
+              <Button onClick={handleBearbeitenSpeichern} disabled={speichernd || !bearbeitenName.trim()}>
+                {speichernd ? 'Speichern...' : 'Speichern'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+// ==================== Teams-Verwaltung ====================
+
+interface EinstTeam {
+  id: string;
+  name: string;
+  sport: string;
+  ageGroup: string;
+  trainerId: string;
+  abteilungId: string | null;
+  _count?: { teamMembers: number; events: number };
+}
+
+interface EinstTrainer {
+  id: string;
+  name: string;
+}
+
+interface EinstAbteilungKurz {
+  id: string;
+  name: string;
+  sport: string;
+}
+
+function TeamsCard() {
+  const [teams, setTeams] = useState<EinstTeam[]>([]);
+  const [abteilungen, setAbteilungen] = useState<EinstAbteilungKurz[]>([]);
+  const [sportartenListe, setSportartenListe] = useState<{ wert: string; label: string }[]>([]);
+  const [altersklassenListe, setAltersklassenListe] = useState<string[]>([]);
+  const [trainerListe, setTrainerListe] = useState<EinstTrainer[]>([]);
+  const [ladend, setLadend] = useState(true);
+  const [fehler, setFehler] = useState('');
+  const [erfolg, setErfolg] = useState('');
+
+  // Erstellen / Bearbeiten
+  const [dialogOffen, setDialogOffen] = useState(false);
+  const [bearbeitenTeam, setBearbeitenTeam] = useState<EinstTeam | null>(null);
+  const [formName, setFormName] = useState('');
+  const [formSportart, setFormSportart] = useState('FUSSBALL');
+  const [formAltersklasse, setFormAltersklasse] = useState('U10');
+  const [formTrainerId, setFormTrainerId] = useState('');
+  const [formAbteilungId, setFormAbteilungId] = useState('');
+  const [speichernd, setSpeichernd] = useState(false);
+
+  const laden = useCallback(async () => {
+    try {
+      const [teamDaten, abtDaten, sportDaten, altDaten] = await Promise.all([
+        apiClient.get<EinstTeam[]>('/teams'),
+        apiClient.get<EinstAbteilungKurz[]>('/abteilungen'),
+        sportartenLaden(),
+        altersklassenLaden(),
+      ]);
+      setTeams(teamDaten);
+      setAbteilungen(abtDaten);
+      setSportartenListe(sportDaten.map((s) => ({
+        wert: s.istVordefiniert ? s.name.toUpperCase().replace(/[^A-Z]/g, '') || s.name : s.name,
+        label: s.name,
+      })));
+      setAltersklassenListe(altDaten);
+
+      // Trainer laden
+      try {
+        const mitglieder = await apiClient.get<Array<{ id: string; firstName: string; lastName: string; userId: string | null }>>('/mitglieder');
+        const benutzerListe = await apiClient.get<Array<{ id: string; role: string; vereinsRollen: string[] }>>('/benutzer/verwaltung/liste')
+          .catch(() => apiClient.get<Array<{ id: string; role: string }>>('/benutzer').then((users) =>
+            users.map((u) => ({ ...u, vereinsRollen: [] as string[] })),
+          ))
+          .catch(() => [] as Array<{ id: string; role: string; vereinsRollen: string[] }>);
+
+        const trainerUserIds = new Set(
+          benutzerListe
+            .filter((b) => (b.vereinsRollen || []).includes('Trainer') || b.role === 'TRAINER')
+            .map((b) => b.id),
+        );
+        setTrainerListe(
+          mitglieder
+            .filter((m) => m.userId && trainerUserIds.has(m.userId))
+            .map((m) => ({ id: m.userId!, name: `${m.firstName} ${m.lastName}` })),
+        );
+      } catch {
+        // Trainer nicht zwingend noetig
+      }
+    } catch {
+      setFehler('Fehler beim Laden der Teams.');
+    } finally {
+      setLadend(false);
+    }
+  }, []);
+
+  useEffect(() => { laden(); }, [laden]);
+
+  const handleDialogOeffnen = (team?: EinstTeam) => {
+    if (team) {
+      setBearbeitenTeam(team);
+      setFormName(team.name);
+      setFormSportart(team.sport);
+      setFormAltersklasse(team.ageGroup);
+      setFormTrainerId(team.trainerId || '');
+      setFormAbteilungId(team.abteilungId || '');
+    } else {
+      setBearbeitenTeam(null);
+      setFormName('');
+      setFormSportart('FUSSBALL');
+      setFormAltersklasse('U10');
+      setFormTrainerId('');
+      setFormAbteilungId('');
+    }
+    setDialogOffen(true);
+  };
+
+  const handleSpeichern = async () => {
+    if (!formName.trim()) return;
+    setSpeichernd(true);
+    setFehler('');
+    try {
+      const daten = {
+        name: formName,
+        sportart: formSportart,
+        altersklasse: formAltersklasse,
+        trainerId: formTrainerId || undefined,
+        abteilungId: formAbteilungId || undefined,
+      };
+      if (bearbeitenTeam) {
+        await apiClient.put(`/teams/${bearbeitenTeam.id}`, daten);
+        setErfolg('Team gespeichert.');
+      } else {
+        await apiClient.post('/teams', daten);
+        setErfolg('Team erstellt.');
+      }
+      setDialogOffen(false);
+      setTimeout(() => setErfolg(''), 3000);
+      laden();
+    } catch (error) {
+      setFehler(error instanceof Error ? error.message : 'Fehler beim Speichern.');
+    } finally {
+      setSpeichernd(false);
+    }
+  };
+
+  const handleLoeschen = async (id: string, name: string) => {
+    if (!confirm(`Team "${name}" wirklich loeschen?`)) return;
+    try {
+      await apiClient.delete(`/teams/${id}`);
+      setErfolg('Team geloescht.');
+      setTimeout(() => setErfolg(''), 3000);
+      laden();
+    } catch (error) {
+      setFehler(error instanceof Error ? error.message : 'Fehler beim Loeschen.');
+    }
+  };
+
+  // Teams nach Abteilung gruppieren
+  const abteilungMap = new Map(abteilungen.map((a) => [a.id, a.name]));
+  const ohneAbteilung = teams.filter((t) => !t.abteilungId);
+  const nachAbteilung = abteilungen
+    .map((abt) => ({
+      ...abt,
+      teams: teams.filter((t) => t.abteilungId === abt.id),
+    }))
+    .filter((a) => a.teams.length > 0);
+
+  return (
+    <>
+      <KlappCard
+        id="teams"
+        titel="Teams / Mannschaften"
+        icon={Users}
+        beschreibung="Alle Mannschaften Ihres Vereins verwalten, anlegen und bearbeiten."
+        kinder={
+          ladend ? <p className="text-sm text-muted-foreground">Laden...</p> : (
+            <>
+              {fehler && <p className="text-sm text-destructive">{fehler}</p>}
+              {erfolg && <p className="text-sm text-green-600">{erfolg}</p>}
+
+              {teams.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Noch keine Teams vorhanden.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {nachAbteilung.map((abt) => (
+                    <div key={abt.id}>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                        {abt.name}
+                      </p>
+                      <div className="space-y-1">
+                        {abt.teams.map((team) => (
+                          <div key={team.id} className="flex items-center gap-3 rounded-md border bg-muted/30 px-3 py-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">{team.name}</span>
+                                <Badge variant="secondary" className="text-xs">{sportartLabel(team.sport)}</Badge>
+                                <span className="text-xs text-muted-foreground">{team.ageGroup}</span>
+                                {team._count && (
+                                  <span className="text-xs text-muted-foreground">{team._count.teamMembers} Spieler</span>
+                                )}
+                              </div>
+                            </div>
+                            <button type="button" onClick={() => handleDialogOeffnen(team)} className="text-muted-foreground hover:text-foreground">
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button type="button" onClick={() => handleLoeschen(team.id, team.name)} className="text-destructive hover:text-destructive/80">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+
+                  {ohneAbteilung.length > 0 && (
+                    <div>
+                      {nachAbteilung.length > 0 && (
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                          Ohne Abteilung
+                        </p>
+                      )}
+                      <div className="space-y-1">
+                        {ohneAbteilung.map((team) => (
+                          <div key={team.id} className="flex items-center gap-3 rounded-md border bg-muted/30 px-3 py-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">{team.name}</span>
+                                <Badge variant="secondary" className="text-xs">{sportartLabel(team.sport)}</Badge>
+                                <span className="text-xs text-muted-foreground">{team.ageGroup}</span>
+                                {team._count && (
+                                  <span className="text-xs text-muted-foreground">{team._count.teamMembers} Spieler</span>
+                                )}
+                              </div>
+                            </div>
+                            <button type="button" onClick={() => handleDialogOeffnen(team)} className="text-muted-foreground hover:text-foreground">
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button type="button" onClick={() => handleLoeschen(team.id, team.name)} className="text-destructive hover:text-destructive/80">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <Button variant="outline" size="sm" onClick={() => handleDialogOeffnen()}>
+                <Plus className="h-4 w-4 mr-1" />
+                Neues Team
+              </Button>
+            </>
+          )
+        }
+      />
+
+      {/* Team erstellen/bearbeiten Dialog */}
+      <Dialog open={dialogOffen} onOpenChange={setDialogOffen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{bearbeitenTeam ? 'Team bearbeiten' : 'Neues Team erstellen'}</DialogTitle>
+            <DialogDescription>
+              Mannschaft einer Abteilung zuordnen, Sportart und Trainer festlegen.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {abteilungen.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="team-abteilung">Abteilung</Label>
+                <Select
+                  id="team-abteilung"
+                  value={formAbteilungId}
+                  onChange={(e) => {
+                    setFormAbteilungId(e.target.value);
+                    const abt = abteilungen.find((a) => a.id === e.target.value);
+                    if (abt?.sport) setFormSportart(abt.sport);
+                  }}
+                >
+                  <option value="">-- Keine Abteilung --</option>
+                  {abteilungen.map((a) => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </Select>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="team-name">Teamname *</Label>
+              <Input
+                id="team-name"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder="z.B. Bambini, E-Jugend 1"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="team-sportart">Sportart</Label>
+                <Select id="team-sportart" value={formSportart} onChange={(e) => setFormSportart(e.target.value)}>
+                  {sportartenListe.map((s) => (
+                    <option key={s.wert} value={s.wert}>{s.label}</option>
+                  ))}
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="team-altersklasse">Altersklasse</Label>
+                <Select id="team-altersklasse" value={formAltersklasse} onChange={(e) => setFormAltersklasse(e.target.value)}>
+                  {altersklassenListe.map((a) => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="team-trainer">Trainer</Label>
+              <Select id="team-trainer" value={formTrainerId} onChange={(e) => setFormTrainerId(e.target.value)}>
+                <option value="">-- Kein Trainer zugewiesen --</option>
+                {trainerListe.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </Select>
+              {trainerListe.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Noch keine Trainer vorhanden. Weisen Sie einem Mitglied die Rolle &quot;Trainer&quot; zu.
+                </p>
+              )}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDialogOffen(false)}>Abbrechen</Button>
+              <Button onClick={handleSpeichern} disabled={speichernd || !formName.trim()}>
+                {speichernd ? 'Speichern...' : (bearbeitenTeam ? 'Speichern' : 'Erstellen')}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
