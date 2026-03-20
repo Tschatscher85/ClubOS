@@ -41,11 +41,18 @@ export class KiService {
   }> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { kiProvider: true, kiApiKey: true, kiModell: true },
+      select: { kiFreigeschaltet: true, kiProvider: true, kiApiKey: true, kiModell: true },
     });
 
     if (!tenant) {
       throw new BadRequestException('Verein nicht gefunden.');
+    }
+
+    // Pruefe ob KI freigeschaltet ist (eigener Key umgeht die Pruefung)
+    if (!tenant.kiFreigeschaltet && !tenant.kiApiKey) {
+      throw new BadRequestException(
+        'KI-Funktionen sind für Ihren Verein nicht freigeschaltet. Kontaktieren Sie den Support oder hinterlegen Sie einen eigenen API-Key.',
+      );
     }
 
     // Wenn Tenant einen eigenen API-Key gesetzt hat, diesen verwenden

@@ -53,6 +53,7 @@ interface Verein {
   benutzerAnzahl: number;
   teamsAnzahl: number;
   eventsAnzahl: number;
+  kiFreigeschaltet: boolean;
   status: 'aktiv' | 'trial' | 'gesperrt' | 'ueberfaellig';
 }
 
@@ -166,6 +167,17 @@ export default function AdminDashboard() {
       laden_daten();
     } catch (err) {
       console.error('Plan ändern fehlgeschlagen:', err);
+    }
+  };
+
+  const kiToggle = async (id: string, freigeschaltet: boolean) => {
+    try {
+      await apiClient.put(`/admin/vereine/${id}/ki`, { freigeschaltet });
+      setVereine((prev) =>
+        prev.map((v) => (v.id === id ? { ...v, kiFreigeschaltet: freigeschaltet } : v)),
+      );
+    } catch (err) {
+      console.error('KI-Toggle fehlgeschlagen:', err);
     }
   };
 
@@ -391,6 +403,7 @@ export default function AdminDashboard() {
                       <th className="text-left p-3 font-medium">Plan</th>
                       <th className="text-center p-3 font-medium">Mitglieder</th>
                       <th className="text-center p-3 font-medium">Teams</th>
+                      <th className="text-center p-3 font-medium">KI</th>
                       <th className="text-left p-3 font-medium">Registriert</th>
                       <th className="text-right p-3 font-medium">Aktionen</th>
                     </tr>
@@ -441,6 +454,19 @@ export default function AdminDashboard() {
                           </td>
                           <td className="p-3 text-center">{verein.mitgliederAnzahl}</td>
                           <td className="p-3 text-center">{verein.teamsAnzahl}</td>
+                          <td className="p-3 text-center">
+                            <button
+                              onClick={() => kiToggle(verein.id, !verein.kiFreigeschaltet)}
+                              title={verein.kiFreigeschaltet ? 'KI deaktivieren' : 'KI freischalten'}
+                            >
+                              <Badge
+                                variant={verein.kiFreigeschaltet ? 'default' : 'outline'}
+                                className={`cursor-pointer text-xs ${verein.kiFreigeschaltet ? 'bg-purple-600 hover:bg-purple-700' : 'text-muted-foreground hover:bg-muted'}`}
+                              >
+                                {verein.kiFreigeschaltet ? 'KI aktiv' : 'KI aus'}
+                              </Badge>
+                            </button>
+                          </td>
                           <td className="p-3 text-xs text-muted-foreground">
                             {new Date(verein.createdAt).toLocaleDateString('de-DE')}
                           </td>

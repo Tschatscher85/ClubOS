@@ -70,6 +70,15 @@ export class AdminController {
     return this.adminService.impersonate(id);
   }
 
+  /** KI pro Verein freischalten / sperren */
+  @Put('vereine/:id/ki')
+  async kiToggle(
+    @Param('id') id: string,
+    @Body('freigeschaltet') freigeschaltet: boolean,
+  ) {
+    return this.adminService.kiToggle(id, freigeschaltet);
+  }
+
   /** Vereins-Daten exportieren */
   @Get('vereine/:id/export')
   async vereinExport(@Param('id') id: string) {

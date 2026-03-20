@@ -23,6 +23,7 @@ export class AdminService {
         logo: true,
         plan: true,
         istAktiv: true,
+        kiFreigeschaltet: true,
         gesperrtAm: true,
         gesperrtGrund: true,
         stripeSubscriptionId: true,
@@ -236,6 +237,18 @@ export class AdminService {
       benutzer: users,
       exportiertAm: new Date().toISOString(),
     };
+  }
+
+  /** KI pro Verein freischalten / sperren */
+  async kiToggle(id: string, freigeschaltet: boolean) {
+    const verein = await this.prisma.tenant.findUnique({ where: { id } });
+    if (!verein) throw new NotFoundException('Verein nicht gefunden');
+
+    return this.prisma.tenant.update({
+      where: { id },
+      data: { kiFreigeschaltet: freigeschaltet },
+      select: { id: true, name: true, kiFreigeschaltet: true },
+    });
   }
 
   private berechneStatus(verein: {

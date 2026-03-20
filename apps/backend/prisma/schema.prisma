@@ -17,6 +17,7 @@ model Tenant {
   primaryColor                 String    @default("#1a56db")
   plan                         Plan      @default(STARTER)
   domain                       String?
+  kiFreigeschaltet             Boolean   @default(false) // Superadmin schaltet KI pro Verein frei
   kiProvider                   String    @default("anthropic")
   kiApiKey                     String?
   kiModell                     String?
