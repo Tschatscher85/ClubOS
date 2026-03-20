@@ -413,161 +413,88 @@ model FAQ {
 
 ---
 
-## 📦 Aktueller Status (Stand: 18.03.2026)
+## 📦 Aktueller Status (Stand: 20.03.2026)
 
-**Alle Sprints abgeschlossen (außer Mobile App)**
+**ALLE Features implementiert. Nur Infrastruktur (DNS, Docker, Mobile) offen.**
 
-### 48 Backend-Module:
-- [x] Auth (JWT, Refresh, Passwort-Aenderung, Passwort-Reset, E-Mail-Verifizierung, Google OAuth)
-- [x] Multi-Tenant (Schema-per-Tenant)
-- [x] Mitgliederverwaltung (E-Mail, Multi-Sport, Auto-Login, QR-Ausweis)
-- [x] Abteilungen + Berichte
-- [x] Teams + Kader
-- [x] Kalender/Events + Erinnerungen (24h + 2h)
-- [x] Turnier-Manager + Livescoring + Public-URL
-- [x] Nachrichten + Notfall-Broadcast
+### 50+ Backend-Module (KOMPLETT):
+- [x] Auth (JWT, Refresh, 2FA/TOTP, Google OAuth, Passwort-Reset, E-Mail-Verifizierung)
+- [x] Multi-Tenant (Schema-per-Tenant, RLS auf 35 Tabellen, mitTenant() Extension)
+- [x] Superadmin (/admin: Vereine listen/sperren/entsperren/Plan/Impersonation)
+- [x] Sperr-Middleware + Sperrseite (Auto-Sperre nach 3 Stripe-Fehlschlaegen)
+- [x] Mitgliederverwaltung (E-Mail, Multi-Sport, QR-Ausweis, DSGVO-Export Art.15+20)
+- [x] Abteilungen + Berichte + Teams + Kader
+- [x] Kalender/Events + Erinnerungen (24h + 2h) + Wiederholungen
+- [x] Turnier-Manager + Livescoring + Public-URL + Landingpages
+- [x] Event-Landingpages (/event/[slug] - oeffentliche Werbeseiten fuer Spiele/Events)
+- [x] Nachrichten + Notfall-Broadcast + Stille-Stunden
 - [x] Einladungs-System (Multi-Formular, Wizard, Unterschrift)
-- [x] Workflows (Einladungs-Pakete pro Sportart)
 - [x] Formulare (PDF-Upload + KI-Felderkennung)
-- [x] PDF-Export fuer Einreichungen
-- [x] KI-FAQ-System (automatische Antworten)
-- [x] Multi-KI-Provider (Claude + OpenAI, pro Verein konfigurierbar)
-- [x] QR-Code Mitgliedsausweis
-- [x] BullMQ Job-Queue (E-Mail, Erinnerungen async via Redis)
+- [x] KI-FAQ-System + Multi-KI-Provider (Claude/OpenAI pro Verein)
+- [x] BullMQ Job-Queue (E-Mail, Erinnerungen, Push async via Redis)
 - [x] Socket.io Realtime (Turnier-Live, Team-Chat)
-- [x] Hallenbelegung (Wochenplan)
-- [x] Schiedsrichter-Einteilung (manuell + Auto-Rotation)
-- [x] Buchhaltung/SEPA (Rechnungen, Beitraege, DATEV-Export)
-- [x] Sponsoren-Modul
-- [x] E-Mail pro Trainer/Vorstand (eigenes SMTP + Signatur)
-- [x] DFBnet CSV Import/Export
-- [x] Dokumenten-Ablage
-- [x] Fahrtenboerse
-- [x] Eltern-Portal (Kinder, Teams, Abteilungen)
-- [x] Dashboard (Statistiken, Uebersicht)
-- [x] Vereins-Branding (Logo, Farbe, Subdomain)
-- [x] Health + Config
-- [x] Self-Hosting (install.sh, Docker, Traefik)
-- [x] Rate Limiting (Throttler: Auth-Endpoints strenger, global)
-- [x] Profilbild-Upload (Upload, Abruf, Loeschen)
-- [x] Vereinshomepage-System (Sektionen, oeffentliche URLs, auto-generiert)
-- [x] Turnier-Landingpages (Werbung, Sponsoren, oeffentliche URLs)
-- [x] Vereinsrollen-System (RollenVorlage pro Verein, mehrere Rollen pro User, Auto-Berechnung)
-- [x] Berechtigungs-Guard (BerechtigungenGuard + Decorator auf Controllern)
-- [x] Sentry Error-Monitoring (Backend + Frontend, DSGVO-konform)
-- [x] Prisma Migrations (statt db push, sicher fuer Produktion)
-- [x] Anwesenheitsstatistik (Heatmap, Ampel-System, Fehl-Alerts)
-- [x] Spielbericht + KI-Textgenerierung (Claude/OpenAI, Veroeffentlichen auf Homepage)
-- [x] Mannschaftskasse + Strafenkatalog (Strafen, Einzahlungen, Saldo pro Mitglied)
-- [x] Trikotverwaltung (Ausgabe, Rueckgabe, Ausstehende)
-- [x] Wetter-Integration (Open-Meteo API, kostenlos, WetterBadge im Kalender)
-- [x] Ressourcen & Platzbuchung (Konflikt-Pruefung, Wochenkalender)
-- [x] KI-Trainingsplan-Generator (strukturierte Einheiten, Multi-KI-Provider)
-- [x] Aufstellungsplaner (CSS-Grid Spielfeld, Formation-Selector, oeffentliche URL)
-- [x] Verletzungsprotokoll (DSGVO Art.9, RehaStatus, nur Trainer/Admin)
-- [x] Spieler-Entwicklungsbogen (Sternebewertung, Radar-Chart, Trend)
-- [x] Affiliate & Empfehlungsprogramm (Referral-Codes, Gratismonate)
+- [x] Web Push Notifications (VAPID, Service Worker, Stille-Stunden)
+- [x] IMAP E-Mail-Empfang (ImapFlow, 5min Polling, Tenant + User-Level)
+- [x] Hallenbelegung, Schiedsrichter, Buchhaltung/SEPA, Sponsoren
+- [x] DFBnet Import/Export, Dokumenten-Ablage, Fahrtenboerse
+- [x] Eltern-Portal, Ressourcen & Platzbuchung
+- [x] KI-Trainingsplan-Generator, Aufstellungsplaner
+- [x] Verletzungsprotokoll (DSGVO Art.9), Spieler-Entwicklungsbogen
+- [x] Affiliate-Programm, Vereinshomepage-System (dnd-kit Editor)
+- [x] Taeglich DB-Backup (Cron 3:00, 30 Tage + monatlich, Pro-Verein-Export)
+- [x] Tenant-Isolations-Tests (594 Zeilen, 9 Kategorien)
+- [x] Rate Limiting, Sentry, Prisma Migrations, Profilbild-Upload
+- [x] Subdomain-Routing (Code fertig: middleware.ts Frontend + Backend)
 
-### 30+ Frontend-Seiten:
-Dashboard, Mitglieder (+Detail, +Entwicklung), Mitarbeiter (Personaluebersicht),
+### 35+ Frontend-Seiten (KOMPLETT):
+Dashboard, Mitglieder (+Detail, +Entwicklung), Mitarbeiter,
 Abteilungen, Teams (+Detail, +Anwesenheit, +Kasse, +Trikots, +Aufstellung),
-Kalender (+Detail mit WetterBadge), Turniere (+Detail), Nachrichten,
-Fahrgemeinschaften, Eltern-Portal, Belegung (Hallen+Sportplaetze),
-Schiedsrichter, Buchhaltung, Sponsoren, Workflows, Formulare (+Detail),
-Dokumente, DFBnet, Ressourcen (Buchungskalender), Trainingsplaene (KI-Generator),
-Spielberichte (Wizard + KI-Text),
-Einstellungen (Verein, Vereinsdaten, Sportarten, Beitraege, Rollen, Benutzer,
-Empfehlen, KI, E-Mail, Passwort),
-Einladung-Wizard, Registrierung (+Empfehlungscode), Passwort-Vergessen,
-Passwort-Zuruecksetzen, E-Mail-Verifizierung, Onboarding-Wizard,
-Aufstellung oeffentlich (kein Login)
-
-### Erledigt (Stand: 19.03.2026):
-- [x] Registrierungs-Seite (Frontend + Backend)
-- [x] Passwort vergessen Flow (E-Mail anfordern + neues Passwort setzen)
-- [x] Google OAuth (Backend + Frontend mit Google Sign-In Button)
-- [x] E-Mail-Verifizierung (Token-basiert, automatisch bei Registrierung)
-- [x] Passwort-Toggle (Auge-Icon) + Passwort-Staerke-Anzeige
-- [x] Dark Mode (Toggle im Header, CSS-Variablen fuer Light/Dark)
-- [x] Onboarding-Wizard (Logo, Farbe, Sportarten nach Registrierung)
-- [x] Rate Limiting (Brute-Force-Schutz auf Auth-Endpoints)
-- [x] Profilbild-Upload (API + Multer)
-- [x] Vereinshomepage-System (Backend: Sektionen-basiert, auto-generiert)
-- [x] Turnier-Landingpages (Backend: oeffentliche Werbeseiten fuer Turniere)
-- [x] Vereinsrollen-System (Vorstand, Trainer, Kassenprufer, Ehrenamt, Spieler, Eltern, Innendienst)
-- [x] Berechtigungs-Guard (granulare Berechtigung pro Modul, MEMBER/PARENT gefiltert)
-- [x] Hallenbelegung umbenannt zu Belegung (Hallen + Sportplaetze)
-- [x] Geburtsdatum-Spalte in Mitglieder-Tabelle
-- [x] Einstellungen > Rollen (Rollenvorlagen pro Verein konfigurieren)
-- [x] Einstellungen > Benutzer (Vereinsrollen zuweisen + individuelle Anpassung)
-- [x] Sentry Error-Monitoring (Backend @sentry/nestjs + Frontend @sentry/nextjs)
-- [x] Prisma Migrations (Baseline + migrate deploy statt db push)
-- [x] Anwesenheitsstatistik (Teams > Anwesenheit: Heatmap + Ampel + Alerts)
-- [x] Spielbericht + KI (Wizard: Ergebnis, Torschuetzen, Karten, KI-Text generieren)
-- [x] Mannschaftskasse (Teams > Kasse: Strafen, Einzahlungen, Strafkatalog, Saldo)
-- [x] Trikotverwaltung (Teams > Trikots: Ausgabe/Rueckgabe/Ausstehende)
-- [x] Wetter-Integration (WetterBadge im Kalender-Event, Open-Meteo, 3h Cache)
-- [x] Ressourcen & Platzbuchung (Wochenkalender, Konflikt-Pruefung)
-- [x] KI-Trainingsplan-Generator (Einheiten-Wizard, Recharts nicht noetig)
-- [x] Aufstellungsplaner (CSS-Grid, Formation-Selector, oeffentliche URL)
-- [x] Verletzungsprotokoll (Team-Widget + Mitglied-Detail, DSGVO Art.9)
-- [x] Spieler-Entwicklungsbogen (Radar-Chart mit Recharts, Sternebewertung)
-- [x] Affiliate-Programm (Einstellungen > Empfehlen, Registrierung mit Code)
-- [x] Sportarten 100% dynamisch (zentrale lib/sportarten.ts, API-Cache, alle 15+ Dateien migriert)
-- [x] Einstellungen > Sportarten: Vorauswahl (20 Sportarten per Klick), leere bereinigen
-- [x] Einstellungen > Kalender-Farben (Event-Typ-Farben konfigurierbar, localStorage)
-- [x] Kalender: Belegungen im Monatskalender sichtbar (aus Wochenplan)
-- [x] Event-Formular: Untergrund (Halle/Rasen/Kunstrasen), Wiederholung taegl./woechentl./monatl., Adresssuche OpenStreetMap, Orte aus Belegung
-- [x] Abteilungen: Bearbeiten + Loeschen Buttons
-- [x] Mitglied-Formular: Team-Zuordnung nach Abteilung gruppiert
-- [x] Turniere-Tab: Zeigt anstehende Spiele + Button "Neues Spiel"
+Kalender (+Detail, +Landingpage-Editor, +WetterBadge), Turniere (+Detail, +Landingpage),
+Nachrichten, Fahrgemeinschaften, Eltern-Portal, Posteingang (IMAP),
+Belegung, Schiedsrichter, Buchhaltung, Sponsoren, Workflows,
+Formulare (+Detail), Dokumente, DFBnet, Ressourcen, Trainingsplaene, Spielberichte,
+Einstellungen (Verein, Vereinsdaten, Sportbetrieb [Abteilungen, Teams, Sportarten,
+Altersklassen, Veranstaltungstypen, Sportstaetten, Kalender-Farben],
+Rollen, Benutzer, Sicherheit [2FA], E-Mail, Homepage-Editor [dnd-kit],
+Empfehlen, Abonnement, Beitraege),
+Oeffentlich: /verein/[slug], /verein/[slug]/kalender, /turnier/[publicUrl],
+/event/[slug] (Werbeseite), /aufstellung/[id],
+Auth: Login, Registrierung, Passwort-Vergessen, E-Mail-Verifizierung, Onboarding,
+Admin: /admin Dashboard (Superadmin)
 
 ### Offen / Roadmap:
 
-#### PRIO 1A: Superadmin-Dashboard & Tenant-Verwaltung
-- [ ] Prisma: istAktiv, gesperrtAm, gesperrtGrund Felder im Tenant-Model
-- [ ] Sperr-Middleware: Bei jedem Request pruefen ob Tenant gesperrt -> Sperrseite
-- [ ] Backend: Admin-Endpoints (alle Vereine listen, sperren, entsperren, Plan aendern)
-- [ ] Backend: Impersonation ("Als Verein einloggen" ohne deren Passwort)
-- [ ] Frontend: /admin Dashboard (Vereine-Tabelle, Ampel gruen/gelb/rot)
-- [ ] Frontend: Sperrseite fuer gesperrte Tenants
-- [ ] Stripe-Webhook: Zahlung fehlgeschlagen -> automatisch warnen/sperren
-- [ ] Subdomain-Routing (fckunchen.vereinbase.de, Middleware existiert teilweise)
-- [ ] Eigene Domain pro Verein (optional, CNAME)
+#### Infrastruktur (DNS + Domain)
+- [ ] DNS: vereinbase.de A-Record auf eigene VM
+- [ ] SSL-Zertifikat (Let's Encrypt / Traefik)
+- [ ] Traefik Wildcard-Rule fuer *.vereinbase.de (Code ist fertig)
+- [ ] Eigene Domain pro Verein (CNAME, Traefik dynamic config)
 
-#### PRIO 1B: Sicherheit & Backup
-- [ ] PostgreSQL Row-Level Security (RLS) auf allen Tabellen mit tenantId
-  - RLS-Policies: USING (tenantId = current_setting('app.current_tenant_id'))
-  - Prisma-Extension: SET LOCAL app.current_tenant_id bei jeder Query
-  - 4. Sicherheitsschicht (neben JWT + TenantGuard + Service-Filter)
-  - Schuetzt auch bei Entwicklerfehlern (vergessenes WHERE tenantId)
-- [ ] Taeglich automatisches DB-Backup (pg_dump 3:00 Uhr, rsync auf NAS)
-  - 30 Tage behalten + 1 pro Monat langzeit
-- [ ] Pro-Verein-Export im Admin-Dashboard (Button -> ZIP mit JSON/CSV)
-- [ ] Automatischer naechtlicher Pro-Verein-Export auf NAS
-- [ ] DSGVO-Export pro Mitglied (Art. 15 + Art. 20)
-- [ ] Tenant-Isolations-Tests (Tenant A sieht NIE Daten von Tenant B)
+#### Infrastruktur (Deployment)
+- [ ] Docker-Setup fuer Produktion
+- [ ] PM2 oder systemd (aktuell nohup)
 
-#### PRIO 2: Features
-- [ ] Vereinskalender (oeffentlich, teamuebergreifend, z.B. Sommerfest)
-- [ ] Sichtbarkeit pro Mitglied (Backend-Filter: nur eigene Team-Events)
-- [ ] Vereinshomepage Frontend-Editor (Sektionen drag&drop, Vorschau)
-- [ ] Turnier-Landingpage Frontend-Editor
-- [ ] Vereinshomepage oeffentliche Darstellung (SSR-Seite)
-- [ ] Push-Notifications (Web mit Service Worker)
-- [ ] 2-Faktor-Authentifizierung (TOTP)
-- [ ] IMAP E-Mail-Empfang (aktuell nur SMTP-Versand)
+#### Mobile App
+- [ ] Expo React Native Setup (iOS + Android)
+- [ ] Login + Push Notifications
+- [ ] Kalender + An-/Abmeldung
+- [ ] Turnier-Live-Anzeige
 
-#### PRIO 3: Infrastruktur
-- [ ] Docker-Setup fuer Produktion (Dockerfile + docker-compose.prod.yml)
-- [ ] Mobile App (Expo React Native)
-- [ ] Umlaute ueberall korrigieren (ae->ae, oe->oe, ue->ue in Code)
+#### Code-Qualitaet
+- [ ] Umlaute in Code konsistent korrigieren
+
+#### Nice-to-Have
+- [ ] KI-Trainer-Assistent
+- [ ] E-Rechnung (ZUGFeRD)
+- [ ] Calendar Sync (iCal Feed, Google Calendar)
 
 ### Deployment (aktuell):
-- Server: Hetzner Ubuntu VM (kein Docker)
+- Server: Eigene Ubuntu VM (kein Docker)
+- Domain: clubos.tschatscher.eu (vereinbase.de geplant)
 - Frontend: `cd apps/frontend && npm run build && npx next start -p 3000`
 - Backend: `cd apps/backend && npm run build && node dist/main.js`
-- Prozesse laufen direkt mit Node, kein PM2/systemd aktuell
+- Prozesse laufen direkt mit Node (nohup)
+- DB-Backup: Cron taeglich 3:00 Uhr
 
 ---
 
@@ -584,12 +511,3 @@ Elternteil:  eltern@fckunchen.de
 ```
 
 Testdaten laden: `npx prisma db seed --schema=apps/backend/prisma/schema.prisma`
-
----
-
-## 💡 Backlog (Zukunft)
-
-- **KI-Trainer-Assistent:** "Erstelle mir einen Trainingsplan fuer die U12"
-- **E-Rechnung (ZUGFeRD):** Automatische Rechnungserstellung
-- **Subdomain-Routing:** fckunchen.vereinbase.de
-- **Push-Notifications:** Firebase Cloud Messaging
