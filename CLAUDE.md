@@ -471,8 +471,8 @@ Admin: /admin Dashboard (Superadmin)
 - [ ] Eigene Domain pro Verein (CNAME, Traefik dynamic config)
 
 #### Infrastruktur (Deployment)
+- [x] PM2 Prozess-Management (ecosystem.config.js, Auto-Restart, Logging)
 - [ ] Docker-Setup fuer Produktion
-- [ ] PM2 oder systemd (aktuell nohup)
 
 #### Mobile App
 - [ ] Expo React Native Setup (iOS + Android)
@@ -481,7 +481,7 @@ Admin: /admin Dashboard (Superadmin)
 - [ ] Turnier-Live-Anzeige
 
 #### Code-Qualitaet
-- [ ] Umlaute in Code konsistent korrigieren
+- [x] Umlaute in 100+ UI-Strings korrigiert (löschen, für, Zurück, hinzufügen, etc.)
 
 #### Nice-to-Have
 - [ ] KI-Trainer-Assistent
@@ -493,7 +493,7 @@ Admin: /admin Dashboard (Superadmin)
 - Domain: clubos.tschatscher.eu (vereinbase.de geplant)
 - Frontend: `cd apps/frontend && npm run build && npx next start -p 3000`
 - Backend: `cd apps/backend && npm run build && node dist/main.js`
-- Prozesse laufen direkt mit Node (nohup)
+- Prozesse via PM2 (ecosystem.config.js, Auto-Restart)
 - DB-Backup: Cron taeglich 3:00 Uhr
 
 ---
