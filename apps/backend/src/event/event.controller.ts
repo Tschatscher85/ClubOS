@@ -159,6 +159,17 @@ export class EventController {
     return this.eventService.schnellTokensGenerieren(tenantId, eventId);
   }
 
+  // ==================== QR-Code Check-In ====================
+
+  @Post(':id/checkin-qr')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
+  @ApiOperation({ summary: 'QR-Code Check-In Token generieren (4h gueltig)' })
+  async checkinQrGenerieren(
+    @Param('id') eventId: string,
+  ) {
+    return this.eventService.checkinTokenErstellen(eventId);
+  }
+
   // ==================== CSV-Export ====================
 
   @Get(':id/export/csv')

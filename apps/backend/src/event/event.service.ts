@@ -6,6 +6,8 @@ import { KommentarDto } from './dto/kommentar.dto';
 import { AttendanceStatus, Role } from '@prisma/client';
 import { ReminderService } from './reminder.service';
 import { PushService } from '../push/push.service';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -14,6 +16,8 @@ export class EventService {
     private prisma: PrismaService,
     private reminderService: ReminderService,
     private pushService: PushService,
+    private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   async erstellen(tenantId: string, dto: ErstelleEventDto) {
@@ -742,6 +746,103 @@ export class EventService {
       where: { eventId },
       orderBy: { createdAt: 'asc' },
     });
+  }
+
+  // ==================== QR-Code Check-In ====================
+
+  /**
+   * Erstellt einen JWT-Token fuer QR-Code Check-In (4 Stunden gueltig).
+   */
+  async checkinTokenErstellen(eventId: string) {
+    // Pruefen ob Event existiert
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      select: { id: true, title: true, date: true },
+    });
+
+    if (!event) {
+      throw new NotFoundException('Veranstaltung nicht gefunden.');
+    }
+
+    const token = this.jwtService.sign(
+      { eventId, typ: 'checkin' },
+      {
+        secret: this.configService.get<string>('jwt.secret'),
+        expiresIn: '4h',
+      },
+    );
+
+    const decoded = this.jwtService.decode(token) as { exp: number };
+    const expiresAt = new Date(decoded.exp * 1000).toISOString();
+
+    return { token, expiresAt };
+  }
+
+  /**
+   * Verarbeitet einen QR-Code Check-In.
+   * Validiert den Token, findet das Event, setzt Anwesenheit auf YES.
+   */
+  async checkinVerarbeiten(token: string, memberId?: string) {
+    // Token validieren
+    let payload: { eventId: string; typ: string };
+    try {
+      payload = this.jwtService.verify(token, {
+        secret: this.configService.get<string>('jwt.secret'),
+      });
+    } catch {
+      throw new BadRequestException('Ungueltiger oder abgelaufener Check-In Token.');
+    }
+
+    if (payload.typ !== 'checkin') {
+      throw new BadRequestException('Ungueltiger Token-Typ.');
+    }
+
+    // Event pruefen
+    const event = await this.prisma.event.findUnique({
+      where: { id: payload.eventId },
+      select: { id: true, title: true, date: true, tenantId: true },
+    });
+
+    if (!event) {
+      throw new NotFoundException('Veranstaltung nicht gefunden.');
+    }
+
+    if (!memberId) {
+      throw new BadRequestException('Keine Mitglieds-ID angegeben. Bitte melde dich an.');
+    }
+
+    // Anwesenheit auf YES setzen
+    const anmeldung = await this.prisma.attendance.upsert({
+      where: {
+        eventId_memberId: {
+          eventId: event.id,
+          memberId,
+        },
+      },
+      update: {
+        status: AttendanceStatus.YES,
+        answeredAt: new Date(),
+      },
+      create: {
+        eventId: event.id,
+        memberId,
+        status: AttendanceStatus.YES,
+        answeredAt: new Date(),
+      },
+      include: {
+        member: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+      },
+    });
+
+    return {
+      nachricht: 'Du bist als anwesend eingetragen!',
+      veranstaltung: event.title,
+      datum: event.date,
+      status: anmeldung.status,
+      mitglied: anmeldung.member,
+    };
   }
 
   /**

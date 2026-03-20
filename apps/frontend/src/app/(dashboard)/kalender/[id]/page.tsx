@@ -21,6 +21,7 @@ import {
   Globe,
   Copy,
   ExternalLink,
+  QrCode,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,6 +34,8 @@ import { API_BASE_URL } from '@/lib/constants';
 import { useBenutzer } from '@/hooks/use-auth';
 import WetterBadge from '@/components/wetter/wetter-badge';
 import { EventFormular } from '@/components/kalender/event-formular';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface MitgliedKurz {
   id: string;
@@ -185,6 +188,12 @@ export default function EventDetailPage() {
   const [lpErfolg, setLpErfolg] = useState('');
   const [lpFehler, setLpFehler] = useState('');
 
+  // QR-Code Check-In
+  const [qrOffen, setQrOffen] = useState(false);
+  const [qrToken, setQrToken] = useState('');
+  const [qrGueltigBis, setQrGueltigBis] = useState('');
+  const [qrLadend, setQrLadend] = useState(false);
+
   const datenLaden = useCallback(async () => {
     try {
       const [eventDaten, anmeldungDaten, kommentarDaten] = await Promise.all([
@@ -246,6 +255,23 @@ export default function EventDetailPage() {
       console.error('Fehler:', error);
     } finally {
       setTokenLadend(false);
+    }
+  };
+
+  const handleCheckinQr = async () => {
+    setQrLadend(true);
+    try {
+      const result = await apiClient.post<{ token: string; expiresAt: string }>(
+        `/veranstaltungen/${eventId}/checkin-qr`,
+        {},
+      );
+      setQrToken(result.token);
+      setQrGueltigBis(result.expiresAt);
+      setQrOffen(true);
+    } catch (error) {
+      console.error('Fehler beim Generieren des QR-Codes:', error);
+    } finally {
+      setQrLadend(false);
     }
   };
 
@@ -446,6 +472,17 @@ export default function EventDetailPage() {
           <Button variant="outline" size="icon" onClick={handleCsvExport} title="CSV Export">
             <Download className="h-4 w-4" />
           </Button>
+          {istAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCheckinQr}
+              disabled={qrLadend}
+            >
+              <QrCode className="h-4 w-4 mr-2" />
+              {qrLadend ? 'Generiere...' : 'Check-In QR'}
+            </Button>
+          )}
           {istAdmin && (
             <Button
               variant="outline"
@@ -886,6 +923,44 @@ export default function EventDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* QR-Code Check-In Dialog */}
+      <Dialog open={qrOffen} onOpenChange={setQrOffen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5" />
+              Check-In QR-Code
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center space-y-4 py-4">
+            {qrToken && (
+              <>
+                <div className="bg-white p-4 rounded-lg">
+                  <QRCodeSVG
+                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/checkin/${qrToken}`}
+                    size={256}
+                    level="M"
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground text-center">
+                  Mitglieder scannen diesen QR-Code, um sich als anwesend einzutragen.
+                </p>
+                {qrGueltigBis && (
+                  <p className="text-xs text-muted-foreground">
+                    Gueltig bis{' '}
+                    {new Date(qrGueltigBis).toLocaleTimeString('de-DE', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}{' '}
+                    Uhr
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Kommentare */}
       <Card>
