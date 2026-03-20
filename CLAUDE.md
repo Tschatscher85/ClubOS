@@ -417,7 +417,7 @@ model FAQ {
 
 **ALLE Features implementiert. Nur Infrastruktur (DNS, Docker, Mobile) offen.**
 
-### 55+ Backend-Module:
+### 60+ Backend-Module:
 - [x] Auth (JWT, Refresh, 2FA/TOTP, Google OAuth, Passwort-Reset, E-Mail-Verifizierung)
 - [x] Multi-Tenant (Schema-per-Tenant, RLS auf 35 Tabellen, mitTenant() Extension)
 - [x] Superadmin (/admin: Vereine listen/sperren/entsperren/Plan/Impersonation)
@@ -451,8 +451,12 @@ model FAQ {
 - [x] Subdomain-Routing (Code fertig: middleware.ts Frontend + Backend)
 - [x] PM2 Prozess-Management (ecosystem.config.js, Auto-Restart)
 - [x] Docker-Setup (Dockerfiles + docker-compose.prod.yml + standalone Next.js)
+- [x] Mitglieder-Selbstverwaltung (Aenderungsantraege mit Genehmigung)
+- [x] Eltern-Umfragen / Doodle-Ersatz (Token-basiert, oeffentlich)
+- [x] Digitales Schwarzes Brett (Kategorien, Push bei AUSFALL, oeffentlich)
+- [x] Wartelisten-Management (maxKader, Auto-Einladung, 48h-Frist)
 
-### 40+ Frontend-Seiten:
+### 45+ Frontend-Seiten:
 Dashboard, Mitglieder (+Detail, +Entwicklung), Mitarbeiter,
 Abteilungen, Teams (+Detail, +Anwesenheit, +Kasse, +Trikots, +Aufstellung),
 Kalender (+Detail, +Landingpage-Editor, +WetterBadge, +QR-Check-In),
@@ -466,8 +470,11 @@ Rollen, Benutzer, Sicherheit [2FA], E-Mail, Homepage-Editor [dnd-kit],
 Empfehlen, Abonnement, Beitraege),
 Oeffentlich: /verein/[slug], /verein/[slug]/kalender, /turnier/[publicUrl],
 /event/[slug] (Werbeseite), /aufstellung/[id], /checkin/[token],
+Mein Profil (Selbstverwaltung), Umfragen (Doodle-Ersatz), Schwarzes Brett,
+Aenderungsantraege (Admin),
 Auth: Login, Registrierung, Passwort-Vergessen, E-Mail-Verifizierung, Onboarding,
-Admin: /admin Dashboard (Superadmin, KI-Verwaltung, Plattform-Keys)
+Admin: /admin Dashboard (Superadmin, KI-Verwaltung, Plattform-Keys),
+Oeffentlich: /umfrage/[token], /verein/[slug]/aktuell (Schwarzes Brett)
 
 ---
 
@@ -483,10 +490,10 @@ Admin: /admin Dashboard (Superadmin, KI-Verwaltung, Plattform-Keys)
 ### Phase A — Schnell umsetzbar, hohe Wirkung
 - [x] A1: Geburtstags-Benachrichtigung (BullMQ CronJob 08:00, Push an Trainer)
 - [x] A2: QR-Code Schnell-Check-In (Token 4h, /checkin/[token], QR-Dialog)
-- [ ] A3: Mitglieder-Selbstverwaltung (Profil-Aenderungen mit Genehmigung)
-- [ ] A4: Eltern-Umfragen / Doodle-Ersatz (Schnellumfrage, Token-basiert)
-- [ ] A5: Digitales Schwarzes Brett (/verein/[slug]/aktuell, Aushaenge)
-- [ ] A6: Wartelisten-Management (maxKader, Auto-Einladung)
+- [x] A3: Mitglieder-Selbstverwaltung (MemberAenderungsantrag, Genehmigung durch Vorstand)
+- [x] A4: Eltern-Umfragen / Doodle-Ersatz (Schnellumfrage, Token-basiert, oeffentlich)
+- [x] A5: Digitales Schwarzes Brett (/verein/[slug]/aktuell, Kategorien, Push bei AUSFALL)
+- [x] A6: Wartelisten-Management (maxKader, Auto-Einladung, 48h-Frist, BullMQ stuendlich)
 
 ### Phase B — Mittlerer Aufwand, strategisch wichtig
 - [ ] B1: Foerdermittel-Jahresbericht (PDF-Export mit pdfkit)
