@@ -36,6 +36,7 @@ import WetterBadge from '@/components/wetter/wetter-badge';
 import { EventFormular } from '@/components/kalender/event-formular';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
+import { VereinsfestPlaner } from '@/components/kalender/vereinsfest-planer';
 
 interface MitgliedKurz {
   id: string;
@@ -1011,6 +1012,11 @@ export default function EventDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Vereinsfest-Planer (nur fuer EVENT und VOLUNTEER) */}
+      {(event.type === 'EVENT' || event.type === 'VOLUNTEER') && (
+        <VereinsfestPlaner eventId={event.id} />
+      )}
     </div>
   );
 }

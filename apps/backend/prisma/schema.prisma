@@ -268,6 +268,7 @@ model Member {
   warteliste           Warteliste[]
   familieMitgliedschaften FamilieMitglied[]
   ehrenamtMeldungen    EhrenamtMeldung[]
+  festSchichtHelfer    FestSchichtHelfer[]
 
   @@index([tenantId])
   @@index([email])
@@ -569,6 +570,9 @@ model Event {
   schnellTokens SchnellAnmeldungToken[]
   landingpage   EventLandingpage?
   spielbericht  Spielbericht?
+  festSchichten FestSchicht[]
+  festEinkaeufe FestEinkauf[]
+  festKasse     FestKasse[]
 
   @@index([tenantId])
   @@index([teamId])
@@ -1923,4 +1927,65 @@ model AuditLog {
   @@index([erstelltAm])
   @@index([userId])
   @@index([aktion])
+}
+
+// ==================== Vereinsfest-Planer ====================
+
+model FestSchicht {
+  id          String   @id @default(cuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tenantId    String
+  name        String           // z.B. "Theke 14-17 Uhr", "Grill 12-18 Uhr", "Aufbau 10 Uhr"
+  startZeit   String?          // z.B. "14:00"
+  endZeit     String?          // z.B. "17:00"
+  maxHelfer   Int              @default(3)
+  helfer      FestSchichtHelfer[]
+
+  @@index([eventId])
+  @@index([tenantId])
+}
+
+model FestSchichtHelfer {
+  id          String   @id @default(cuid())
+  schichtId   String
+  schicht     FestSchicht @relation(fields: [schichtId], references: [id], onDelete: Cascade)
+  mitgliedId  String
+  member      Member   @relation(fields: [mitgliedId], references: [id])
+  erstelltAm  DateTime @default(now())
+
+  @@unique([schichtId, mitgliedId])
+  @@index([schichtId])
+}
+
+model FestEinkauf {
+  id          String   @id @default(cuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tenantId    String
+  artikel     String
+  menge       String?           // z.B. "5 Kisten", "20 Stueck"
+  kauftEin    String?           // Name der Person
+  erledigt    Boolean  @default(false)
+  erstelltAm  DateTime @default(now())
+
+  @@index([eventId])
+}
+
+model FestKasse {
+  id          String   @id @default(cuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tenantId    String
+  typ         FestKassenTyp
+  betrag      Float
+  beschreibung String
+  erstelltAm  DateTime @default(now())
+
+  @@index([eventId])
+}
+
+enum FestKassenTyp {
+  EINNAHME
+  AUSGABE
 }
