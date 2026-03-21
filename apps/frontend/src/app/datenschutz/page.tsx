@@ -37,7 +37,7 @@ export default function DatenschutzPage() {
             <h2 className="text-xl font-semibold mb-2">2. Welche Daten wir verarbeiten</h2>
             <p>
               Bei Registrierung: Name, E-Mail, Passwort (bcrypt-verschlüsselt).<br />
-              Bei Nutzung: IP-Adresse (wird nach 7 Tagen anonymisiert), Log-Daten.<br />
+              Bei Nutzung: IP-Adresse (Log-Daten werden regelmäßig gelöscht), Log-Daten.<br />
               Mitgliederdaten der Vereine: Name, Geburtsdatum, Adresse, Telefon —
               diese Daten gehören dem jeweiligen Verein, nicht Vereinbase.
             </p>
@@ -54,8 +54,8 @@ export default function DatenschutzPage() {
           <section>
             <h2 className="text-xl font-semibold mb-2">4. Server und Speicherort</h2>
             <p>
-              Alle Daten werden ausschließlich auf Servern in Deutschland gespeichert.
-              Keine Übermittlung in Drittländer außerhalb der EU.
+              Alle Daten werden ausschließlich auf eigener Infrastruktur in Deutschland
+              gespeichert und verarbeitet. Keine Übermittlung in Drittländer außerhalb der EU.
             </p>
           </section>
 
@@ -63,7 +63,7 @@ export default function DatenschutzPage() {
             <h2 className="text-xl font-semibold mb-2">5. Drittanbieter</h2>
             <ul className="list-disc pl-6 space-y-1">
               <li>
-                <strong>Stripe</strong> (Zahlungsabwicklung):{' '}
+                <strong>Stripe</strong> (Zahlungsabwicklung, bei Aktivierung):{' '}
                 <a href="https://stripe.com/de/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                   stripe.com/de/privacy
                 </a>
@@ -71,10 +71,6 @@ export default function DatenschutzPage() {
               <li>
                 <strong>Anthropic / OpenAI</strong> (KI-Features): nur wenn vom Verein aktiviert,
                 nur anonymisierte Anfragen, keine Mitgliederdaten.
-              </li>
-              <li>
-                <strong>Sentry</strong> (Fehlermonitoring): ausschließlich technische Fehlerdaten,
-                keine personenbezogenen Daten.
               </li>
             </ul>
           </section>

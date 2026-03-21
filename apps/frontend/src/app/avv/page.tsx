@@ -66,7 +66,7 @@ export default function AVVPage() {
 
           <section>
             <h2 className="text-xl font-semibold mb-2">Speicherort</h2>
-            <p>Ausschließlich Server in Deutschland (EU).</p>
+            <p>Ausschließlich eigene Infrastruktur in Deutschland (EU).</p>
           </section>
 
           <section>
@@ -85,12 +85,11 @@ export default function AVVPage() {
               Technische und organisatorische Maßnahmen (TOMs)
             </h2>
             <ul className="list-disc pl-6 space-y-1">
-              <li>Verschlüsselung der Datenübertragung (TLS 1.3)</li>
-              <li>Verschlüsselung der gespeicherten Daten</li>
+              <li>Verschlüsselung der Datenübertragung (TLS)</li>
               <li>Zugriffskontrolle (Row-Level Security, Schema-per-Tenant)</li>
               <li>Jeder Verein hat einen vollständig getrennten Datenbereich</li>
-              <li>Tägliche verschlüsselte Backups (30 Tage Aufbewahrung)</li>
-              <li>Sentry-Monitoring (nur technische Fehlerdaten, keine Personendaten)</li>
+              <li>Tägliche Backups (30 Tage Aufbewahrung)</li>
+              <li>Passwörter bcrypt-verschlüsselt gespeichert</li>
               <li>Alle Mitarbeiter zur Vertraulichkeit verpflichtet</li>
             </ul>
           </section>
@@ -99,16 +98,13 @@ export default function AVVPage() {
             <h2 className="text-xl font-semibold mb-2">Unterauftragnehmer</h2>
             <ul className="list-disc pl-6 space-y-1">
               <li>
-                <strong>Stripe Inc.</strong> (Zahlungsabwicklung):{' '}
+                <strong>Stripe Inc.</strong> (Zahlungsabwicklung, bei Aktivierung):{' '}
                 <a href="https://stripe.com/de/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                   stripe.com/de/privacy
                 </a>
               </li>
               <li>
                 <strong>Anthropic / OpenAI</strong> (KI, nur wenn Verein aktiviert hat)
-              </li>
-              <li>
-                <strong>Sentry</strong> (Fehlermonitoring, anonymisiert)
               </li>
             </ul>
             <p>
