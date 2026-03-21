@@ -38,4 +38,5 @@ export const ROUTEN = {
   BERICHTE: '/berichte',
   EHRENAMT: '/ehrenamt',
   MITGLIEDERBINDUNG: '/mitgliederbindung',
+  GALERIE: '/galerie',
 } as const;

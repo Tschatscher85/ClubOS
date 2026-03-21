@@ -267,8 +267,9 @@ model Member {
   aenderungsantraege   MemberAenderungsantrag[]
   warteliste           Warteliste[]
   familieMitgliedschaften FamilieMitglied[]
-  ehrenamtMeldungen    EhrenamtMeldung[]
-  festSchichtHelfer    FestSchichtHelfer[]
+  ehrenamtMeldungen          EhrenamtMeldung[]
+  festSchichtHelfer          FestSchichtHelfer[]
+  einverstaendnisAntworten   EinverstaendnisAntwort[]
 
   @@index([tenantId])
   @@index([email])
@@ -401,6 +402,7 @@ model Team {
   aushaenge          Aushang[]
   warteliste         Warteliste[]
   ehrenamtAufgaben   EhrenamtAufgabe[]
+  fotos              Foto[]
 
   @@index([tenantId])
   @@index([abteilungId])
@@ -570,9 +572,11 @@ model Event {
   schnellTokens SchnellAnmeldungToken[]
   landingpage   EventLandingpage?
   spielbericht  Spielbericht?
-  festSchichten FestSchicht[]
-  festEinkaeufe FestEinkauf[]
-  festKasse     FestKasse[]
+  festSchichten     FestSchicht[]
+  festEinkaeufe     FestEinkauf[]
+  festKasse         FestKasse[]
+  einverstaendnisse Einverstaendnis[]
+  fotos             Foto[]
 
   @@index([tenantId])
   @@index([teamId])
@@ -1988,4 +1992,57 @@ model FestKasse {
 enum FestKassenTyp {
   EINNAHME
   AUSGABE
+}
+
+// ==================== Einverstaendniserklaerung (Eltern-Einverstaendnis) ====================
+
+model Einverstaendnis {
+  id            String   @id @default(cuid())
+  tenantId      String
+  eventId       String
+  event         Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  titel         String           // z.B. "Einverstaendniserklaerung Ausflug Europapark"
+  inhalt        String           // Text der Erklaerung
+  erstelltVon   String
+  erstelltAm    DateTime @default(now())
+  antworten     EinverstaendnisAntwort[]
+
+  @@index([tenantId])
+  @@index([eventId])
+}
+
+model EinverstaendnisAntwort {
+  id                  String   @id @default(cuid())
+  einverstaendnisId   String
+  einverstaendnis     Einverstaendnis @relation(fields: [einverstaendnisId], references: [id], onDelete: Cascade)
+  mitgliedId          String
+  member              Member   @relation(fields: [mitgliedId], references: [id])
+  elternName          String           // Name des Elternteils das unterschrieben hat
+  zugestimmt          Boolean
+  unterschrift        String?          // Digitale Unterschrift Text
+  ipAdresse           String?
+  beantwortetAm       DateTime @default(now())
+
+  @@unique([einverstaendnisId, mitgliedId])
+  @@index([einverstaendnisId])
+}
+
+// ==================== Foto-Galerie ====================
+
+model Foto {
+  id              String   @id @default(cuid())
+  tenantId        String
+  teamId          String?
+  team            Team?    @relation(fields: [teamId], references: [id])
+  eventId         String?
+  event           Event?   @relation(fields: [eventId], references: [id])
+  url             String           // Bild-URL (hochgeladen)
+  thumbnail       String?          // Thumbnail-URL
+  beschreibung    String?
+  hochgeladenVon  String           // userId
+  erstelltAm      DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([teamId])
+  @@index([eventId])
 }

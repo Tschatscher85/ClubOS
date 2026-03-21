@@ -59,6 +59,8 @@ import { BerichtModule } from './bericht/bericht.module';
 import { EhrenamtModule } from './ehrenamt/ehrenamt.module';
 import { FestModule } from './fest/fest.module';
 import { MitgliederbindungModule } from './mitgliederbindung/mitgliederbindung.module';
+import { EinverstaendnisModule } from './einverstaendnis/einverstaendnis.module';
+import { GalerieModule } from './galerie/galerie.module';
 import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
 import { TenantStatusMiddleware } from './common/middleware/tenant-status.middleware';
 import configuration from './config/configuration';
@@ -143,6 +145,8 @@ import configuration from './config/configuration';
     EhrenamtModule,
     FestModule,
     MitgliederbindungModule,
+    EinverstaendnisModule,
+    GalerieModule,
   ],
   providers: [
     {

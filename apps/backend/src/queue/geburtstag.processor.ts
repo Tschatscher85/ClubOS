@@ -38,6 +38,11 @@ export class GeburtstagProcessor {
           lastName: true,
           birthDate: true,
           tenantId: true,
+          user: {
+            select: {
+              email: true,
+            },
+          },
           teamMembers: {
             select: {
               team: {
@@ -96,6 +101,30 @@ export class GeburtstagProcessor {
             });
           } catch (err) {
             this.logger.warn(`Push an Trainer ${trainerId} fehlgeschlagen: ${err}`);
+          }
+        }
+
+        // Geburtstags-E-Mail an das Mitglied selbst senden
+        const mitgliedEmail = mitglied.user?.email;
+        if (mitgliedEmail) {
+          try {
+            // Vereinsname und Logo laden
+            const tenant = await this.prisma.tenant.findUnique({
+              where: { id: mitglied.tenantId },
+              select: { name: true, logo: true },
+            });
+
+            await this.queueService.geburtstagsEmailSenden({
+              email: mitgliedEmail,
+              vorname: mitglied.firstName,
+              vereinsname: tenant?.name || 'Dein Verein',
+              alter: alter || undefined,
+              logoUrl: tenant?.logo || undefined,
+            });
+          } catch (err) {
+            this.logger.warn(
+              `Geburtstags-E-Mail an ${mitgliedEmail} fehlgeschlagen: ${err}`,
+            );
           }
         }
 

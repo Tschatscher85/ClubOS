@@ -41,6 +41,15 @@ interface NotfallJobDaten {
   nachricht: string;
 }
 
+/** Daten fuer Geburtstags-E-Mails an Mitglieder */
+interface GeburtstagsJobDaten {
+  email: string;
+  vorname: string;
+  vereinsname: string;
+  alter?: number;
+  logoUrl?: string;
+}
+
 /** Daten fuer Zahlungs-Warnungs-E-Mails */
 interface ZahlungWarnungJobDaten {
   email: string;
@@ -148,6 +157,57 @@ export class EmailProcessor {
     } catch (fehler) {
       this.logger.error(
         `Fehler beim Senden der Erinnerungs-E-Mail an ${email}: ${fehler}`,
+      );
+      throw fehler;
+    }
+  }
+
+  @Process('geburtstag')
+  async geburtstagsEmailVerarbeiten(job: Job<GeburtstagsJobDaten>): Promise<void> {
+    const { email, vorname, vereinsname, alter, logoUrl } = job.data;
+    this.logger.log(`Geburtstags-E-Mail wird an ${email} gesendet...`);
+
+    try {
+      const alterText = alter ? `<p style="font-size:18px;">Du wirst heute <strong>${alter} Jahre</strong> alt!</p>` : '';
+      const logoHtml = logoUrl
+        ? `<img src="${logoUrl}" alt="${vereinsname}" style="max-width:120px;margin-bottom:16px;" />`
+        : '';
+
+      const htmlInhalt = `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;text-align:center;padding:32px;">
+          ${logoHtml}
+          <h1 style="color:#1a56db;">Alles Gute zum Geburtstag, ${vorname}! 🎂</h1>
+          ${alterText}
+          <p style="font-size:16px;line-height:1.6;">
+            Der gesamte <strong>${vereinsname}</strong> wuenscht dir einen wunderbaren Geburtstag!
+          </p>
+          <p style="font-size:16px;line-height:1.6;">
+            Wir freuen uns, dass du Teil unseres Vereins bist und hoffen,
+            dass du einen tollen Tag hast. 🎉
+          </p>
+          <hr style="margin:24px 0;border:none;border-top:1px solid #e5e7eb;" />
+          <p style="color:#6b7280;font-size:13px;">
+            Diese E-Mail wurde automatisch von ${vereinsname} ueber Vereinbase versendet.
+          </p>
+        </div>`;
+
+      await this.mailService['transporter']?.sendMail({
+        from: 'noreply@vereinbase.de',
+        to: email,
+        subject: `Alles Gute zum Geburtstag, ${vorname}! 🎂`,
+        html: htmlInhalt,
+      });
+
+      if (!this.mailService['transporter']) {
+        this.logger.log(
+          `[Mail] SMTP nicht konfiguriert. Geburtstags-E-Mail an ${email}: ${vorname}`,
+        );
+      }
+
+      this.logger.log(`Geburtstags-E-Mail erfolgreich an ${email} gesendet`);
+    } catch (fehler) {
+      this.logger.error(
+        `Fehler beim Senden der Geburtstags-E-Mail an ${email}: ${fehler}`,
       );
       throw fehler;
     }

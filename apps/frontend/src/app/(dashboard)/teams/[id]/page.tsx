@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/dialog';
 import { apiClient } from '@/lib/api-client';
 import { sportartLabel } from '@/lib/sportarten';
+import { TeamFotosBereich } from '@/components/teams/team-fotos-bereich';
 
 interface MitgliedInfo {
   id: string;
@@ -725,6 +726,9 @@ export default function TeamDetailPage() {
           <TabsTrigger value="kalender">
             Kalender ({team._count.events})
           </TabsTrigger>
+          <TabsTrigger value="fotos">
+            Fotos
+          </TabsTrigger>
         </TabsList>
 
         {/* Tab: Kader */}
@@ -845,6 +849,11 @@ export default function TeamDetailPage() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* Tab: Fotos */}
+        <TabsContent value="fotos">
+          <TeamFotosBereich teamId={team.id} />
         </TabsContent>
       </Tabs>
 

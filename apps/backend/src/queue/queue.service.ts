@@ -42,6 +42,15 @@ interface NotfallBroadcastDaten {
   nachricht: string;
 }
 
+/** Daten fuer Geburtstags-E-Mails an Mitglieder */
+interface GeburtstagsEmailDaten {
+  email: string;
+  vorname: string;
+  vereinsname: string;
+  alter?: number;
+  logoUrl?: string;
+}
+
 /** Daten fuer Push-Benachrichtigungen */
 interface BenachrichtigungDaten {
   empfaengerId: string;
@@ -211,6 +220,22 @@ export class QueueService {
       },
     });
     this.logger.log('Job zum Verarbeiten faelliger Erinnerungen zur Queue hinzugefuegt');
+  }
+
+  /**
+   * Fuegt eine Geburtstags-E-Mail zur Queue hinzu (an das Mitglied selbst).
+   */
+  async geburtstagsEmailSenden(daten: GeburtstagsEmailDaten): Promise<void> {
+    await this.emailQueue.add('geburtstag', daten, {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 5000,
+      },
+    });
+    this.logger.log(
+      `Geburtstags-E-Mail-Job fuer ${daten.email} zur Queue hinzugefuegt`,
+    );
   }
 
   /**

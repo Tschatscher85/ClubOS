@@ -37,6 +37,7 @@ import { EventFormular } from '@/components/kalender/event-formular';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
 import { VereinsfestPlaner } from '@/components/kalender/vereinsfest-planer';
+import { EinverstaendnisBereich } from '@/components/kalender/einverstaendnis-bereich';
 
 interface MitgliedKurz {
   id: string;
@@ -1012,6 +1013,11 @@ export default function EventDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Einverstaendniserklaerung (fuer TRIP, EVENT, TOURNAMENT) */}
+      {['TRIP', 'EVENT', 'TOURNAMENT'].includes(event.type) && (
+        <EinverstaendnisBereich eventId={event.id} istAdmin={!!istAdmin} />
+      )}
 
       {/* Vereinsfest-Planer (nur fuer EVENT und VOLUNTEER) */}
       {(event.type === 'EVENT' || event.type === 'VOLUNTEER') && (
