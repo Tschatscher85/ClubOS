@@ -55,6 +55,7 @@ import { WartelisteModule } from './warteliste/warteliste.module';
 import { FamilieModule } from './familie/familie.module';
 import { MarktplatzModule } from './marktplatz/marktplatz.module';
 import { VertragModule } from './vertrag/vertrag.module';
+import { BerichtModule } from './bericht/bericht.module';
 import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
 import { TenantStatusMiddleware } from './common/middleware/tenant-status.middleware';
 import configuration from './config/configuration';
@@ -135,6 +136,7 @@ import configuration from './config/configuration';
     FamilieModule,
     MarktplatzModule,
     VertragModule,
+    BerichtModule,
   ],
   providers: [
     {

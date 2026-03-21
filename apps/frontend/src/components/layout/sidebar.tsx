@@ -21,6 +21,7 @@ import {
   ClipboardList,
   UsersRound,
   Store,
+  FileBarChart,
 } from 'lucide-react';
 import { useTenant, useBenutzer } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -74,6 +75,7 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
       { href: ROUTEN.BUCHHALTUNG, label: 'Buchhaltung & Beiträge', icon: Receipt, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'BUCHHALTUNG' },
       { href: ROUTEN.SPONSOREN, label: 'Sponsoren', icon: Heart, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'SPONSOREN' },
       { href: ROUTEN.DOKUMENTE, label: 'Dokumente & Formulare', icon: FolderOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'DOKUMENTE' },
+      { href: ROUTEN.BERICHTE, label: 'Berichte', icon: FileBarChart, rollen: ['SUPERADMIN', 'ADMIN'] },
     ],
   },
   {

@@ -35,4 +35,5 @@ export const ROUTEN = {
   SCHWARZES_BRETT: '/schwarzes-brett',
   FAMILIEN: '/familien',
   MARKTPLATZ: '/marktplatz',
+  BERICHTE: '/berichte',
 } as const;

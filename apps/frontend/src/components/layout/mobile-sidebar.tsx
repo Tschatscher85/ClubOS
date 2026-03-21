@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   UsersRound,
   Store,
+  FileBarChart,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -71,6 +72,7 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
       { href: ROUTEN.BUCHHALTUNG, label: 'Buchhaltung & Beiträge', icon: Receipt, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'BUCHHALTUNG' },
       { href: ROUTEN.SPONSOREN, label: 'Sponsoren', icon: Heart, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'SPONSOREN' },
       { href: ROUTEN.DOKUMENTE, label: 'Dokumente & Formulare', icon: FolderOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'DOKUMENTE' },
+      { href: ROUTEN.BERICHTE, label: 'Berichte', icon: FileBarChart, rollen: ['SUPERADMIN', 'ADMIN'] },
     ],
   },
   {
