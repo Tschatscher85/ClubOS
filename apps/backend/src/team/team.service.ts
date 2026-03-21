@@ -14,7 +14,7 @@ export class TeamService {
         name: dto.name,
         sport: dto.sportart,
         ageGroup: dto.altersklasse,
-        trainerId: dto.trainerId,
+        trainerId: dto.trainerId || null,
         tenantId,
       },
     });

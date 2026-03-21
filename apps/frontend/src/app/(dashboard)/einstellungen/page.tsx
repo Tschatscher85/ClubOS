@@ -672,10 +672,24 @@ export default function EinstellungenPage() {
       {/* ============ TAB: Sportbetrieb ============ */}
       {aktiveTab === 'sportbetrieb' && istAdmin && (
         <div className="space-y-4">
+          {/* Vereinsstruktur */}
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
+            Vereinsstruktur
+          </p>
           <AbteilungenCard />
-          <TeamsCard />
           <SportartenCard />
+
+          {/* Mannschaften */}
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 pt-4">
+            Mannschaften
+          </p>
+          <TeamsCard />
           <AltersklassenCard />
+
+          {/* Spielbetrieb & Orte */}
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 pt-4">
+            Spielbetrieb & Orte
+          </p>
           <VeranstaltungstypenCard />
           <SportstaettenCard />
 

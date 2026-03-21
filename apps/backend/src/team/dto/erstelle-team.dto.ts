@@ -17,9 +17,10 @@ export class ErstelleTeamDto {
   @MinLength(1, { message: 'Altersklasse darf nicht leer sein.' })
   altersklasse!: string;
 
-  @ApiProperty({ description: 'Trainer-User-ID' })
+  @ApiPropertyOptional({ description: 'Trainer-User-ID (optional, kann spaeter zugeordnet werden)' })
+  @IsOptional()
   @IsString()
-  trainerId!: string;
+  trainerId?: string;
 }
 
 export class AktualisiereTeamDto {

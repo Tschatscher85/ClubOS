@@ -388,7 +388,7 @@ model Team {
   name        String
   sport       Sport
   ageGroup    String
-  trainerId   String
+  trainerId   String?    // Optional: Trainer kann spaeter zugeordnet werden
   tenantId    String
   tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   abteilungId String?
