@@ -81,6 +81,8 @@ interface Mitglied {
   parentEmail: string | null;
   signatureUrl: string | null;
   qrCode: string | null;
+  profilBildUrl: string | null;
+  fotoErlaubnis: boolean;
   teamMembers: TeamMitgliedschaft[];
   user: BenutzerInfo | null;
 }
@@ -432,7 +434,7 @@ export default function MitgliedDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header mit Profilbild */}
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
@@ -441,6 +443,60 @@ export default function MitgliedDetailPage() {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
+
+        {/* Profilbild */}
+        <div className="relative group shrink-0">
+          <div className="h-16 w-16 rounded-full bg-muted overflow-hidden flex items-center justify-center border-2 border-border">
+            {mitglied.profilBildUrl ? (
+              <img
+                src={`${API_BASE_URL}${mitglied.profilBildUrl}`}
+                alt={`${mitglied.firstName} ${mitglied.lastName}`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="text-xl font-bold text-muted-foreground">
+                {mitglied.firstName.charAt(0)}{mitglied.lastName.charAt(0)}
+              </span>
+            )}
+          </div>
+          {istTrainerOderAdmin && (
+            <label className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={async (e) => {
+                  const datei = e.target.files?.[0];
+                  if (!datei) return;
+                  // Fotoerlaubnis pruefen bei Minderjaehrigen
+                  if (mitglied.birthDate) {
+                    const geb = new Date(mitglied.birthDate);
+                    const heute = new Date();
+                    const alter = heute.getFullYear() - geb.getFullYear();
+                    if (alter < 18 && !mitglied.fotoErlaubnis) {
+                      alert('Fotoerlaubnis der Eltern fehlt. Bitte zuerst im Mitglied-Formular die Fotoerlaubnis aktivieren.');
+                      return;
+                    }
+                  }
+                  const formData = new FormData();
+                  formData.append('bild', datei);
+                  try {
+                    const storeJson = localStorage.getItem('auth-storage');
+                    const token = storeJson ? JSON.parse(storeJson).state?.accessToken : null;
+                    const res = await fetch(`${API_BASE_URL}/mitglieder/${mitgliedId}/profilbild`, {
+                      method: 'POST',
+                      headers: token ? { Authorization: `Bearer ${token}` } : {},
+                      body: formData,
+                    });
+                    if (res.ok) datenLaden();
+                  } catch { /* Ignore */ }
+                }}
+              />
+            </label>
+          )}
+        </div>
+
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">

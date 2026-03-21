@@ -241,6 +241,7 @@ model Member {
   status                     MemberStatus   @default(PENDING)
   sport                      String[]
   qrCode                     String?
+  profilBildUrl              String?    // Profilbild (Upload durch Admin/Trainer/Eltern)
   parentEmail                String?
   signatureUrl               String?
   // Beitrag & Ermaessigung

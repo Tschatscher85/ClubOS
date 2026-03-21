@@ -344,6 +344,51 @@ export class MemberController {
     return this.memberService.nachweisHochladen(tenantId, id, dokUrl);
   }
 
+  @Post(':id/profilbild')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
+  @ApiOperation({ summary: 'Profilbild fuer Mitglied hochladen' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('bild', {
+      storage: diskStorage({
+        destination: './uploads/profilbilder',
+        filename: (_req, file, cb) => {
+          cb(null, `${randomUUID()}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (_req, file, cb) => {
+        if (!file.mimetype.match(/^image\/(png|jpeg|jpg|webp)$/)) {
+          cb(new Error('Nur PNG, JPG und WebP erlaubt.'), false);
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async profilbildHochladen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new MaxFileSizeValidator({ maxSize: 2 * 1024 * 1024 })],
+      }),
+    )
+    datei: Express.Multer.File,
+  ) {
+    const bildUrl = `/uploads/profilbilder/${datei.filename}`;
+    return this.memberService.profilbildSetzen(tenantId, id, bildUrl);
+  }
+
+  @Delete(':id/profilbild')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
+  @ApiOperation({ summary: 'Profilbild eines Mitglieds entfernen' })
+  async profilbildLoeschen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.memberService.profilbildSetzen(tenantId, id, null);
+  }
+
   @Put(':id/nachweis-status')
   @Rollen(Role.SUPERADMIN, Role.ADMIN)
   @ApiOperation({ summary: 'Nachweis-Status aendern (genehmigen/ablehnen)' })

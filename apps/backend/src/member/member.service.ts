@@ -1188,6 +1188,14 @@ export class MemberService {
   ];
 
   /** Nachweis-Dokument hochladen und Status auf EINGEREICHT setzen */
+  async profilbildSetzen(tenantId: string, memberId: string, bildUrl: string | null) {
+    await this.nachIdAbrufen(tenantId, memberId);
+    return this.prisma.member.update({
+      where: { id: memberId },
+      data: { profilBildUrl: bildUrl },
+    });
+  }
+
   async nachweisHochladen(tenantId: string, memberId: string, dokUrl: string) {
     await this.nachIdAbrufen(tenantId, memberId);
 
