@@ -474,6 +474,11 @@ model FAQ {
 - [x] Rate-Limiting verschaerft (Login 5/min, Registrierung 3/min)
 - [x] Dashboard Geburtstage-Widget (diese Woche)
 - [x] Onboarding 4. Schritt: Mitglieder einladen
+- [x] Kooperationspartner (Plattform-Level, SUPERADMIN, 9 Kategorien, Provision + Rabatt)
+- [x] Vereins-Partner/Dienstleister (Tenant-Level, Auftrags-Tracking, Notizen)
+- [x] Partner-Seite (/partner, Tabs: Vereins-Partner + Vereinbase Vorteile)
+- [x] Multi-PDF Workflow-Stepper (Reihenfolge, Schritt-Nummern, Auf/Ab-Buttons)
+- [x] CORS eingeschraenkt (api.vereinbase.de nur von vereinbase.de)
 - [x] Audit-Log + System-Status (Admin)
 - [x] NDA/Vertrags-System (Token-basiert, Unterschrift, IP-Log)
 - [x] Eltern-Einverstaendnis digital (Token-basiert, pro Event)
