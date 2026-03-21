@@ -417,7 +417,7 @@ model FAQ {
 
 **ALLE Features implementiert. Nur Infrastruktur (DNS, Docker, Mobile) offen.**
 
-### 60+ Backend-Module:
+### 70+ Backend-Module:
 - [x] Auth (JWT, Refresh, 2FA/TOTP, Google OAuth, Passwort-Reset, E-Mail-Verifizierung)
 - [x] Multi-Tenant (Schema-per-Tenant, RLS auf 35 Tabellen, mitTenant() Extension)
 - [x] Superadmin (/admin: Vereine listen/sperren/entsperren/Plan/Impersonation)
@@ -458,7 +458,7 @@ model FAQ {
 - [x] Familie-Verknuepfung (Partner, Kinder, Geschwister - Mama+Papa synchronisiert)
 - [x] Vereinbase Marktplatz (vereinsuebergreifend, PLZ-Filter, Bewerbungen)
 
-### 45+ Frontend-Seiten:
+### 55+ Frontend-Seiten:
 Dashboard, Mitglieder (+Detail, +Entwicklung), Mitarbeiter,
 Abteilungen, Teams (+Detail, +Anwesenheit, +Kasse, +Trikots, +Aufstellung),
 Kalender (+Detail, +Landingpage-Editor, +WetterBadge, +QR-Check-In),
@@ -498,10 +498,10 @@ Oeffentlich: /umfrage/[token], /verein/[slug]/aktuell (Schwarzes Brett)
 - [x] A6: Wartelisten-Management (maxKader, Auto-Einladung, 48h-Frist, BullMQ stuendlich)
 
 ### Phase B — Mittlerer Aufwand, strategisch wichtig
-- [ ] B1: Foerdermittel-Jahresbericht (PDF-Export mit pdfkit)
-- [ ] B2: Ehrenamt-Modul (Helfer-Aufgaben, Uebungsleiterpauschale)
-- [ ] B3: Vereinsfest-Planer (Schichten, Einkaufsliste, Kassen-Abrechnung)
-- [ ] B4: KI-Mitgliederbindung / Churn Prevention (Risiko-Score, Dashboard)
+- [x] B1: Foerdermittel-Jahresbericht (PDF-Export, Mitgliederentwicklung, Altersstruktur)
+- [x] B2: Ehrenamt-Modul (Helfer-Aufgaben, Uebungsleiterstunden, 3.300 EUR Warnung)
+- [x] B3: Vereinsfest-Planer (Schichten, Einkaufsliste, Kassen-Abrechnung)
+- [x] B4: KI-Mitgliederbindung (Risiko-Score 0-100, Ampel, KI-Kontaktvorschlag, Weekly CronJob)
 
 ### Phase C — Vereinbase als Plattform
 - [x] C1: Vereinbase Marktplatz (vereinsuebergreifend: Geraete, Trikots, Trainer, Spiele, Turniere, SR, PLZ-Filter)
