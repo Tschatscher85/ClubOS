@@ -36,4 +36,5 @@ export const ROUTEN = {
   FAMILIEN: '/familien',
   MARKTPLATZ: '/marktplatz',
   BERICHTE: '/berichte',
+  EHRENAMT: '/ehrenamt',
 } as const;

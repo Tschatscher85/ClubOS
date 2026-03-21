@@ -121,6 +121,8 @@ model Tenant {
   umfragen           Umfrage[]
   aushaenge          Aushang[]
   marktplatzInserate MarktplatzInserat[]
+  ehrenamtAufgaben   EhrenamtAufgabe[]
+  uebungsleiterStunden UebungsleiterStunden[]
 
   @@index([slug])
 }
@@ -265,6 +267,7 @@ model Member {
   aenderungsantraege   MemberAenderungsantrag[]
   warteliste           Warteliste[]
   familieMitgliedschaften FamilieMitglied[]
+  ehrenamtMeldungen    EhrenamtMeldung[]
 
   @@index([tenantId])
   @@index([email])
@@ -396,6 +399,7 @@ model Team {
   umfragen           Umfrage[]
   aushaenge          Aushang[]
   warteliste         Warteliste[]
+  ehrenamtAufgaben   EhrenamtAufgabe[]
 
   @@index([tenantId])
   @@index([abteilungId])
@@ -1838,6 +1842,69 @@ model VertragEinladung {
 
   @@index([vertragId])
   @@index([token])
+}
+
+// ==================== Ehrenamt (Helfer-Aufgaben + Uebungsleiterpauschale) ====================
+
+model EhrenamtAufgabe {
+  id            String         @id @default(cuid())
+  tenantId      String
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teamId        String?
+  team          Team?          @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  titel         String
+  beschreibung  String?
+  datum         DateTime?
+  frist         DateTime?         // Deadline fuer Helfer-Anmeldung
+  maxHelfer     Int?              // null = unbegrenzt
+  status        AufgabenStatus    @default(OFFEN)
+  erstelltVon   String
+  erstelltAm    DateTime          @default(now())
+  meldungen     EhrenamtMeldung[]
+
+  @@index([tenantId])
+  @@index([status])
+}
+
+model EhrenamtMeldung {
+  id          String              @id @default(cuid())
+  aufgabeId   String
+  aufgabe     EhrenamtAufgabe     @relation(fields: [aufgabeId], references: [id], onDelete: Cascade)
+  mitgliedId  String
+  member      Member              @relation(fields: [mitgliedId], references: [id])
+  status      MeldungStatus       @default(ANGEMELDET)
+  erstelltAm  DateTime            @default(now())
+
+  @@unique([aufgabeId, mitgliedId])
+  @@index([aufgabeId])
+}
+
+model UebungsleiterStunden {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId       String
+  datum        DateTime
+  stunden      Float
+  beschreibung String?
+  erstelltAm   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([datum])
+}
+
+enum AufgabenStatus {
+  OFFEN
+  BESETZT
+  ABGESCHLOSSEN
+  ABGESAGT
+}
+
+enum MeldungStatus {
+  ANGEMELDET
+  BESTAETIGT
+  ABGELEHNT
 }
 
 // ==================== Audit-Log (Superadmin) ====================
