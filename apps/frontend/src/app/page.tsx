@@ -146,7 +146,12 @@ const featureSections = [
       'Vereins-Wiki (internes Wissensmanagement)',
       'Foerdermittel-Jahresbericht (PDF)',
       'Jahres-Statistik-Poster',
-      'Sponsoren-Portal',
+      'Sponsoren-Portal (Magic-Link)',
+      'Vereins-Crowdfunding',
+      'Versicherungs-Check',
+      'Vereins-Gesundheitscheck (Score 0-100)',
+      'Trainer-Lizenz-Tracker',
+      'Oeffentliche Statistik-Seite',
     ],
   },
   {
@@ -180,9 +185,7 @@ const featureSections = [
 
 const comingSoon = [
   { title: 'Mobile App (iOS + Android)', icon: Smartphone },
-  { title: 'Vereins-Crowdfunding', icon: Coins },
   { title: 'E-Rechnung (ZUGFeRD)', icon: Receipt },
-  { title: 'Vereins-Gesundheitscheck', icon: Stethoscope },
 ];
 
 // Preise werden noch definiert - Platzhalter
@@ -333,7 +336,7 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-blue-500" />
-            <span>80+ Funktionen in einer Plattform</span>
+            <span>90+ Funktionen in einer Plattform</span>
           </div>
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-green-500" />

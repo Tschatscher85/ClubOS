@@ -417,7 +417,7 @@ model FAQ {
 
 **ALLE Features implementiert. Nur Infrastruktur (DNS, Docker, Mobile) offen.**
 
-### 80+ Backend-Module:
+### 90+ Backend-Module:
 - [x] Auth (JWT, Refresh, 2FA/TOTP, Google OAuth, Passwort-Reset, E-Mail-Verifizierung)
 - [x] Multi-Tenant (Schema-per-Tenant, RLS auf 35 Tabellen, mitTenant() Extension)
 - [x] Superadmin (/admin: Vereine listen/sperren/entsperren/Plan/Impersonation)
@@ -468,7 +468,7 @@ model FAQ {
 - [x] Audit-Log + System-Status (Admin)
 - [x] NDA/Vertrags-System (Token-basiert, Unterschrift, IP-Log)
 
-### 55+ Frontend-Seiten:
+### 65+ Frontend-Seiten:
 Dashboard, Mitglieder (+Detail, +Entwicklung), Mitarbeiter,
 Abteilungen, Teams (+Detail, +Anwesenheit, +Kasse, +Trikots, +Aufstellung),
 Kalender (+Detail, +Landingpage-Editor, +WetterBadge, +QR-Check-In),
@@ -513,19 +513,18 @@ Oeffentlich: /umfrage/[token], /verein/[slug]/aktuell (Schwarzes Brett)
 - [x] B3: Vereinsfest-Planer (Schichten, Einkaufsliste, Kassen-Abrechnung)
 - [x] B4: KI-Mitgliederbindung (Risiko-Score 0-100, Ampel, KI-Kontaktvorschlag, Weekly CronJob)
 
-### Phase C — Vereinbase als Plattform
-- [x] C1: Vereinbase Marktplatz (vereinsuebergreifend: Geraete, Trikots, Trainer, Spiele, Turniere, SR, PLZ-Filter)
-- [ ] C2: Vereins-Gesundheitscheck Dashboard (Score 0-100, Quartals-Analyse)
-- [x] C3: iCal Feed (erledigt, /homepage/ical/:slug)
-- [ ] C4: Vereins-Crowdfunding (Stripe, Fortschrittsbalken)
+### Phase C — Vereinbase als Plattform (KOMPLETT)
+- [x] C1: Vereinbase Marktplatz (vereinsuebergreifend, PLZ-Filter, Bewerbungen)
+- [x] C2: Vereins-Gesundheitscheck Dashboard (Score 0-100, 4 Kategorien, Empfehlungen)
+- [x] C3: iCal Feed (/homepage/ical/:slug)
+- [x] C4: Vereins-Crowdfunding (Fortschrittsbalken, oeffentliche Projektseite, Spenden)
 - [x] C5: Regionaler Schiedsrichter-Pool (im Marktplatz integriert)
 
-### Phase D — Langfristig
-- [ ] D1: E-Sport Integration
-- [ ] D2: Vereins-Versicherungs-Check
-- [ ] D3: Trainer-Qualifizierungs-Tracker
+### Phase D — (KOMPLETT, D1 gestrichen)
+- [x] D2: Vereins-Versicherungs-Check (Empfehlungen, Warnungen, Prioritaeten)
+- [x] D3: Trainer-Qualifizierungs-Tracker (Lizenzen, Ablauf-Warnung)
 - [ ] D4: Mobile App (Expo React Native)
-- [ ] D5: Vereins-Statistik-Seite oeffentlich
+- [x] D5: Vereins-Statistik-Seite oeffentlich (/verein/[slug]/statistiken)
 
 ### Infrastruktur
 - [x] DNS: vereinbase.de (A-Record + SSL via Caddy)
