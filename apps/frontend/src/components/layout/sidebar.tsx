@@ -19,6 +19,7 @@ import {
   FileEdit,
   BarChart3,
   ClipboardList,
+  UsersRound,
 } from 'lucide-react';
 import { useTenant, useBenutzer } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -50,6 +51,7 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
     titel: 'Verein',
     eintraege: [
       { href: ROUTEN.MITGLIEDER, label: 'Mitglieder & Personal', icon: Users, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'MITGLIEDER' },
+      { href: ROUTEN.FAMILIEN, label: 'Familien', icon: UsersRound, rollen: ['SUPERADMIN', 'ADMIN'] },
       { href: ROUTEN.TEAMS, label: 'Teams & Abteilungen', icon: Shield, rollen: null, berechtigung: 'TEAMS' },
     ],
   },

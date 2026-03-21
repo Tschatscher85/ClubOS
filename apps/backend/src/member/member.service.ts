@@ -323,12 +323,74 @@ export class MemberService {
 
   // ==================== Eltern-Portal ====================
 
-  /** Alle Kinder eines Elternteils anhand der E-Mail-Adresse finden */
-  async meineKinder(tenantId: string, elternEmail: string) {
+  /** Alle Kinder eines Elternteils finden - BEVORZUGT Familie-Verknuepfung, Fallback: parentEmail */
+  async meineKinder(tenantId: string, elternEmail: string, userId?: string) {
+    // 1. Zuerst via Familie-Verknuepfung suchen (wenn userId vorhanden)
+    if (userId) {
+      const familienKinder = await this.kinderAusFamilie(tenantId, userId);
+      if (familienKinder.length > 0) {
+        return familienKinder;
+      }
+    }
+
+    // 2. Fallback: Alte parentEmail-Logik
     return this.prisma.member.findMany({
       where: {
         tenantId,
         parentEmail: elternEmail,
+      },
+      include: {
+        teamMembers: {
+          include: {
+            team: {
+              select: { id: true, name: true, sport: true, ageGroup: true, abteilungId: true },
+            },
+          },
+        },
+      },
+      orderBy: { lastName: 'asc' },
+    });
+  }
+
+  /** Kinder via Familie-Verknuepfung finden */
+  private async kinderAusFamilie(tenantId: string, userId: string) {
+    // Finde Familie(n) wo der User Elternteil ist
+    const familienMitgliedschaften = await this.prisma.familieMitglied.findMany({
+      where: {
+        userId,
+        rolle: { in: ['MUTTER', 'VATER', 'ERZIEHUNGSBERECHTIGTER', 'PARTNER'] },
+      },
+      select: { familieId: true },
+    });
+
+    if (familienMitgliedschaften.length === 0) {
+      return [];
+    }
+
+    const familieIds = familienMitgliedschaften.map((fm) => fm.familieId);
+
+    // Finde alle Kinder in diesen Familien
+    const kinderMitgliedschaften = await this.prisma.familieMitglied.findMany({
+      where: {
+        familieId: { in: familieIds },
+        rolle: 'KIND',
+        memberId: { not: null },
+      },
+      select: { memberId: true },
+    });
+
+    const kinderIds = kinderMitgliedschaften
+      .map((k) => k.memberId)
+      .filter((id): id is string => !!id);
+
+    if (kinderIds.length === 0) {
+      return [];
+    }
+
+    return this.prisma.member.findMany({
+      where: {
+        id: { in: kinderIds },
+        tenantId,
       },
       include: {
         teamMembers: {

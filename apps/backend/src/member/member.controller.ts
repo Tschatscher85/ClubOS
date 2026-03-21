@@ -171,8 +171,9 @@ export class MemberController {
   async meineKinder(
     @AktuellerBenutzer('tenantId') tenantId: string,
     @AktuellerBenutzer('email') elternEmail: string,
+    @AktuellerBenutzer('id') userId: string,
   ) {
-    return this.memberService.meineKinder(tenantId, elternEmail);
+    return this.memberService.meineKinder(tenantId, elternEmail, userId);
   }
 
   @Get('meine-kinder/teams')

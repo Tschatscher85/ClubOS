@@ -27,6 +27,11 @@ export class ErstelleUmfrageDto {
   @IsString()
   teamId?: string;
 
+  @ApiPropertyOptional({ description: 'Abteilungs-ID (optional, fuer abteilungsspezifische Umfragen)' })
+  @IsOptional()
+  @IsString()
+  abteilungId?: string;
+
   @ApiPropertyOptional({ description: 'Ablaufdatum der Umfrage (ISO-String)' })
   @IsOptional()
   @IsDateString({}, { message: 'Ungueltiges Datumsformat.' })

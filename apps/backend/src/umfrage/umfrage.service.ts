@@ -34,10 +34,12 @@ export class UmfrageService {
         frage: dto.frage,
         optionen: dto.optionen,
         teamId: dto.teamId || null,
+        abteilungId: dto.abteilungId || null,
         endetAm: dto.endetAm ? new Date(dto.endetAm) : null,
       },
       include: {
         team: { select: { id: true, name: true } },
+        abteilung: { select: { id: true, name: true } },
         antworten: true,
       },
     });
@@ -52,12 +54,74 @@ export class UmfrageService {
     return { ...umfrage, token };
   }
 
-  /** Alle Umfragen eines Vereins abrufen */
-  async alleAbrufen(tenantId: string) {
+  /** Alle Umfragen eines Vereins abrufen (rollenbasiert gefiltert) */
+  async alleAbrufen(tenantId: string, userId?: string, rolle?: string) {
+    // ADMIN/SUPERADMIN/TRAINER sehen alle
+    if (!rolle || ['ADMIN', 'SUPERADMIN', 'TRAINER'].includes(rolle)) {
+      return this.prisma.umfrage.findMany({
+        where: { tenantId },
+        include: {
+          team: { select: { id: true, name: true } },
+          abteilung: { select: { id: true, name: true } },
+          antworten: true,
+        },
+        orderBy: { erstelltAm: 'desc' },
+      });
+    }
+
+    // PARENT: Nur Umfragen fuer Teams/Abteilungen der Kinder + vereinsweite
+    if (rolle === 'PARENT' && userId) {
+      const kinderTeamIds = await this.kinderTeamIds(tenantId, userId);
+      const kinderAbteilungIds = await this.kinderAbteilungIds(tenantId, userId);
+
+      return this.prisma.umfrage.findMany({
+        where: {
+          tenantId,
+          OR: [
+            // Vereinsweite Umfragen (kein Team, keine Abteilung)
+            { teamId: null, abteilungId: null },
+            // Umfragen fuer Teams der Kinder
+            ...(kinderTeamIds.length > 0 ? [{ teamId: { in: kinderTeamIds } }] : []),
+            // Umfragen fuer Abteilungen der Kinder
+            ...(kinderAbteilungIds.length > 0 ? [{ abteilungId: { in: kinderAbteilungIds } }] : []),
+          ],
+        },
+        include: {
+          team: { select: { id: true, name: true } },
+          abteilung: { select: { id: true, name: true } },
+          antworten: true,
+        },
+        orderBy: { erstelltAm: 'desc' },
+      });
+    }
+
+    // MEMBER: Nur Umfragen fuer eigene Teams + vereinsweite
+    if (rolle === 'MEMBER' && userId) {
+      const memberTeamIds = await this.memberTeamIds(tenantId, userId);
+
+      return this.prisma.umfrage.findMany({
+        where: {
+          tenantId,
+          OR: [
+            { teamId: null, abteilungId: null },
+            ...(memberTeamIds.length > 0 ? [{ teamId: { in: memberTeamIds } }] : []),
+          ],
+        },
+        include: {
+          team: { select: { id: true, name: true } },
+          abteilung: { select: { id: true, name: true } },
+          antworten: true,
+        },
+        orderBy: { erstelltAm: 'desc' },
+      });
+    }
+
+    // Fallback: vereinsweite Umfragen
     return this.prisma.umfrage.findMany({
-      where: { tenantId },
+      where: { tenantId, teamId: null, abteilungId: null },
       include: {
         team: { select: { id: true, name: true } },
+        abteilung: { select: { id: true, name: true } },
         antworten: true,
       },
       orderBy: { erstelltAm: 'desc' },
@@ -70,6 +134,7 @@ export class UmfrageService {
       where: { id, tenantId },
       include: {
         team: { select: { id: true, name: true } },
+        abteilung: { select: { id: true, name: true } },
         antworten: true,
       },
     });
@@ -179,6 +244,7 @@ export class UmfrageService {
       where: { id: payload.umfrageId },
       include: {
         team: { select: { id: true, name: true } },
+        abteilung: { select: { id: true, name: true } },
         antworten: true,
       },
     });
@@ -209,6 +275,7 @@ export class UmfrageService {
       endetAm: umfrage.endetAm,
       erstelltAm: umfrage.erstelltAm,
       teamName: umfrage.team?.name || null,
+      abteilungName: umfrage.abteilung?.name || null,
       gesamtStimmen: umfrage.antworten.length,
       statistiken,
       abgelaufen,
@@ -243,6 +310,91 @@ export class UmfrageService {
         option,
       },
     });
+  }
+
+  // ==================== Hilfsmethoden ====================
+
+  /** Team-IDs der Kinder eines Elternteils (via Familie + parentEmail Fallback) */
+  private async kinderTeamIds(tenantId: string, userId: string): Promise<string[]> {
+    // Via Familie
+    const familienMitgliedschaften = await this.prisma.familieMitglied.findMany({
+      where: {
+        userId,
+        rolle: { in: ['MUTTER', 'VATER', 'ERZIEHUNGSBERECHTIGTER', 'PARTNER'] },
+      },
+      select: { familieId: true },
+    });
+
+    let kinderIds: string[] = [];
+
+    if (familienMitgliedschaften.length > 0) {
+      const familieIds = familienMitgliedschaften.map((fm) => fm.familieId);
+      const kinder = await this.prisma.familieMitglied.findMany({
+        where: {
+          familieId: { in: familieIds },
+          rolle: 'KIND',
+          memberId: { not: null },
+        },
+        select: { memberId: true },
+      });
+      kinderIds = kinder.map((k) => k.memberId!).filter(Boolean);
+    }
+
+    // Fallback: parentEmail
+    if (kinderIds.length === 0) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true },
+      });
+      if (user) {
+        const kinderViaEmail = await this.prisma.member.findMany({
+          where: { tenantId, parentEmail: user.email },
+          select: { id: true },
+        });
+        kinderIds = kinderViaEmail.map((k) => k.id);
+      }
+    }
+
+    if (kinderIds.length === 0) return [];
+
+    const teamMitgliedschaften = await this.prisma.teamMember.findMany({
+      where: { memberId: { in: kinderIds } },
+      select: { teamId: true },
+    });
+
+    return [...new Set(teamMitgliedschaften.map((tm) => tm.teamId))];
+  }
+
+  /** Abteilungs-IDs der Kinder eines Elternteils */
+  private async kinderAbteilungIds(tenantId: string, userId: string): Promise<string[]> {
+    const teamIds = await this.kinderTeamIds(tenantId, userId);
+    if (teamIds.length === 0) return [];
+
+    const teams = await this.prisma.team.findMany({
+      where: { id: { in: teamIds }, tenantId },
+      select: { abteilungId: true },
+    });
+
+    return [...new Set(
+      teams.map((t) => t.abteilungId).filter((id): id is string => !!id),
+    )];
+  }
+
+  /** Team-IDs eines Members (fuer MEMBER-Rolle) */
+  private async memberTeamIds(tenantId: string, userId: string): Promise<string[]> {
+    const member = await this.prisma.member.findFirst({
+      where: { userId, tenantId },
+      select: { id: true },
+    });
+
+    if (!member) return [];
+
+    const teamMitgliedschaften = await this.prisma.teamMember.findMany({
+      where: { memberId: member.id },
+      select: { teamId: true },
+    });
+
+    return teamMitgliedschaften.map((tm) => tm.teamId);
   }
 
   /** Token verifizieren */

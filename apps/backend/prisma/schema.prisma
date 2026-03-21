@@ -178,6 +178,7 @@ model User {
   emailEinstellungen     EmailEinstellungen?
   buchungen              Buchung[]
   webPushSubscriptions   WebPushSubscription[]
+  familieMitgliedschaften FamilieMitglied[]
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
 
@@ -262,6 +263,7 @@ model Member {
   entwicklungsboegen   Entwicklungsbogen[]
   aenderungsantraege   MemberAenderungsantrag[]
   warteliste           Warteliste[]
+  familieMitgliedschaften FamilieMitglied[]
 
   @@index([tenantId])
   @@index([email])
@@ -355,7 +357,8 @@ model Abteilung {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  teams Team[]
+  teams    Team[]
+  umfragen Umfrage[]
 
   @@unique([tenantId, sport])
   @@index([tenantId])
@@ -1640,20 +1643,23 @@ model WebPushSubscription {
 // ==================== Umfragen (Doodle-Ersatz / Quick Polls) ====================
 
 model Umfrage {
-  id          String           @id @default(cuid())
-  tenantId    String
-  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  teamId      String?
-  team        Team?            @relation(fields: [teamId], references: [id])
-  frage       String
-  optionen    String[]
-  endetAm     DateTime?
-  erstelltVon String
-  erstelltAm  DateTime         @default(now())
-  antworten   UmfrageAntwort[]
+  id           String           @id @default(cuid())
+  tenantId     String
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teamId       String?
+  team         Team?            @relation(fields: [teamId], references: [id])
+  abteilungId  String?
+  abteilung    Abteilung?       @relation(fields: [abteilungId], references: [id])
+  frage        String
+  optionen     String[]
+  endetAm      DateTime?
+  erstelltVon  String
+  erstelltAm   DateTime         @default(now())
+  antworten    UmfrageAntwort[]
 
   @@index([tenantId])
   @@index([teamId])
+  @@index([abteilungId])
 }
 
 model UmfrageAntwort {
@@ -1693,4 +1699,40 @@ enum AushangKategorie {
   WICHTIG
   TRAINING
   AUSFALL
+}
+
+// ==================== Familie ====================
+
+model Familie {
+  id          String            @id @default(cuid())
+  tenantId    String
+  name        String            // z.B. "Familie Mueller" (auto-generated from first member's last name)
+  mitglieder  FamilieMitglied[]
+  createdAt   DateTime          @default(now())
+
+  @@index([tenantId])
+}
+
+model FamilieMitglied {
+  id          String         @id @default(cuid())
+  familieId   String
+  familie     Familie        @relation(fields: [familieId], references: [id], onDelete: Cascade)
+  memberId    String?        // linked Member (child/playing member)
+  member      Member?        @relation(fields: [memberId], references: [id])
+  userId      String?        // linked User account (parent/guardian)
+  user        User?          @relation(fields: [userId], references: [id])
+  rolle       FamilienRolle
+  createdAt   DateTime       @default(now())
+
+  @@index([familieId])
+  @@index([memberId])
+  @@index([userId])
+}
+
+enum FamilienRolle {
+  KIND                       // Child (linked to Member)
+  MUTTER                     // Mother (linked to User)
+  VATER                      // Father (linked to User)
+  ERZIEHUNGSBERECHTIGTER     // Guardian
+  PARTNER                    // Partner/Spouse
 }

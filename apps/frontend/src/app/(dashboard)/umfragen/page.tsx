@@ -47,6 +47,13 @@ interface Statistik {
 interface Team {
   id: string;
   name: string;
+  abteilungId?: string | null;
+}
+
+interface Abteilung {
+  id: string;
+  name: string;
+  sport: string;
 }
 
 interface Umfrage {
@@ -57,6 +64,7 @@ interface Umfrage {
   erstelltVon: string;
   erstelltAm: string;
   team: Team | null;
+  abteilung: Abteilung | null;
   antworten: UmfrageAntwort[];
   statistiken?: Statistik[];
   token?: string;
@@ -75,6 +83,7 @@ export default function UmfragenPage() {
   const benutzer = useBenutzer();
   const [umfragen, setUmfragen] = useState<Umfrage[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [abteilungen, setAbteilungen] = useState<Abteilung[]>([]);
   const [ladend, setLadend] = useState(true);
   const [expandiert, setExpandiert] = useState<Record<string, boolean>>({});
   const [kopiert, setKopiert] = useState<string | null>(null);
@@ -84,6 +93,7 @@ export default function UmfragenPage() {
   const [frage, setFrage] = useState('');
   const [optionen, setOptionen] = useState(['', '']);
   const [teamId, setTeamId] = useState('');
+  const [abteilungId, setAbteilungId] = useState('');
   const [endetAm, setEndetAm] = useState('');
   const [speichernd, setSpeichernd] = useState(false);
 
@@ -96,12 +106,14 @@ export default function UmfragenPage() {
 
   const datenLaden = useCallback(async () => {
     try {
-      const [umfragenDaten, teamsDaten] = await Promise.all([
+      const [umfragenDaten, teamsDaten, abteilungenDaten] = await Promise.all([
         apiClient.get<Umfrage[]>('/umfragen'),
         apiClient.get<Team[]>('/teams').catch(() => [] as Team[]),
+        apiClient.get<Abteilung[]>('/abteilungen').catch(() => [] as Abteilung[]),
       ]);
       setUmfragen(umfragenDaten);
       setTeams(teamsDaten);
+      setAbteilungen(abteilungenDaten);
     } catch (error) {
       console.error('Fehler beim Laden:', error);
     } finally {
@@ -117,6 +129,7 @@ export default function UmfragenPage() {
     setFrage('');
     setOptionen(['', '']);
     setTeamId('');
+    setAbteilungId('');
     setEndetAm('');
     setDialogOffen(true);
   };
@@ -149,6 +162,7 @@ export default function UmfragenPage() {
         frage: frage.trim(),
         optionen: gefilterteOptionen,
         teamId: teamId || undefined,
+        abteilungId: abteilungId || undefined,
         endetAm: endetAm || undefined,
       });
       setDialogOffen(false);
@@ -271,6 +285,11 @@ export default function UmfragenPage() {
                     <div className="flex-1">
                       <CardTitle className="text-lg">{umfrage.frage}</CardTitle>
                       <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                        {umfrage.abteilung && (
+                          <Badge variant="outline" className="border-purple-300 text-purple-700 bg-purple-50">
+                            {umfrage.abteilung.name}
+                          </Badge>
+                        )}
                         {umfrage.team && (
                           <Badge variant="outline">{umfrage.team.name}</Badge>
                         )}
@@ -455,18 +474,44 @@ export default function UmfragenPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Team-Zuordnung (optional)</Label>
+              <Label>Empfaenger</Label>
+              <p className="text-xs text-muted-foreground">
+                Optional: Umfrage auf eine Abteilung oder ein Team beschraenken.
+              </p>
+
+              <Label className="text-xs mt-2">Abteilung (optional)</Label>
+              <select
+                value={abteilungId}
+                onChange={(e) => {
+                  setAbteilungId(e.target.value);
+                  setTeamId(''); // Team zuruecksetzen bei Abteilungswechsel
+                }}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="">Keine Abteilung (vereinsweit)</option>
+                {abteilungen.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+
+              <Label className="text-xs mt-2">Team (optional)</Label>
               <select
                 value={teamId}
                 onChange={(e) => setTeamId(e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <option value="">Kein Team (vereinsweit)</option>
-                {teams.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
+                <option value="">
+                  {abteilungId ? 'Alle Teams der Abteilung' : 'Kein Team (vereinsweit)'}
+                </option>
+                {teams
+                  .filter((t) => !abteilungId || t.abteilungId === abteilungId)
+                  .map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
               </select>
             </div>
 

@@ -33,4 +33,5 @@ export const ROUTEN = {
   AENDERUNGSANTRAEGE: '/einstellungen/aenderungsantraege',
   UMFRAGEN: '/umfragen',
   SCHWARZES_BRETT: '/schwarzes-brett',
+  FAMILIEN: '/familien',
 } as const;

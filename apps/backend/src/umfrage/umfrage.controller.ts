@@ -57,11 +57,13 @@ export class UmfrageController {
   @Get()
   @UseGuards(JwtAuthGuard, RollenGuard, TenantGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Alle Umfragen des Vereins abrufen' })
+  @ApiOperation({ summary: 'Alle Umfragen des Vereins abrufen (rollenbasiert gefiltert)' })
   async alleAbrufen(
     @AktuellerBenutzer('tenantId') tenantId: string,
+    @AktuellerBenutzer('id') userId: string,
+    @AktuellerBenutzer('rolle') rolle: string,
   ) {
-    return this.umfrageService.alleAbrufen(tenantId);
+    return this.umfrageService.alleAbrufen(tenantId, userId, rolle);
   }
 
   @Get(':id')

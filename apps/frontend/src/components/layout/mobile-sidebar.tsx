@@ -16,6 +16,7 @@ import {
   Settings,
   Menu,
   ShieldCheck,
+  UsersRound,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,7 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
     titel: 'Verein',
     eintraege: [
       { href: ROUTEN.MITGLIEDER, label: 'Mitglieder & Personal', icon: Users, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'MITGLIEDER' },
+      { href: ROUTEN.FAMILIEN, label: 'Familien', icon: UsersRound, rollen: ['SUPERADMIN', 'ADMIN'] },
       { href: ROUTEN.TEAMS, label: 'Teams & Abteilungen', icon: Shield, rollen: null, berechtigung: 'TEAMS' },
     ],
   },

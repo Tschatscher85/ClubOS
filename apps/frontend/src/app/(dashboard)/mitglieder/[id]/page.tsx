@@ -25,12 +25,22 @@ import {
   Info,
   FileText,
   Download,
+  UsersRound,
+  Plus,
+  Baby,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { apiClient } from '@/lib/api-client';
 import { API_BASE_URL } from '@/lib/constants';
 import { sportartLabel } from '@/lib/sportarten';
@@ -82,6 +92,21 @@ interface FormularEinreichung {
   signatureUrl?: string;
   kommentar?: string;
   template: { name: string; type: string };
+}
+
+interface FamilieMitglied {
+  id: string;
+  memberId: string | null;
+  userId: string | null;
+  rolle: string;
+  member: { id: string; firstName: string; lastName: string; memberNumber: string } | null;
+  user: { id: string; email: string; role: string } | null;
+}
+
+interface FamilieInfo {
+  id: string;
+  name: string;
+  mitglieder: FamilieMitglied[];
 }
 
 interface AnwesenheitsStatistik {
@@ -204,6 +229,14 @@ export default function MitgliedDetailPage() {
   // Formular-Einreichungen
   const [formulare, setFormulare] = useState<FormularEinreichung[]>([]);
 
+  // Familie
+  const [familien, setFamilien] = useState<FamilieInfo[]>([]);
+  const [familieDialogOffen, setFamilieDialogOffen] = useState(false);
+  const [verfuegbareFamilien, setVerfuegbareFamilien] = useState<FamilieInfo[]>([]);
+  const [ausgewaehlteFamilieId, setAusgewaehlteFamilieId] = useState('');
+  const [familieRolle, setFamilieRolle] = useState('KIND');
+  const [familieHinzufuegend, setFamilieHinzufuegend] = useState(false);
+
   const datenLaden = useCallback(async () => {
     try {
       const [mitgliedDaten, statistikDaten] = await Promise.all([
@@ -219,6 +252,20 @@ export default function MitgliedDetailPage() {
       apiClient.get<FormularEinreichung[]>(`/mitglieder/${mitgliedId}/formulare`)
         .then(setFormulare)
         .catch(() => setFormulare([]));
+
+      // Familien laden (Member-bezogen: alle Familien durchsuchen)
+      apiClient.get<FamilieInfo[]>('/familien')
+        .then((alleFamilien) => {
+          const memberFamilien = alleFamilien.filter((f) =>
+            f.mitglieder.some((m) => m.memberId === mitgliedId),
+          );
+          setFamilien(memberFamilien);
+          setVerfuegbareFamilien(alleFamilien);
+        })
+        .catch(() => {
+          setFamilien([]);
+          setVerfuegbareFamilien([]);
+        });
 
       // Wenn kein Benutzer verknuepft, lade verfuegbare Benutzer
       if (!mitgliedDaten.user) {
@@ -294,6 +341,43 @@ export default function MitgliedDetailPage() {
       console.error('Fehler:', error);
     } finally {
       setLoginErstellend(false);
+    }
+  }, [mitgliedId, datenLaden]);
+
+  const handleFamilieHinzufuegen = useCallback(async () => {
+    if (!ausgewaehlteFamilieId) return;
+    setFamilieHinzufuegend(true);
+    try {
+      await apiClient.post(`/familien/${ausgewaehlteFamilieId}/mitglied`, {
+        memberId: mitgliedId,
+        rolle: familieRolle,
+      });
+      setFamilieDialogOffen(false);
+      setAusgewaehlteFamilieId('');
+      setFamilieRolle('KIND');
+      datenLaden();
+    } catch (error) {
+      console.error('Fehler beim Hinzufuegen zur Familie:', error);
+    } finally {
+      setFamilieHinzufuegend(false);
+    }
+  }, [ausgewaehlteFamilieId, familieRolle, mitgliedId, datenLaden]);
+
+  const handleNeueFamilieErstellen = useCallback(async () => {
+    setFamilieHinzufuegend(true);
+    try {
+      const neueFamilie = await apiClient.post<FamilieInfo>('/familien', {});
+      // Mitglied gleich hinzufuegen
+      await apiClient.post(`/familien/${neueFamilie.id}/mitglied`, {
+        memberId: mitgliedId,
+        rolle: 'KIND',
+      });
+      setFamilieDialogOffen(false);
+      datenLaden();
+    } catch (error) {
+      console.error('Fehler beim Erstellen:', error);
+    } finally {
+      setFamilieHinzufuegend(false);
     }
   }, [mitgliedId, datenLaden]);
 
@@ -581,6 +665,152 @@ export default function MitgliedDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Familie */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <UsersRound className="h-5 w-5" />
+              Familie
+            </div>
+            {istTrainerOderAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFamilieDialogOffen(true)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Zuordnen
+              </Button>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {familien.length > 0 ? (
+            <div className="space-y-4">
+              {familien.map((familie) => (
+                <div key={familie.id} className="space-y-2">
+                  <p className="text-sm font-medium">{familie.name}</p>
+                  <div className="space-y-1">
+                    {familie.mitglieder.map((fm) => (
+                      <div
+                        key={fm.id}
+                        className="flex items-center justify-between rounded-md border px-3 py-2"
+                      >
+                        <div className="flex items-center gap-2">
+                          {fm.rolle === 'KIND' ? (
+                            <Baby className="h-4 w-4 text-blue-500" />
+                          ) : (
+                            <User className="h-4 w-4 text-pink-500" />
+                          )}
+                          <span className="text-sm">
+                            {fm.member
+                              ? `${fm.member.firstName} ${fm.member.lastName}`
+                              : fm.user
+                                ? fm.user.email
+                                : 'Unbekannt'}
+                          </span>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {fm.rolle === 'KIND'
+                            ? 'Kind'
+                            : fm.rolle === 'MUTTER'
+                              ? 'Mutter'
+                              : fm.rolle === 'VATER'
+                                ? 'Vater'
+                                : fm.rolle === 'ERZIEHUNGSBERECHTIGTER'
+                                  ? 'Erziehungsberechtigter'
+                                  : 'Partner'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => router.push(`/familien`)}
+                    className="text-xs"
+                  >
+                    Zur Familienansicht
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Noch keiner Familie zugeordnet.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Dialog: Zur Familie hinzufuegen */}
+      <Dialog open={familieDialogOffen} onOpenChange={setFamilieDialogOffen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Zur Familie hinzufuegen</DialogTitle>
+            <DialogDescription>
+              Waehlen Sie eine bestehende Familie oder erstellen Sie eine neue.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Rolle in der Familie</Label>
+              <select
+                value={familieRolle}
+                onChange={(e) => setFamilieRolle(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="KIND">Kind</option>
+                <option value="MUTTER">Mutter</option>
+                <option value="VATER">Vater</option>
+                <option value="ERZIEHUNGSBERECHTIGTER">Erziehungsberechtigter</option>
+                <option value="PARTNER">Partner</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label>Familie auswaehlen</Label>
+              <select
+                value={ausgewaehlteFamilieId}
+                onChange={(e) => setAusgewaehlteFamilieId(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="">Familie waehlen...</option>
+                {verfuegbareFamilien.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name} ({f.mitglieder.length} Mitglieder)
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex justify-between pt-2">
+              <Button
+                variant="outline"
+                onClick={handleNeueFamilieErstellen}
+                disabled={familieHinzufuegend}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Neue Familie erstellen
+              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setFamilieDialogOffen(false)}
+                >
+                  Abbrechen
+                </Button>
+                <Button
+                  onClick={handleFamilieHinzufuegen}
+                  disabled={!ausgewaehlteFamilieId || familieHinzufuegend}
+                >
+                  {familieHinzufuegend ? 'Wird zugeordnet...' : 'Zuordnen'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Verletzungshistorie (nur fuer Trainer/Admin) */}
       {istTrainerOderAdmin && (
