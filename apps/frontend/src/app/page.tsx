@@ -48,6 +48,8 @@ const featureSections = [
     features: [
       'Digitale Mitgliedsanträge + QR-Ausweis',
       'Familien-Verknüpfung (ein Login für alle Kinder)',
+      'Papieranträge scannen & zuordnen',
+      'Foto-/Fahrgemeinschaft-Einverständnis',
       'Selbstverwaltungs-Portal',
       'DSGVO-Export auf Knopfdruck',
     ],
@@ -114,7 +116,7 @@ const featureSections = [
       'Ehrenamt-Modul (Helfer-Aufgaben)',
       'Vereinsfest-Planer (Schichten, Einkauf, Kasse)',
       'Übungsleiter-Stunden (3.300 EUR Warnung)',
-      'Foto-Galerie pro Team/Event',
+      'Foto-Galerie pro Team (DSGVO-geschützt)',
     ],
   },
   {
@@ -297,7 +299,7 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-amber-500" />
-            <span>90+ Funktionen in einer Plattform</span>
+            <span>100+ Funktionen in einer Plattform</span>
           </div>
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-emerald-500" />

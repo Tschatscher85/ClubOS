@@ -449,7 +449,7 @@ model FAQ {
 - [x] Tenant-Isolations-Tests (594 Zeilen, 9 Kategorien)
 - [x] Rate Limiting, Sentry, Prisma Migrations, Profilbild-Upload
 - [x] Subdomain-Routing (Code fertig: middleware.ts Frontend + Backend)
-- [x] PM2 Prozess-Management (ecosystem.config.js, Auto-Restart)
+- [x] PM2 Prozess-Management (ecosystem.config.js, Auto-Restart, systemd Setup-Script)
 - [x] Docker-Setup (Dockerfiles + docker-compose.prod.yml + standalone Next.js)
 - [x] Mitglieder-Selbstverwaltung (Aenderungsantraege mit Genehmigung)
 - [x] Eltern-Umfragen / Doodle-Ersatz (Token-basiert, oeffentlich)
@@ -464,7 +464,11 @@ model FAQ {
 - [x] Saisonplanung (visuelle Timeline, Phasen, Auto-Events)
 - [x] Jahres-Statistik-Poster (PDF, Vereinsfarbe, Social Media)
 - [x] Sponsoren-Portal (Magic-Link Login, Dashboard)
-- [x] Impressum, Datenschutz, AGB Seiten
+- [x] Impressum, Datenschutz, AGB, AVV Seiten (vollstaendige Rechtstexte)
+- [x] Mitglied-Dokumente (Papierantraege scannen/fotografieren, Mitglied zuordnen)
+- [x] Foto-/Fahrgemeinschaft-Einverstaendnis (Checkboxen bei Minderjaehrigen, KUG §22 + §832 BGB)
+- [x] Galerie DSGVO-Filterung (nur eigene Team-Fotos sichtbar)
+- [x] Multi-Upload mit Fortschrittsbalken (Galerie + Team-Fotos + Dokumente)
 - [x] Audit-Log + System-Status (Admin)
 - [x] NDA/Vertrags-System (Token-basiert, Unterschrift, IP-Log)
 - [x] Eltern-Einverstaendnis digital (Token-basiert, pro Event)
@@ -497,6 +501,7 @@ Oeffentlich: /verein/[slug], /verein/[slug]/kalender, /turnier/[publicUrl],
 /event/[slug] (Werbeseite), /aufstellung/[id], /checkin/[token],
 Mein Profil (Selbstverwaltung), Umfragen (Doodle-Ersatz), Schwarzes Brett,
 Aenderungsantraege (Admin),
+Oeffentlich: /avv (Auftragsverarbeitungsvertrag),
 Auth: Login, Registrierung, Passwort-Vergessen, E-Mail-Verifizierung, Onboarding,
 Admin: /admin Dashboard (Superadmin, KI-Verwaltung, Plattform-Keys),
 Oeffentlich: /umfrage/[token], /verein/[slug]/aktuell (Schwarzes Brett)
