@@ -618,10 +618,11 @@ export default function MarktplatzSeite() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Store className="h-6 w-6" />
-            Marktplatz
+            Marktplatz & Partner
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Vereinsübergreifender Marktplatz — Geräte, Trainer, Spiele und mehr
+            Vereinsübergreifender Marktplatz — Geräte, Trainer, Spiele und mehr |{' '}
+            <a href="/partner" className="text-primary hover:underline">Partner & Dienstleister</a>
           </p>
         </div>
         <Button

@@ -61,20 +61,17 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
   {
     titel: 'Verein',
     eintraege: [
-      { href: ROUTEN.MITGLIEDER, label: 'Mitglieder & Personal', icon: Users, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'MITGLIEDER' },
-      { href: ROUTEN.FAMILIEN, label: 'Familien', icon: UsersRound, rollen: ['SUPERADMIN', 'ADMIN'] },
+      { href: ROUTEN.MITGLIEDER, label: 'Mitglieder & Familien', icon: Users, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'MITGLIEDER' },
       { href: ROUTEN.TEAMS, label: 'Teams & Abteilungen', icon: Shield, rollen: null, berechtigung: 'TEAMS' },
     ],
   },
   {
     titel: 'Aktivitäten',
     eintraege: [
-      { href: ROUTEN.KALENDER, label: 'Kalender & Spielbetrieb', icon: Calendar, rollen: null, berechtigung: 'KALENDER' },
-      { href: ROUTEN.SAISONPLANUNG, label: 'Saisonplanung', icon: CalendarRange, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
+      { href: ROUTEN.KALENDER, label: 'Kalender & Saison', icon: Calendar, rollen: null, berechtigung: 'KALENDER' },
       { href: ROUTEN.NACHRICHTEN, label: 'Nachrichten', icon: MessageSquare, rollen: null, berechtigung: 'NACHRICHTEN' },
       { href: ROUTEN.UMFRAGEN, label: 'Umfragen', icon: BarChart3, rollen: null },
-      { href: ROUTEN.SCHWARZES_BRETT, label: 'Schwarzes Brett', icon: ClipboardList, rollen: null },
-      { href: ROUTEN.FAHRGEMEINSCHAFTEN, label: 'Fahrtenbörse', icon: Car, rollen: null, berechtigung: 'FAHRGEMEINSCHAFTEN' },
+      { href: ROUTEN.SCHWARZES_BRETT, label: 'Pinnwand', icon: ClipboardList, rollen: null },
       { href: ROUTEN.GALERIE, label: 'Galerie', icon: Camera, rollen: null },
     ],
   },
@@ -93,8 +90,7 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
       { href: ROUTEN.WIKI, label: 'Wiki', icon: BookOpen, rollen: null },
       { href: ROUTEN.EHRENAMT, label: 'Ehrenamt', icon: HandHeart, rollen: null },
       { href: ROUTEN.SCHIEDSRICHTER, label: 'Schiedsrichter', icon: UserCheck, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'SCHIEDSRICHTER' },
-      { href: ROUTEN.MARKTPLATZ, label: 'Marktplatz', icon: Store, rollen: ['SUPERADMIN', 'ADMIN'] },
-      { href: '/partner', label: 'Partner & Dienstleister', icon: HandHeart, rollen: ['SUPERADMIN', 'ADMIN'] },
+      { href: ROUTEN.MARKTPLATZ, label: 'Marktplatz & Partner', icon: Store, rollen: ['SUPERADMIN', 'ADMIN'] },
     ],
   },
   {

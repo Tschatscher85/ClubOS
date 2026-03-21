@@ -210,10 +210,16 @@ export default function SchwarzesBrettPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <ClipboardList className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold">Schwarzes Brett</h1>
-          <Badge variant="secondary">{aushaenge.length}</Badge>
+        <div>
+          <div className="flex items-center gap-3">
+            <ClipboardList className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold">Pinnwand</h1>
+            <Badge variant="secondary">{aushaenge.length}</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1 ml-9">
+            Aushänge & Infos |{' '}
+            <a href="/fahrgemeinschaften" className="text-primary hover:underline">Fahrtenbörse</a>
+          </p>
         </div>
         {istTrainerOderAdmin && (
           <Button onClick={() => dialogOeffnen()}>

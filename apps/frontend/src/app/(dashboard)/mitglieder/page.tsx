@@ -4,6 +4,7 @@ import { Users } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import MitgliederInhalt from './mitglieder-inhalt';
 import MitarbeiterInhalt from './mitarbeiter-inhalt';
+import FamilienPage from '../familien/page';
 
 export default function PersonenPage() {
   return (
@@ -11,9 +12,9 @@ export default function PersonenPage() {
       <div className="flex items-center gap-3">
         <Users className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">Mitglieder & Mitarbeiter</h1>
+          <h1 className="text-2xl font-bold">Mitglieder & Familien</h1>
           <p className="text-muted-foreground">
-            Vereinsmitglieder und Mitarbeiter verwalten
+            Vereinsmitglieder, Mitarbeiter und Familien verwalten
           </p>
         </div>
       </div>
@@ -22,12 +23,16 @@ export default function PersonenPage() {
         <TabsList>
           <TabsTrigger value="mitglieder">Mitglieder</TabsTrigger>
           <TabsTrigger value="mitarbeiter">Mitarbeiter</TabsTrigger>
+          <TabsTrigger value="familien">Familien</TabsTrigger>
         </TabsList>
         <TabsContent value="mitglieder">
           <MitgliederInhalt />
         </TabsContent>
         <TabsContent value="mitarbeiter">
           <MitarbeiterInhalt />
+        </TabsContent>
+        <TabsContent value="familien">
+          <FamilienPage />
         </TabsContent>
       </Tabs>
     </div>
