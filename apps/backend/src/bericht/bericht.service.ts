@@ -320,6 +320,218 @@ export class BerichtService {
     return alter;
   }
 
+  async jahresStatistikPoster(
+    tenantId: string,
+    jahr: number,
+  ): Promise<Buffer> {
+    const jahresbeginn = new Date(jahr, 0, 1);
+    const naechstesJahr = new Date(jahr + 1, 0, 1);
+
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+    });
+
+    const primaerFarbe = tenant.primaryColor || '#1a56db';
+
+    // Daten sammeln
+    const aktiveMitglieder = await this.prisma.member.count({
+      where: { tenantId, status: 'ACTIVE' },
+    });
+
+    const teams = await this.prisma.team.count({
+      where: { tenantId },
+    });
+
+    const trainingseinheiten = await this.prisma.event.count({
+      where: {
+        tenantId,
+        type: 'TRAINING',
+        date: { gte: jahresbeginn, lt: naechstesJahr },
+      },
+    });
+
+    const spiele = await this.prisma.event.count({
+      where: {
+        tenantId,
+        type: 'MATCH',
+        date: { gte: jahresbeginn, lt: naechstesJahr },
+      },
+    });
+
+    const turniere = await this.prisma.event.count({
+      where: {
+        tenantId,
+        type: 'TOURNAMENT',
+        date: { gte: jahresbeginn, lt: naechstesJahr },
+      },
+    });
+
+    // Anwesenheitsquote
+    const alleEvents = await this.prisma.event.findMany({
+      where: {
+        tenantId,
+        type: 'TRAINING',
+        date: { gte: jahresbeginn, lt: naechstesJahr },
+      },
+      select: { id: true },
+    });
+    const eventIds = alleEvents.map((e) => e.id);
+    let anwesenheitsquote = 0;
+    if (eventIds.length > 0) {
+      const gesamt = await this.prisma.attendance.count({
+        where: { eventId: { in: eventIds } },
+      });
+      const zugesagt = await this.prisma.attendance.count({
+        where: { eventId: { in: eventIds }, status: 'YES' },
+      });
+      anwesenheitsquote =
+        gesamt > 0 ? Math.round((zugesagt / gesamt) * 100) : 0;
+    }
+
+    // Neue Mitglieder
+    const neueMitglieder = await this.prisma.member.count({
+      where: {
+        tenantId,
+        joinDate: { gte: jahresbeginn, lt: naechstesJahr },
+      },
+    });
+
+    // Ehrenamtliche Stunden (falls Modul vorhanden)
+    let ehrenamtStunden = 0;
+    try {
+      const stunden = await this.prisma.uebungsleiterStunden.findMany({
+        where: {
+          tenantId,
+          datum: { gte: jahresbeginn, lt: naechstesJahr },
+        },
+        select: { stunden: true },
+      });
+      ehrenamtStunden = stunden.reduce(
+        (sum: number, s: { stunden: number }) => sum + s.stunden,
+        0,
+      );
+    } catch {
+      // Tabelle existiert ggf. nicht
+    }
+
+    // PDF erstellen - A4 Landscape
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        layout: 'landscape',
+        margins: { top: 40, bottom: 40, left: 50, right: 50 },
+        info: {
+          Title: `Vereinsjahr ${jahr} in Zahlen - ${tenant.name}`,
+          Author: 'Vereinbase',
+        },
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      const breite = 842 - 100; // A4 landscape minus Raender
+      const hoehe = 595 - 80;
+
+      // Hintergrund
+      doc.rect(0, 0, 842, 595).fill('#ffffff');
+
+      // Oberer Farbbalken
+      doc.rect(0, 0, 842, 8).fill(primaerFarbe);
+
+      // Vereinsname
+      doc
+        .fontSize(32)
+        .fillColor(primaerFarbe)
+        .text(tenant.name, 50, 30, {
+          align: 'center',
+          width: breite,
+        });
+
+      // Untertitel
+      doc
+        .fontSize(18)
+        .fillColor('#374151')
+        .text(`Unser Vereinsjahr ${jahr} in Zahlen`, 50, 70, {
+          align: 'center',
+          width: breite,
+        });
+
+      // Trennlinie
+      doc
+        .moveTo(200, 100)
+        .lineTo(642, 100)
+        .strokeColor(primaerFarbe)
+        .lineWidth(2)
+        .stroke();
+
+      // Statistik-Grid (2 Reihen x 4 Spalten)
+      const statistiken = [
+        { zahl: aktiveMitglieder.toString(), label: 'Aktive Mitglieder' },
+        { zahl: teams.toString(), label: 'Teams' },
+        { zahl: trainingseinheiten.toString(), label: 'Trainingseinheiten' },
+        { zahl: spiele.toString(), label: 'Spiele' },
+        { zahl: turniere.toString(), label: 'Turniere' },
+        { zahl: `${anwesenheitsquote}%`, label: 'Anwesenheitsquote' },
+        { zahl: neueMitglieder.toString(), label: 'Neue Mitglieder' },
+        {
+          zahl: ehrenamtStunden > 0 ? ehrenamtStunden.toString() : '-',
+          label: 'Ehrenamtliche Std.',
+        },
+      ];
+
+      const spalten = 4;
+      const zellenBreite = breite / spalten;
+      const zellenHoehe = 140;
+      const startY = 130;
+
+      statistiken.forEach((stat, index) => {
+        const reihe = Math.floor(index / spalten);
+        const spalte = index % spalten;
+        const x = 50 + spalte * zellenBreite;
+        const y = startY + reihe * zellenHoehe;
+
+        // Hintergrund-Box
+        doc
+          .roundedRect(x + 10, y + 10, zellenBreite - 20, zellenHoehe - 20, 8)
+          .fill('#f9fafb');
+
+        // Zahl gross
+        doc
+          .fontSize(42)
+          .fillColor(primaerFarbe)
+          .text(stat.zahl, x + 10, y + 30, {
+            width: zellenBreite - 20,
+            align: 'center',
+          });
+
+        // Label
+        doc
+          .fontSize(12)
+          .fillColor('#6b7280')
+          .text(stat.label, x + 10, y + 85, {
+            width: zellenBreite - 20,
+            align: 'center',
+          });
+      });
+
+      // Unterer Farbbalken
+      doc.rect(0, 595 - 8, 842, 8).fill(primaerFarbe);
+
+      // Footer
+      doc
+        .fontSize(10)
+        .fillColor('#9ca3af')
+        .text('Powered by Vereinbase', 50, 595 - 35, {
+          align: 'center',
+          width: breite,
+        });
+
+      doc.end();
+    });
+  }
+
   private async pdfErstellen(daten: JahresberichtDaten): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({

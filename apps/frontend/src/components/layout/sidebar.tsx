@@ -25,6 +25,8 @@ import {
   FileBarChart,
   UserX,
   Camera,
+  BookOpen,
+  CalendarRange,
 } from 'lucide-react';
 import { useTenant, useBenutzer } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -70,7 +72,14 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
       { href: ROUTEN.SCHWARZES_BRETT, label: 'Schwarzes Brett', icon: ClipboardList, rollen: null },
       { href: ROUTEN.GALERIE, label: 'Galerie', icon: Camera, rollen: null },
       { href: ROUTEN.EHRENAMT, label: 'Ehrenamt', icon: HandHeart, rollen: null },
+      { href: ROUTEN.WIKI, label: 'Wiki', icon: BookOpen, rollen: null },
       { href: ROUTEN.MARKTPLATZ, label: 'Marktplatz', icon: Store, rollen: ['SUPERADMIN', 'ADMIN'] },
+    ],
+  },
+  {
+    titel: 'Trainer-Tools',
+    eintraege: [
+      { href: ROUTEN.SAISONPLANUNG, label: 'Saisonplanung', icon: CalendarRange, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
     ],
   },
   {

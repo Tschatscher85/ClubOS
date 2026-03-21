@@ -123,6 +123,7 @@ model Tenant {
   marktplatzInserate MarktplatzInserat[]
   ehrenamtAufgaben   EhrenamtAufgabe[]
   uebungsleiterStunden UebungsleiterStunden[]
+  wikiSeiten         WikiSeite[]
 
   @@index([slug])
 }
@@ -403,6 +404,7 @@ model Team {
   warteliste         Warteliste[]
   ehrenamtAufgaben   EhrenamtAufgabe[]
   fotos              Foto[]
+  saisonplaene       Saisonplan[]
 
   @@index([tenantId])
   @@index([abteilungId])
@@ -2045,4 +2047,55 @@ model Foto {
   @@index([tenantId])
   @@index([teamId])
   @@index([eventId])
+}
+
+// ==================== Vereins-Wiki ====================
+
+model WikiSeite {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  titel         String
+  inhalt        String           // HTML/Markdown content
+  kategorie     String?          // z.B. "Halle", "Kontakte", "Ablaeufe"
+  erstelltVon   String
+  bearbeitetVon String?
+  erstelltAm    DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([kategorie])
+}
+
+// ==================== Saisonplanung ====================
+
+model Saisonplan {
+  id          String        @id @default(cuid())
+  tenantId    String
+  teamId      String
+  team        Team          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  saison      String                 // z.B. "2025/2026"
+  startDatum  DateTime
+  endDatum    DateTime
+  phasen      SaisonPhase[]
+  erstelltVon String
+  erstelltAm  DateTime      @default(now())
+
+  @@index([tenantId])
+  @@index([teamId])
+}
+
+model SaisonPhase {
+  id              String     @id @default(cuid())
+  saisonplanId    String
+  saisonplan      Saisonplan @relation(fields: [saisonplanId], references: [id], onDelete: Cascade)
+  name            String              // z.B. "Vorbereitung", "Hinrunde", "Winterpause"
+  startDatum      DateTime
+  endDatum        DateTime
+  schwerpunkt     String?             // z.B. "Kondition", "Taktik", "Spielpraxis"
+  farbe           String?             // Hex color for timeline
+  notizen         String?
+  reihenfolge     Int        @default(0)
+
+  @@index([saisonplanId])
 }

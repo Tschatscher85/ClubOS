@@ -39,4 +39,6 @@ export const ROUTEN = {
   EHRENAMT: '/ehrenamt',
   MITGLIEDERBINDUNG: '/mitgliederbindung',
   GALERIE: '/galerie',
+  WIKI: '/wiki',
+  SAISONPLANUNG: '/saisonplanung',
 } as const;

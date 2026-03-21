@@ -44,4 +44,27 @@ export class BerichtController {
 
     res.end(pdfBuffer);
   }
+
+  @Get('jahresposter')
+  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Jahres-Statistik-Poster als PDF generieren' })
+  async jahresposter(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Query('jahr') jahrStr: string,
+    @Res() res: Response,
+  ) {
+    const jahr = parseInt(jahrStr, 10) || new Date().getFullYear();
+    const pdfBuffer = await this.berichtService.jahresStatistikPoster(
+      tenantId,
+      jahr,
+    );
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="Vereinsjahr_${jahr}_Poster.pdf"`,
+      'Content-Length': pdfBuffer.length,
+    });
+
+    res.end(pdfBuffer);
+  }
 }

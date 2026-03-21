@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FileBarChart, Download, FileText } from 'lucide-react';
+import { FileBarChart, Download, FileText, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -17,24 +17,27 @@ import { useAuthStore } from '@/stores/auth-store';
 export default function BerichtePage() {
   const aktuellesJahr = new Date().getFullYear();
   const [jahr, setJahr] = useState(aktuellesJahr.toString());
+  const [posterJahr, setPosterJahr] = useState(aktuellesJahr.toString());
   const [laed, setLaed] = useState(false);
+  const [posterLaed, setPosterLaed] = useState(false);
   const { accessToken } = useAuthStore();
 
   const jahreOptionen = Array.from({ length: 4 }, (_, i) =>
     (aktuellesJahr - i).toString(),
   );
 
-  const jahresberichtHerunterladen = async () => {
-    setLaed(true);
+  const pdfHerunterladen = async (
+    endpunkt: string,
+    dateiname: string,
+    setLadend: (v: boolean) => void,
+  ) => {
+    setLadend(true);
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/berichte/jahresbericht?jahr=${jahr}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+      const response = await fetch(`${API_BASE_URL}${endpunkt}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
         },
-      );
+      });
 
       if (!response.ok) {
         throw new Error('Fehler beim Herunterladen');
@@ -44,7 +47,7 @@ export default function BerichtePage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Jahresbericht_${jahr}.pdf`;
+      a.download = dateiname;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -52,7 +55,7 @@ export default function BerichtePage() {
     } catch {
       alert('Fehler beim Erstellen des Berichts. Bitte versuchen Sie es erneut.');
     } finally {
-      setLaed(false);
+      setLadend(false);
     }
   };
 
@@ -111,7 +114,13 @@ export default function BerichtePage() {
               </div>
 
               <Button
-                onClick={jahresberichtHerunterladen}
+                onClick={() =>
+                  pdfHerunterladen(
+                    `/berichte/jahresbericht?jahr=${jahr}`,
+                    `Jahresbericht_${jahr}.pdf`,
+                    setLaed,
+                  )
+                }
                 disabled={laed}
                 className="gap-2"
               >
@@ -131,6 +140,106 @@ export default function BerichtePage() {
                 <li>Veranstaltungsuebersicht (Turniere, Spiele, Sonstige)</li>
                 <li>Zusammenfassung mit Kennzahlen</li>
               </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Jahres-Statistik-Poster Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+              <Image className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle>Jahres-Statistik-Poster</CardTitle>
+              <CardDescription>
+                Automatisch generiertes &quot;Vereinsjahr in Zahlen&quot; - ideal
+                zum Teilen auf Social Media
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Ein visuelles Poster im Querformat (A4) mit den wichtigsten
+              Kennzahlen eures Vereinsjahres. Perfekt fuer die Mitgliederversammlung,
+              Social Media oder die Vereinshomepage.
+            </p>
+
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Jahr</label>
+                <Select
+                  value={posterJahr}
+                  onChange={(e) => setPosterJahr(e.target.value)}
+                  className="w-[180px]"
+                >
+                  {jahreOptionen.map((j) => (
+                    <option key={j} value={j}>
+                      {j}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              <Button
+                onClick={() =>
+                  pdfHerunterladen(
+                    `/berichte/jahresposter?jahr=${posterJahr}`,
+                    `Vereinsjahr_${posterJahr}_Poster.pdf`,
+                    setPosterLaed,
+                  )
+                }
+                disabled={posterLaed}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {posterLaed ? 'Wird erstellt...' : 'Poster herunterladen'}
+              </Button>
+            </div>
+
+            {/* Poster Vorschau */}
+            <div className="mt-4 rounded-lg border bg-muted/30 p-6">
+              <h4 className="text-sm font-medium mb-4">Vorschau:</h4>
+              <div className="rounded-lg border bg-white p-6 shadow-sm">
+                <div className="text-center space-y-2">
+                  <div className="h-2 w-full bg-primary rounded-t" />
+                  <p className="text-lg font-bold text-primary">Vereinsname</p>
+                  <p className="text-sm text-muted-foreground">
+                    Unser Vereinsjahr {posterJahr} in Zahlen
+                  </p>
+                  <div className="h-px bg-primary/30 w-1/2 mx-auto my-3" />
+                  <div className="grid grid-cols-4 gap-3 mt-4">
+                    {[
+                      'Aktive Mitglieder',
+                      'Teams',
+                      'Trainingseinheiten',
+                      'Spiele',
+                      'Turniere',
+                      'Anwesenheitsquote',
+                      'Neue Mitglieder',
+                      'Ehrenamtliche Std.',
+                    ].map((label) => (
+                      <div
+                        key={label}
+                        className="rounded bg-muted/50 p-2 text-center"
+                      >
+                        <p className="text-lg font-bold text-primary">--</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-3">
+                    Powered by Vereinbase
+                  </p>
+                  <div className="h-2 w-full bg-primary rounded-b" />
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>
