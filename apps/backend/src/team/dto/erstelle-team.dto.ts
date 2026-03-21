@@ -8,9 +8,9 @@ export class ErstelleTeamDto {
   @MinLength(1, { message: 'Name darf nicht leer sein.' })
   name!: string;
 
-  @ApiProperty({ enum: Sport, example: Sport.FUSSBALL })
-  @IsEnum(Sport, { message: 'Ungueltige Sportart.' })
-  sportart!: Sport;
+  @ApiProperty({ example: 'FUSSBALL', description: 'Sportart (Enum-Wert oder Custom)' })
+  @IsString({ message: 'Sportart muss ein Text sein.' })
+  sportart!: string;
 
   @ApiProperty({ example: 'U10', description: 'Altersklasse' })
   @IsString({ message: 'Altersklasse muss ein Text sein.' })
@@ -21,6 +21,11 @@ export class ErstelleTeamDto {
   @IsOptional()
   @IsString()
   trainerId?: string;
+
+  @ApiPropertyOptional({ description: 'Abteilungs-ID' })
+  @IsOptional()
+  @IsString()
+  abteilungId?: string;
 }
 
 export class AktualisiereTeamDto {

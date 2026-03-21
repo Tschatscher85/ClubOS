@@ -2,19 +2,22 @@
 
 import { Users } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useBenutzer } from '@/hooks/use-auth';
 import MitgliederInhalt from './mitglieder-inhalt';
 import MitarbeiterInhalt from './mitarbeiter-inhalt';
-import FamilienPage from '../familien/page';
 
 export default function PersonenPage() {
+  const benutzer = useBenutzer();
+  const istAdmin = benutzer && ['SUPERADMIN', 'ADMIN'].includes(benutzer.rolle);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Users className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">Mitglieder & Familien</h1>
+          <h1 className="text-2xl font-bold">Mitglieder & Personal</h1>
           <p className="text-muted-foreground">
-            Vereinsmitglieder, Mitarbeiter und Familien verwalten
+            Vereinsmitglieder und Mitarbeiter verwalten
           </p>
         </div>
       </div>
@@ -22,18 +25,18 @@ export default function PersonenPage() {
       <Tabs defaultValue="mitglieder">
         <TabsList>
           <TabsTrigger value="mitglieder">Mitglieder</TabsTrigger>
-          <TabsTrigger value="mitarbeiter">Mitarbeiter</TabsTrigger>
-          <TabsTrigger value="familien">Familien</TabsTrigger>
+          {istAdmin && (
+            <TabsTrigger value="mitarbeiter">Mitarbeiter</TabsTrigger>
+          )}
         </TabsList>
         <TabsContent value="mitglieder">
           <MitgliederInhalt />
         </TabsContent>
-        <TabsContent value="mitarbeiter">
-          <MitarbeiterInhalt />
-        </TabsContent>
-        <TabsContent value="familien">
-          <FamilienPage />
-        </TabsContent>
+        {istAdmin && (
+          <TabsContent value="mitarbeiter">
+            <MitarbeiterInhalt />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

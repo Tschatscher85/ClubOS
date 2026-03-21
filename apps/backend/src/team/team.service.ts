@@ -12,9 +12,10 @@ export class TeamService {
     return this.prisma.team.create({
       data: {
         name: dto.name,
-        sport: dto.sportart,
+        sport: dto.sportart as any,
         ageGroup: dto.altersklasse,
         trainerId: dto.trainerId || null,
+        abteilungId: dto.abteilungId || null,
         tenantId,
       },
     });

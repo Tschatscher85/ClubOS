@@ -155,10 +155,12 @@ export default function NachrichtenInhalt() {
               Notfall
             </Button>
           )}
-          <Button onClick={() => setFormularOffen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Neue Nachricht
-          </Button>
+          {(benutzer?.rolle === 'ADMIN' || benutzer?.rolle === 'SUPERADMIN' || benutzer?.rolle === 'TRAINER') && (
+            <Button onClick={() => setFormularOffen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Neue Nachricht
+            </Button>
+          )}
         </div>
       </div>
 
