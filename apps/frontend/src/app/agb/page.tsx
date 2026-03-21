@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
 export default function AGBPage() {
   return (
@@ -8,190 +9,124 @@ export default function AGBPage() {
           <Link href="/" className="text-xl font-bold text-primary">
             Vereinbase
           </Link>
-          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
+          <Link
+            href="/"
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
             Zurück zur Startseite
           </Link>
         </div>
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-12">
-        <h1 className="text-3xl font-bold mb-8">Allgemeine Geschäftsbedingungen (AGB)</h1>
+        <h1 className="text-3xl font-bold mb-8">
+          Allgemeine Geschäftsbedingungen der Vereinbase UG (haftungsbeschränkt)
+        </h1>
 
         <div className="prose prose-sm max-w-none space-y-6">
           <section>
             <h2 className="text-xl font-semibold mb-2">§ 1 Geltungsbereich</h2>
             <p>
-              (1) Diese Allgemeinen Geschäftsbedingungen gelten für die Nutzung der
-              SaaS-Plattform &quot;Vereinbase&quot; (nachfolgend &quot;Plattform&quot;),
-              betrieben von der Vereinbase UG (haftungsbeschränkt), ein Unternehmen
-              der Jaeger Holding UG (nachfolgend &quot;Anbieter&quot;).
-            </p>
-            <p>
-              (2) Die Plattform richtet sich an Sportvereine und deren Mitglieder
-              in Deutschland.
+              Diese AGB gelten für alle Verträge zwischen der Vereinbase UG (haftungsbeschränkt),
+              In den Kirschwiesen 16, 73329 Kuchen (nachfolgend &quot;Vereinbase&quot;) und
+              Sportvereinen sowie Organisationen (nachfolgend &quot;Kunde&quot;) über die Nutzung
+              der Vereinbase SaaS-Plattform.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold mb-2">§ 2 Vertragsgegenstand</h2>
             <p>
-              (1) Der Anbieter stellt dem Kunden (Verein) eine webbasierte
-              Vereinsverwaltungssoftware als Software-as-a-Service (SaaS) zur Verfügung.
-            </p>
-            <p>
-              (2) Der Funktionsumfang richtet sich nach dem gewählten Tarif.
-              Der aktuelle Funktionsumfang ist auf der Website einsehbar.
-            </p>
-            <p>
-              (3) Der Anbieter erbringt seine Leistungen mit einer Verfügbarkeit
-              von mindestens 99% im Jahresmittel (ausgenommen angekündigte Wartungsfenster).
+              Vereinbase stellt eine cloudbasierte Vereinsverwaltungssoftware als
+              Software-as-a-Service bereit. Der Zugang erfolgt per Browser und optionaler
+              Mobile App. Eine Installation ist nicht erforderlich.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">§ 3 Registrierung und Vertragsschluss</h2>
+            <h2 className="text-xl font-semibold mb-2">§ 3 Registrierung</h2>
             <p>
-              (1) Die Nutzung der Plattform setzt eine Registrierung voraus.
-              Mit Abschluss der Registrierung kommt ein Nutzungsvertrag zustande.
-            </p>
-            <p>
-              (2) Der Kunde versichert, dass die bei der Registrierung angegebenen
-              Daten vollständig und korrekt sind. Änderungen sind unverzüglich mitzuteilen.
-            </p>
-            <p>
-              (3) Jeder Verein erhält einen eigenen Mandantenbereich (Tenant).
-              Der registrierende Nutzer wird automatisch als Administrator eingesetzt.
+              Die Registrierung ist ausschließlich für Vereine und Organisationen zulässig.
+              Der Registrierende muss mindestens 18 Jahre alt und berechtigt sein, den Verein
+              zu vertreten. Pro Verein ist ein Account (Tenant) zulässig. Der Kunde ist für
+              die Sicherheit seiner Zugangsdaten verantwortlich.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">§ 4 Testphase</h2>
+            <h2 className="text-xl font-semibold mb-2">§ 4 Testphase und Zahlung</h2>
             <p>
-              (1) Neue Kunden erhalten eine kostenlose Testphase von 14 Tagen
-              mit vollem Funktionsumfang.
-            </p>
-            <p>
-              (2) Nach Ablauf der Testphase ist ein kostenpflichtiger Tarif zu wählen.
-              Ohne Tarifwahl wird der Zugang eingeschränkt.
+              Die ersten 14 Tage sind kostenlos und unverbindlich. Eine Kreditkarte ist für
+              die Testphase nicht erforderlich. Nach Ablauf der Testphase wird der gewählte
+              Tarif monatlich oder jährlich per Stripe abgerechnet (Kreditkarte oder
+              SEPA-Lastschrift). Alle Preise verstehen sich inkl. MwSt.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">§ 5 Vergütung und Zahlung</h2>
+            <h2 className="text-xl font-semibold mb-2">§ 5 Laufzeit und Kündigung</h2>
             <p>
-              (1) Die Vergütung richtet sich nach dem gewählten Tarif.
-              Die Abrechnung erfolgt monatlich im Voraus.
+              Der Vertrag läuft monatlich und ist monatlich kündbar.
+              Kündigung per E-Mail an:{' '}
+              <a href="mailto:kuendigung@vereinbase.de" className="text-primary hover:underline">
+                kuendigung@vereinbase.de
+              </a>
             </p>
             <p>
-              (2) Die Zahlung erfolgt per Kreditkarte oder SEPA-Lastschrift
-              über den Zahlungsdienstleister Stripe.
-            </p>
-            <p>
-              (3) Bei Zahlungsverzug von mehr als 14 Tagen ist der Anbieter
-              berechtigt, den Zugang vorübergehend zu sperren. Nach drei
-              fehlgeschlagenen Zahlungsversuchen wird der Account automatisch
-              gesperrt.
+              Nach Kündigung bleiben alle Daten noch 30 Tage abrufbar, danach werden
+              sie unwiderruflich gelöscht.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">§ 6 Laufzeit und Kündigung</h2>
+            <h2 className="text-xl font-semibold mb-2">§ 6 Auftragsverarbeitung (DSGVO)</h2>
             <p>
-              (1) Der Vertrag wird auf unbestimmte Zeit geschlossen und kann
-              von beiden Seiten jederzeit zum Ende des laufenden Abrechnungszeitraums
-              gekündigt werden.
+              Vereinbase ist Auftragsverarbeiter gemäß Art. 28 DSGVO. Der
+              Auftragsverarbeitungsvertrag (AVV) ist Bestandteil dieser AGB und wird mit
+              der Registrierung automatisch akzeptiert. Der Kunde bleibt Verantwortlicher
+              für die Daten seiner Mitglieder. Ein separater AVV muss nicht abgeschlossen werden.
             </p>
             <p>
-              (2) Die Kündigung kann über die Kontoeinstellungen oder per E-Mail
-              an support@vereinbase.de erfolgen.
-            </p>
-            <p>
-              (3) Nach Kündigung bleiben die Daten für 30 Tage verfügbar.
-              In diesem Zeitraum kann ein Datenexport durchgeführt werden.
-              Danach werden alle Daten unwiderruflich gelöscht.
+              Den vollständigen AVV finden Sie unter:{' '}
+              <Link href="/avv" className="text-primary hover:underline">
+                vereinbase.de/avv
+              </Link>
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">§ 7 Datenschutz und Datensicherheit</h2>
+            <h2 className="text-xl font-semibold mb-2">§ 7 Verfügbarkeit</h2>
             <p>
-              (1) Der Anbieter verarbeitet personenbezogene Daten im Auftrag des
-              Kunden gemäß Art. 28 DSGVO. Ein gesonderter Auftragsverarbeitungsvertrag
-              (AVV) wird bei Vertragsschluss geschlossen.
-            </p>
-            <p>
-              (2) Alle Daten werden ausschließlich auf Servern in Deutschland
-              gespeichert und verarbeitet.
-            </p>
-            <p>
-              (3) Die Datentrennung zwischen Vereinen erfolgt durch Multi-Tenant-Architektur
-              mit Row-Level Security auf Datenbankebene.
-            </p>
-            <p>
-              (4) Weitere Details entnehmen Sie bitte unserer{' '}
-              <Link href="/datenschutz" className="text-primary hover:underline">
-                Datenschutzerklärung
-              </Link>.
+              Vereinbase strebt eine monatliche Verfügbarkeit von 99,5 % an. Geplante
+              Wartungsarbeiten werden mindestens 24 Stunden vorher per E-Mail und in der
+              App angekündigt.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">§ 8 Pflichten des Kunden</h2>
+            <h2 className="text-xl font-semibold mb-2">§ 8 Haftung</h2>
             <p>
-              (1) Der Kunde ist für die Inhalte verantwortlich, die über seinen
-              Mandantenbereich verarbeitet werden.
-            </p>
-            <p>
-              (2) Der Kunde stellt sicher, dass die erforderlichen Einwilligungen
-              seiner Mitglieder für die Datenverarbeitung vorliegen.
-            </p>
-            <p>
-              (3) Zugangsdaten sind vertraulich zu behandeln. Der Kunde haftet
-              für alle Aktivitäten, die über seine Zugangsdaten erfolgen.
+              Vereinbase haftet nur bei Vorsatz und grober Fahrlässigkeit. Für den Verlust
+              von Daten haftet Vereinbase nur, soweit ein Backup nicht möglich war.
+              Vereinbase erstellt tägliche Backups.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">§ 9 Haftung</h2>
+            <h2 className="text-xl font-semibold mb-2">§ 9 Änderungen der AGB</h2>
             <p>
-              (1) Der Anbieter haftet unbeschränkt für Vorsatz und grobe Fahrlässigkeit.
-            </p>
-            <p>
-              (2) Bei leichter Fahrlässigkeit haftet der Anbieter nur bei Verletzung
-              wesentlicher Vertragspflichten (Kardinalpflichten), begrenzt auf den
-              vorhersehbaren, vertragstypischen Schaden.
-            </p>
-            <p>
-              (3) Die Haftung für Datenverlust ist auf den typischen
-              Wiederherstellungsaufwand beschränkt, der bei regelmäßiger
-              Datensicherung entstanden wäre. Der Anbieter führt tägliche
-              Backups durch.
+              Änderungen werden 30 Tage vor Inkrafttreten per E-Mail mitgeteilt. Widerspricht
+              der Kunde nicht innerhalb von 30 Tagen, gelten die neuen AGB als akzeptiert.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">§ 10 Änderungen der AGB</h2>
+            <h2 className="text-xl font-semibold mb-2">§ 10 Schlussbestimmungen</h2>
             <p>
-              (1) Der Anbieter behält sich vor, diese AGB mit einer Ankündigungsfrist
-              von 4 Wochen zu ändern.
-            </p>
-            <p>
-              (2) Die Änderungen werden per E-Mail angekündigt. Widerspricht der
-              Kunde nicht innerhalb von 4 Wochen, gelten die neuen AGB als akzeptiert.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold mb-2">§ 11 Schlussbestimmungen</h2>
-            <p>
-              (1) Es gilt das Recht der Bundesrepublik Deutschland.
-            </p>
-            <p>
-              (2) Gerichtsstand ist, soweit gesetzlich zulässig, der Sitz des Anbieters.
-            </p>
-            <p>
-              (3) Sollten einzelne Bestimmungen dieser AGB unwirksam sein, bleibt
-              die Wirksamkeit der übrigen Bestimmungen unberührt.
+              Es gilt deutsches Recht. Gerichtsstand ist Göppingen, soweit gesetzlich zulässig.
+              Sollten einzelne Bestimmungen unwirksam sein, bleibt die Wirksamkeit der übrigen
+              Bestimmungen unberührt.
             </p>
           </section>
         </div>

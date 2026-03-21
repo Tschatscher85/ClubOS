@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import { PendingBadge } from '@/components/ui/pending-badge';
 
 export default function ImpressumPage() {
   return (
@@ -8,7 +10,11 @@ export default function ImpressumPage() {
           <Link href="/" className="text-xl font-bold text-primary">
             Vereinbase
           </Link>
-          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
+          <Link
+            href="/"
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
             Zurück zur Startseite
           </Link>
         </div>
@@ -22,28 +28,21 @@ export default function ImpressumPage() {
             <h2 className="text-xl font-semibold mb-2">Angaben gemäß § 5 TMG</h2>
             <p>
               Vereinbase UG (haftungsbeschränkt)<br />
-              ein Unternehmen der Jaeger Holding UG<br />
-              <br />
-              {/* TODO: Adresse eintragen */}
-              [Straße und Hausnummer]<br />
-              [PLZ Ort]<br />
-              Deutschland
+              In den Kirschwiesen 16<br />
+              73329 Kuchen
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold mb-2">Vertreten durch</h2>
-            <p>
-              Geschäftsführer: [Name des Geschäftsführers]
-            </p>
+            <p>Geschäftsführer: Sven Jaeger</p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold mb-2">Kontakt</h2>
             <p>
-              E-Mail: support@vereinbase.de<br />
-              {/* TODO: Telefon eintragen */}
-              Telefon: [Telefonnummer]
+              Telefon: 0176 70378744<br />
+              E-Mail: info@vereinbase.de
             </p>
           </section>
 
@@ -51,8 +50,8 @@ export default function ImpressumPage() {
             <h2 className="text-xl font-semibold mb-2">Registereintrag</h2>
             <p>
               Eintragung im Handelsregister<br />
-              Registergericht: [Amtsgericht]<br />
-              Registernummer: [HRB XXXXX]
+              Registergericht: Amtsgericht Ulm<br />
+              Handelsregisternummer: <PendingBadge label="HRB XXXXX — nach Notartermin eintragen" />
             </p>
           </section>
 
@@ -60,15 +59,18 @@ export default function ImpressumPage() {
             <h2 className="text-xl font-semibold mb-2">Umsatzsteuer-ID</h2>
             <p>
               Umsatzsteuer-Identifikationsnummer gemäß § 27a Umsatzsteuergesetz:<br />
-              [DE XXXXXXXXX]
+              <PendingBadge label="nach Finanzamt-Bescheid eintragen" />
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h2>
+            <h2 className="text-xl font-semibold mb-2">
+              Inhaltlich verantwortlich gemäß § 55 Abs. 2 RStV
+            </h2>
             <p>
-              [Name des Verantwortlichen]<br />
-              [Adresse]
+              Sven Jaeger<br />
+              In den Kirschwiesen 16<br />
+              73329 Kuchen
             </p>
           </section>
 
@@ -76,44 +78,18 @@ export default function ImpressumPage() {
             <h2 className="text-xl font-semibold mb-2">Streitschlichtung</h2>
             <p>
               Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:{' '}
-              <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              <a
+                href="https://ec.europa.eu/consumers/odr/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
                 https://ec.europa.eu/consumers/odr/
               </a>
             </p>
             <p>
-              Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer
-              Verbraucherschlichtungsstelle teilzunehmen.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold mb-2">Haftung für Inhalte</h2>
-            <p>
-              Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen
-              Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind
-              wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte
-              fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine
-              rechtswidrige Tätigkeit hinweisen.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold mb-2">Haftung für Links</h2>
-            <p>
-              Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir
-              keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine
-              Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige
-              Anbieter oder Betreiber der Seiten verantwortlich.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold mb-2">Urheberrecht</h2>
-            <p>
-              Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten
-              unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung,
-              Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes
-              bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers.
+              Wir sind nicht bereit und nicht verpflichtet, an einem Streitbeilegungsverfahren
+              vor einer Verbraucherschlichtungsstelle teilzunehmen.
             </p>
           </section>
         </div>
