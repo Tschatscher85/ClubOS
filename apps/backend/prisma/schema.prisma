@@ -1810,3 +1810,32 @@ enum BewerbungStatus {
   ABGELEHNT
   ERLEDIGT
 }
+
+// ==================== Vertraege & NDAs (Plattform-Level) ====================
+
+model Vertrag {
+  id            String             @id @default(cuid())
+  titel         String
+  inhalt        String
+  version       Int                @default(1)
+  erstelltVon   String
+  erstelltAm    DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  einladungen   VertragEinladung[]
+}
+
+model VertragEinladung {
+  id                String    @id @default(cuid())
+  vertragId         String
+  vertrag           Vertrag   @relation(fields: [vertragId], references: [id], onDelete: Cascade)
+  email             String
+  name              String
+  token             String    @unique
+  unterschriebenAm  DateTime?
+  unterschriftDaten String?
+  ipAdresse         String?
+  erstelltAm        DateTime  @default(now())
+
+  @@index([vertragId])
+  @@index([token])
+}

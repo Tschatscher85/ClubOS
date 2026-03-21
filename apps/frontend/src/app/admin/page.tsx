@@ -20,6 +20,7 @@ import {
   Eye,
   EyeOff,
   Save,
+  FileText,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useBenutzer } from '@/hooks/use-auth';
@@ -411,6 +412,29 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* Vertraege & NDAs */}
+        <Card
+          className="cursor-pointer hover:border-primary/50 transition-colors"
+          onClick={() => router.push('/admin/vertraege')}
+        >
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-indigo-100 p-2">
+                  <FileText className="h-5 w-5 text-indigo-700" />
+                </div>
+                <div>
+                  <p className="font-medium">Vertraege & NDAs</p>
+                  <p className="text-xs text-muted-foreground">
+                    Vertraege erstellen, versenden und Unterschriften verwalten
+                  </p>
+                </div>
+              </div>
+              <Badge variant="outline">Oeffnen</Badge>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Plattform KI-Einstellungen */}
         <Card>

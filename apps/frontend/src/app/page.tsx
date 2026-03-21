@@ -153,53 +153,7 @@ const comingSoon = [
   { title: 'Mobile App (iOS + Android)', icon: Smartphone },
 ];
 
-const pricingPlans = [
-  {
-    name: 'Starter',
-    price: '29',
-    description: 'Perfekt für kleine Vereine',
-    features: [
-      'Bis 100 Mitglieder',
-      'Alle Grundfunktionen',
-      'Kalender & Events',
-      'Turnier-Manager',
-      'Kommunikation',
-      'QR-Code Check-In',
-      'E-Mail-Support',
-    ],
-    highlighted: false,
-  },
-  {
-    name: 'Pro',
-    price: '79',
-    description: 'Für wachsende Vereine',
-    features: [
-      'Bis 500 Mitglieder',
-      'Alles aus Starter',
-      'KI-Features (Trainingsplan, Berichte)',
-      'Vereins-Marktplatz',
-      'DATEV-Export',
-      'Vereinshomepage-Editor',
-      'Priority-Support',
-    ],
-    highlighted: true,
-  },
-  {
-    name: 'Club',
-    price: '149',
-    description: 'Für große Mehrspartenvereine',
-    features: [
-      'Unbegrenzte Mitglieder',
-      'Alles aus Pro',
-      'Alle Sportarten',
-      'Eigene Domain',
-      'DFBnet Import/Export',
-      'API-Zugang',
-      'Persönlicher Ansprechpartner',
-    ],
-    highlighted: false,
-  },
-];
+// Preise werden noch definiert - Platzhalter
 
 const trustBadges = [
   { icon: Shield, label: 'DSGVO-konform' },
@@ -452,64 +406,23 @@ export default function LandingPage() {
               Preise
             </Badge>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Ein Plan für jede Vereinsgröße
+              Faire Preise für jeden Verein
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              Transparent, fair, ohne versteckte Kosten. Jederzeit kündbar.
+              Wir arbeiten gerade an unseren Preispaketen.
+              Starten Sie jetzt kostenlos und testen Sie alle Funktionen 14 Tage lang.
+            </p>
+            <div className="mt-8">
+              <Link href="/registrieren">
+                <Button size="lg" className="text-lg px-8 py-6">
+                  Jetzt kostenlos testen
+                </Button>
+              </Link>
+            </div>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Keine Kreditkarte nötig. Keine Verpflichtung.
             </p>
           </div>
-
-          <div className="mx-auto mt-16 grid max-w-5xl gap-8 lg:grid-cols-3">
-            {pricingPlans.map((plan) => (
-              <div
-                key={plan.name}
-                className={`relative flex flex-col rounded-2xl border p-8 shadow-sm transition-shadow hover:shadow-md ${
-                  plan.highlighted
-                    ? 'border-primary ring-2 ring-primary/20'
-                    : ''
-                }`}
-              >
-                {plan.highlighted && (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    Beliebteste Wahl
-                  </Badge>
-                )}
-                <h3 className="text-xl font-bold">{plan.name}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {plan.description}
-                </p>
-                <div className="mt-6 flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold">{plan.price}&euro;</span>
-                  <span className="text-muted-foreground">/Monat</span>
-                </div>
-
-                <ul className="mt-8 flex-1 space-y-3">
-                  {plan.features.map((f) => (
-                    <li
-                      key={f}
-                      className="flex items-start gap-2 text-sm text-muted-foreground"
-                    >
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Link href="/registrieren" className="mt-8">
-                  <Button
-                    className="w-full"
-                    variant={plan.highlighted ? 'default' : 'outline'}
-                  >
-                    Kostenlos testen
-                  </Button>
-                </Link>
-              </div>
-            ))}
-          </div>
-
-          <p className="mt-10 text-center text-sm text-muted-foreground">
-            14 Tage kostenlos testen. Keine Kreditkarte nötig. Jederzeit kündbar.
-          </p>
         </div>
       </section>
 
