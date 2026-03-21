@@ -65,6 +65,8 @@ import { WikiModule } from './wiki/wiki.module';
 import { SaisonplanModule } from './saisonplan/saisonplan.module';
 import { GesundheitscheckModule } from './gesundheitscheck/gesundheitscheck.module';
 import { TrainerLizenzModule } from './trainer-lizenz/trainer-lizenz.module';
+import { FundingModule } from './funding/funding.module';
+import { VersicherungModule } from './versicherung/versicherung.module';
 import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
 import { TenantStatusMiddleware } from './common/middleware/tenant-status.middleware';
 import configuration from './config/configuration';
@@ -155,6 +157,8 @@ import configuration from './config/configuration';
     SaisonplanModule,
     GesundheitscheckModule,
     TrainerLizenzModule,
+    FundingModule,
+    VersicherungModule,
   ],
   providers: [
     {

@@ -43,4 +43,6 @@ export const ROUTEN = {
   SAISONPLANUNG: '/saisonplanung',
   GESUNDHEITSCHECK: '/gesundheitscheck',
   TRAINER_LIZENZEN: '/trainer-lizenzen',
+  FUNDING: '/funding',
+  VERSICHERUNG: '/versicherung',
 } as const;

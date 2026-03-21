@@ -29,6 +29,8 @@ import {
   CalendarRange,
   Activity,
   Award,
+  Coins,
+  ShieldAlert,
 } from 'lucide-react';
 import { useTenant, useBenutzer } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -75,6 +77,7 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
       { href: ROUTEN.GALERIE, label: 'Galerie', icon: Camera, rollen: null },
       { href: ROUTEN.EHRENAMT, label: 'Ehrenamt', icon: HandHeart, rollen: null },
       { href: ROUTEN.WIKI, label: 'Wiki', icon: BookOpen, rollen: null },
+      { href: ROUTEN.FUNDING, label: 'Crowdfunding', icon: Coins, rollen: null },
       { href: ROUTEN.MARKTPLATZ, label: 'Marktplatz', icon: Store, rollen: ['SUPERADMIN', 'ADMIN'] },
     ],
   },
@@ -95,6 +98,7 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
       { href: ROUTEN.MITGLIEDERBINDUNG, label: 'Mitgliederbindung', icon: UserX, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
       { href: ROUTEN.GESUNDHEITSCHECK, label: 'Gesundheitscheck', icon: Activity, rollen: ['SUPERADMIN', 'ADMIN'] },
       { href: ROUTEN.TRAINER_LIZENZEN, label: 'Trainer-Lizenzen', icon: Award, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
+      { href: ROUTEN.VERSICHERUNG, label: 'Versicherungs-Check', icon: ShieldAlert, rollen: ['SUPERADMIN', 'ADMIN'] },
     ],
   },
   {

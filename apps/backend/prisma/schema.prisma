@@ -124,6 +124,7 @@ model Tenant {
   ehrenamtAufgaben   EhrenamtAufgabe[]
   uebungsleiterStunden UebungsleiterStunden[]
   wikiSeiten         WikiSeite[]
+  fundingProjekte    FundingProjekt[]
 
   @@index([slug])
 }
@@ -2131,4 +2132,47 @@ model TrainerLizenz {
   @@index([tenantId])
   @@index([userId])
   @@index([gueltigBis])
+}
+
+// ==================== Vereins-Crowdfunding ====================
+
+model FundingProjekt {
+  id              String        @id @default(cuid())
+  tenantId        String
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  titel           String
+  beschreibung    String
+  bildUrl         String?
+  zielBetrag      Float
+  aktuellerBetrag Float         @default(0)
+  laufzeitBis     DateTime
+  sichtbarkeit    String        @default("MITGLIEDER") // MITGLIEDER or OEFFENTLICH
+  status          FundingStatus @default(AKTIV)
+  erstelltVon     String
+  erstelltAm      DateTime      @default(now())
+  spenden         FundingSpende[]
+
+  @@index([tenantId])
+  @@index([status])
+}
+
+model FundingSpende {
+  id            String         @id @default(cuid())
+  projektId     String
+  projekt       FundingProjekt @relation(fields: [projektId], references: [id], onDelete: Cascade)
+  betrag        Float
+  spenderName   String?        // null = anonym
+  spenderEmail  String?
+  anonym        Boolean        @default(false)
+  nachricht     String?
+  erstelltAm    DateTime       @default(now())
+
+  @@index([projektId])
+}
+
+enum FundingStatus {
+  AKTIV
+  ERREICHT
+  ABGELAUFEN
+  GESCHLOSSEN
 }

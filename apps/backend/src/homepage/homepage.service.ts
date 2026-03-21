@@ -821,4 +821,71 @@ Wichtig:
       .replace(/,/g, '\\,')
       .replace(/\n/g, '\\n');
   }
+
+  // ==================== Oeffentliche Statistiken ====================
+
+  /**
+   * Oeffentliche Vereinsstatistiken laden
+   */
+  async oeffentlicheStatistiken(slug: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        logo: true,
+        primaryColor: true,
+        gruendungsjahr: true,
+      },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Verein nicht gefunden.');
+    }
+
+    const jetzt = new Date();
+    const jahresBeginn = new Date(jetzt.getFullYear(), 0, 1);
+
+    const [mitglieder, teams, sportarten, eventsImJahr, turniereImJahr] =
+      await Promise.all([
+        this.prisma.member.count({
+          where: { tenantId: tenant.id, status: 'ACTIVE' },
+        }),
+        this.prisma.team.count({
+          where: { tenantId: tenant.id },
+        }),
+        this.prisma.team
+          .findMany({
+            where: { tenantId: tenant.id },
+            select: { sport: true },
+            distinct: ['sport'],
+          })
+          .then((s) => s.length),
+        this.prisma.event.count({
+          where: {
+            tenantId: tenant.id,
+            date: { gte: jahresBeginn },
+          },
+        }),
+        this.prisma.tournament.count({
+          where: {
+            tenantId: tenant.id,
+            createdAt: { gte: jahresBeginn },
+          },
+        }),
+      ]);
+
+    return {
+      tenant,
+      statistiken: {
+        mitglieder,
+        teams,
+        sportarten,
+        eventsImJahr,
+        turniereImJahr,
+        gruendungsjahr: tenant.gruendungsjahr,
+      },
+    };
+  }
 }

@@ -218,6 +218,17 @@ export class HomepageController {
     return this.homepageService.eventLandingpageOeffentlich(slug);
   }
 
+  // ==================== Oeffentliche Vereinsstatistiken ====================
+
+  @Get('public/:slug/statistiken')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Oeffentliche Vereinsstatistiken laden' })
+  @ApiResponse({ status: 200, description: 'Statistiken des Vereins' })
+  @ApiResponse({ status: 404, description: 'Verein nicht gefunden' })
+  async oeffentlicheStatistiken(@Param('slug') slug: string) {
+    return this.homepageService.oeffentlicheStatistiken(slug);
+  }
+
   // ==================== Oeffentlicher Vereinskalender ====================
 
   @Get('public/:slug/kalender')
