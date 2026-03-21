@@ -124,6 +124,12 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
   {
     titel: '',
     eintraege: [
+      { href: '/hallen', label: 'Belegungsplan', icon: Calendar, rollen: ['HALLENWART'] },
+    ],
+  },
+  {
+    titel: '',
+    eintraege: [
       { href: '/admin', label: 'Admin-Dashboard', icon: ShieldCheck, rollen: ['SUPERADMIN'] },
     ],
   },

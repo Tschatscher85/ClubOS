@@ -25,6 +25,7 @@ const ROLLEN_LABEL: Record<string, string> = {
   TRAINER: 'Trainer',
   MEMBER: 'Mitglied',
   PARENT: 'Elternteil',
+  HALLENWART: 'Hallenwart',
 };
 
 export function Header() {

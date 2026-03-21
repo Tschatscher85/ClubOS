@@ -132,6 +132,10 @@ export class HalleService {
         von: dto.von,
         bis: dto.bis,
         notiz: dto.notiz,
+        wiederholung: dto.wiederholung || 'WOECHENTLICH',
+        gueltigVon: dto.gueltigVon ? new Date(dto.gueltigVon) : null,
+        gueltigBis: dto.gueltigBis ? new Date(dto.gueltigBis) : null,
+        einmalDatum: dto.einmalDatum ? new Date(dto.einmalDatum) : null,
       },
       include: { halle: true, team: true },
     });

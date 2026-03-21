@@ -135,6 +135,8 @@ export class AktualisiereBelegungDto {
   halleId?: string;
 }
 
+const WIEDERHOLUNGEN = ['WOECHENTLICH', 'TAEGLICH', 'EINMALIG', 'ALLE_2_WOCHEN'] as const;
+
 export class ErstelleBelegungDto {
   @ApiProperty({ example: 'team-id-123', description: 'ID der Mannschaft' })
   @IsString()
@@ -157,4 +159,25 @@ export class ErstelleBelegungDto {
   @IsOptional()
   @IsString()
   notiz?: string;
+
+  @ApiPropertyOptional({ example: 'WOECHENTLICH', description: 'Wiederholung' })
+  @IsOptional()
+  @IsString()
+  @IsIn(WIEDERHOLUNGEN, { message: 'Wiederholung muss WOECHENTLICH, TAEGLICH, EINMALIG oder ALLE_2_WOCHEN sein.' })
+  wiederholung?: string;
+
+  @ApiPropertyOptional({ example: '2026-09-01', description: 'Gueltig ab (Saisonstart)' })
+  @IsOptional()
+  @IsString()
+  gueltigVon?: string;
+
+  @ApiPropertyOptional({ example: '2027-06-30', description: 'Gueltig bis (Saisonende)' })
+  @IsOptional()
+  @IsString()
+  gueltigBis?: string;
+
+  @ApiPropertyOptional({ example: '2026-04-15', description: 'Einmal-Datum (nur bei EINMALIG)' })
+  @IsOptional()
+  @IsString()
+  einmalDatum?: string;
 }

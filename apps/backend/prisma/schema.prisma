@@ -199,6 +199,7 @@ enum Role {
   TRAINER
   MEMBER
   PARENT
+  HALLENWART  // Gemeinde/Stadt: nur Belegungsplan sehen und verwalten
 }
 
 // ==================== Rollen-Vorlagen (pro Verein konfigurierbar) ====================
@@ -565,6 +566,7 @@ model Event {
   hallName       String?
   hallAddress    String?
   untergrund     String?
+  halleId        String?   // Verknuepfung zur Halle (automatische Belegung)
   teamId         String
   team           Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
   tenantId       String
@@ -1097,12 +1099,16 @@ model Hallenbelegung {
   halle     Halle    @relation(fields: [halleId], references: [id], onDelete: Cascade)
   teamId    String
   team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  wochentag String // MO, DI, MI, DO, FR, SA, SO
-  von       String // "18:00"
-  bis       String // "20:00"
-  notiz     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  wochentag    String   // MO, DI, MI, DO, FR, SA, SO
+  von          String   // "18:00"
+  bis          String   // "20:00"
+  notiz        String?
+  wiederholung String   @default("WOECHENTLICH") // WOECHENTLICH, TAEGLICH, EINMALIG, ALLE_2_WOCHEN
+  gueltigVon   DateTime? // Ab wann gilt die Belegung (null = sofort)
+  gueltigBis   DateTime? // Bis wann (null = unbegrenzt, z.B. Saisonende)
+  einmalDatum  DateTime? // Nur bei EINMALIG: konkretes Datum
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([halleId])
   @@index([teamId])

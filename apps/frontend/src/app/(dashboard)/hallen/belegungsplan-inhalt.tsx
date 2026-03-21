@@ -85,6 +85,10 @@ export default function BelegungsplanInhalt() {
   const [belegungVon, setBelegungVon] = useState('18:00');
   const [belegungBis, setBelegungBis] = useState('20:00');
   const [belegungNotiz, setBelegungNotiz] = useState('');
+  const [belegungWiederholung, setBelegungWiederholung] = useState('WOECHENTLICH');
+  const [belegungGueltigVon, setBelegungGueltigVon] = useState('');
+  const [belegungGueltigBis, setBelegungGueltigBis] = useState('');
+  const [belegungEinmalDatum, setBelegungEinmalDatum] = useState('');
   const [belegungSpeichernd, setBelegungSpeichernd] = useState(false);
 
   const datenLaden = useCallback(async () => {
@@ -169,6 +173,10 @@ export default function BelegungsplanInhalt() {
       setBelegungVon(belegung.von);
       setBelegungBis(belegung.bis);
       setBelegungNotiz(belegung.notiz || '');
+      setBelegungWiederholung((belegung as any).wiederholung || 'WOECHENTLICH');
+      setBelegungGueltigVon((belegung as any).gueltigVon?.split('T')[0] || '');
+      setBelegungGueltigBis((belegung as any).gueltigBis?.split('T')[0] || '');
+      setBelegungEinmalDatum((belegung as any).einmalDatum?.split('T')[0] || '');
     } else {
       setBelegungBearbeitenId(null);
       setBelegungHalleId('');
@@ -177,6 +185,10 @@ export default function BelegungsplanInhalt() {
       setBelegungVon('18:00');
       setBelegungBis('20:00');
       setBelegungNotiz('');
+      setBelegungWiederholung('WOECHENTLICH');
+      setBelegungGueltigVon('');
+      setBelegungGueltigBis('');
+      setBelegungEinmalDatum('');
     }
     setBelegungDialogOffen(true);
   };
@@ -191,6 +203,10 @@ export default function BelegungsplanInhalt() {
         von: belegungVon,
         bis: belegungBis,
         notiz: belegungNotiz || undefined,
+        wiederholung: belegungWiederholung,
+        gueltigVon: belegungGueltigVon || undefined,
+        gueltigBis: belegungGueltigBis || undefined,
+        einmalDatum: belegungEinmalDatum || undefined,
       };
       if (belegungBearbeitenId) {
         await apiClient.put(`/hallen/belegung/${belegungBearbeitenId}`, {
