@@ -1839,3 +1839,21 @@ model VertragEinladung {
   @@index([vertragId])
   @@index([token])
 }
+
+// ==================== Audit-Log (Superadmin) ====================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  aktion      String   // z.B. "VEREIN_GESPERRT", "PLAN_GEAENDERT", "IMPERSONATION", "KI_TOGGLE"
+  details     String?  // JSON-String mit Details
+  userId      String   // Wer hat die Aktion durchgefuehrt
+  userEmail   String   // Fuer Anzeige
+  tenantId    String?  // Welcher Verein betroffen (null fuer Plattform-Aktionen)
+  tenantName  String?  // Fuer Anzeige
+  ipAdresse   String?
+  erstelltAm  DateTime @default(now())
+
+  @@index([erstelltAm])
+  @@index([userId])
+  @@index([aktion])
+}

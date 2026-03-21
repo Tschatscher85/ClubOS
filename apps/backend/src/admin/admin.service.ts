@@ -3,6 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { Plan } from '@prisma/client';
+import { AuditService } from './audit.service';
+
+interface AuditKontext {
+  userId: string;
+  userEmail: string;
+  ipAdresse?: string;
+}
 
 @Injectable()
 export class AdminService {
@@ -10,6 +17,7 @@ export class AdminService {
     private prisma: PrismaService,
     private jwt: JwtService,
     private config: ConfigService,
+    private audit: AuditService,
   ) {}
 
   /** Alle Vereine mit Statistiken abrufen */
@@ -86,11 +94,11 @@ export class AdminService {
   }
 
   /** Verein sperren */
-  async vereinSperren(id: string, grund: string) {
+  async vereinSperren(id: string, grund: string, kontext: AuditKontext) {
     const verein = await this.prisma.tenant.findUnique({ where: { id } });
     if (!verein) throw new NotFoundException('Verein nicht gefunden');
 
-    return this.prisma.tenant.update({
+    const ergebnis = await this.prisma.tenant.update({
       where: { id },
       data: {
         istAktiv: false,
@@ -99,14 +107,26 @@ export class AdminService {
       },
       select: { id: true, name: true, istAktiv: true, gesperrtAm: true, gesperrtGrund: true },
     });
+
+    await this.audit.loggen({
+      aktion: 'VEREIN_GESPERRT',
+      userId: kontext.userId,
+      userEmail: kontext.userEmail,
+      tenantId: id,
+      tenantName: verein.name,
+      details: JSON.stringify({ grund }),
+      ipAdresse: kontext.ipAdresse,
+    });
+
+    return ergebnis;
   }
 
   /** Verein entsperren */
-  async vereinEntsperren(id: string) {
+  async vereinEntsperren(id: string, kontext: AuditKontext) {
     const verein = await this.prisma.tenant.findUnique({ where: { id } });
     if (!verein) throw new NotFoundException('Verein nicht gefunden');
 
-    return this.prisma.tenant.update({
+    const ergebnis = await this.prisma.tenant.update({
       where: { id },
       data: {
         istAktiv: true,
@@ -115,22 +135,47 @@ export class AdminService {
       },
       select: { id: true, name: true, istAktiv: true },
     });
+
+    await this.audit.loggen({
+      aktion: 'VEREIN_ENTSPERRT',
+      userId: kontext.userId,
+      userEmail: kontext.userEmail,
+      tenantId: id,
+      tenantName: verein.name,
+      ipAdresse: kontext.ipAdresse,
+    });
+
+    return ergebnis;
   }
 
   /** Plan aendern */
-  async planAendern(id: string, plan: Plan) {
+  async planAendern(id: string, plan: Plan, kontext: AuditKontext) {
     const verein = await this.prisma.tenant.findUnique({ where: { id } });
     if (!verein) throw new NotFoundException('Verein nicht gefunden');
 
-    return this.prisma.tenant.update({
+    const alterPlan = verein.plan;
+
+    const ergebnis = await this.prisma.tenant.update({
       where: { id },
       data: { plan },
       select: { id: true, name: true, plan: true },
     });
+
+    await this.audit.loggen({
+      aktion: 'PLAN_GEAENDERT',
+      userId: kontext.userId,
+      userEmail: kontext.userEmail,
+      tenantId: id,
+      tenantName: verein.name,
+      details: JSON.stringify({ vonPlan: alterPlan, zuPlan: plan }),
+      ipAdresse: kontext.ipAdresse,
+    });
+
+    return ergebnis;
   }
 
   /** Als Verein einloggen (Impersonation) */
-  async impersonate(tenantId: string) {
+  async impersonate(tenantId: string, kontext: AuditKontext) {
     // Finde den Admin-User des Vereins
     const adminUser = await this.prisma.user.findFirst({
       where: {
@@ -146,6 +191,11 @@ export class AdminService {
       );
     }
 
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { id: true, name: true, slug: true, logo: true, primaryColor: true },
+    });
+
     // Token generieren mit dem Admin-User des Vereins
     const payload = {
       sub: adminUser.id,
@@ -160,6 +210,16 @@ export class AdminService {
       expiresIn: '1h',
     });
 
+    await this.audit.loggen({
+      aktion: 'IMPERSONATION',
+      userId: kontext.userId,
+      userEmail: kontext.userEmail,
+      tenantId,
+      tenantName: tenant?.name,
+      details: JSON.stringify({ alsUser: adminUser.email }),
+      ipAdresse: kontext.ipAdresse,
+    });
+
     return {
       accessToken,
       benutzer: {
@@ -167,10 +227,7 @@ export class AdminService {
         email: adminUser.email,
         rolle: adminUser.role,
       },
-      tenant: await this.prisma.tenant.findUnique({
-        where: { id: tenantId },
-        select: { id: true, name: true, slug: true, logo: true, primaryColor: true },
-      }),
+      tenant,
     };
   }
 
@@ -260,12 +317,15 @@ export class AdminService {
   }
 
   /** Plattform KI-Konfiguration speichern */
-  async plattformKiSpeichern(daten: {
-    anthropicApiKey?: string;
-    openaiApiKey?: string;
-    standardProvider?: string;
-    standardModell?: string;
-  }) {
+  async plattformKiSpeichern(
+    daten: {
+      anthropicApiKey?: string;
+      openaiApiKey?: string;
+      standardProvider?: string;
+      standardModell?: string;
+    },
+    kontext: AuditKontext,
+  ) {
     const updateData: Record<string, unknown> = {};
 
     // Nur aktualisieren wenn nicht maskiert (****)
@@ -282,7 +342,7 @@ export class AdminService {
       updateData.standardModell = daten.standardModell || null;
     }
 
-    return this.prisma.plattformConfig.upsert({
+    const ergebnis = await this.prisma.plattformConfig.upsert({
       where: { id: 'singleton' },
       update: updateData,
       create: {
@@ -291,21 +351,163 @@ export class AdminService {
         standardProvider: (updateData.standardProvider as string) || 'anthropic',
       },
     });
+
+    await this.audit.loggen({
+      aktion: 'KI_EINSTELLUNGEN',
+      userId: kontext.userId,
+      userEmail: kontext.userEmail,
+      details: JSON.stringify({ provider: daten.standardProvider }),
+      ipAdresse: kontext.ipAdresse,
+    });
+
+    return ergebnis;
   }
 
   /** KI pro Verein freischalten / sperren + Provider waehlen */
-  async kiToggle(id: string, freigeschaltet: boolean, provider?: string) {
+  async kiToggle(id: string, freigeschaltet: boolean, provider: string | undefined, kontext: AuditKontext) {
     const verein = await this.prisma.tenant.findUnique({ where: { id } });
     if (!verein) throw new NotFoundException('Verein nicht gefunden');
 
     const data: Record<string, unknown> = { kiFreigeschaltet: freigeschaltet };
     if (provider) data.kiProvider = provider;
 
-    return this.prisma.tenant.update({
+    const ergebnis = await this.prisma.tenant.update({
       where: { id },
       data,
       select: { id: true, name: true, kiFreigeschaltet: true, kiProvider: true },
     });
+
+    await this.audit.loggen({
+      aktion: 'KI_TOGGLE',
+      userId: kontext.userId,
+      userEmail: kontext.userEmail,
+      tenantId: id,
+      tenantName: verein.name,
+      details: JSON.stringify({ freigeschaltet, provider }),
+      ipAdresse: kontext.ipAdresse,
+    });
+
+    return ergebnis;
+  }
+
+  // ==================== System-Status ====================
+
+  /** System-Status abrufen */
+  async systemStatus() {
+    const ergebnis: Record<string, unknown> = {};
+
+    // PostgreSQL
+    try {
+      const dbSize = await this.prisma.$queryRaw<[{ pg_database_size: bigint }]>`
+        SELECT pg_database_size(current_database())
+      `;
+      ergebnis.postgresql = {
+        status: 'ok',
+        groesse: Number(dbSize[0].pg_database_size),
+        groesseFormatiert: this.formatBytes(Number(dbSize[0].pg_database_size)),
+      };
+    } catch (err) {
+      ergebnis.postgresql = {
+        status: 'fehler',
+        fehler: err instanceof Error ? err.message : 'Unbekannter Fehler',
+      };
+    }
+
+    // Redis
+    try {
+      const redisUrl = this.config.get<string>('redis.url') || 'redis://localhost:6379';
+      const url = new URL(redisUrl);
+      const net = await import('net');
+      const redisOk = await new Promise<boolean>((resolve) => {
+        const socket = net.createConnection(
+          { host: url.hostname, port: parseInt(url.port, 10) || 6379, timeout: 2000 },
+          () => { socket.destroy(); resolve(true); },
+        );
+        socket.on('error', () => { socket.destroy(); resolve(false); });
+        socket.on('timeout', () => { socket.destroy(); resolve(false); });
+      });
+      ergebnis.redis = { status: redisOk ? 'ok' : 'fehler' };
+    } catch {
+      ergebnis.redis = { status: 'fehler' };
+    }
+
+    // Queues - BullMQ Statistiken
+    try {
+      const queueNames = ['email', 'erinnerung', 'benachrichtigung', 'geburtstag', 'warteliste'];
+      const Bull = await import('bull');
+      const redisUrl = this.config.get<string>('redis.url') || 'redis://localhost:6379';
+      const redisUrlObj = new URL(redisUrl);
+      const redisOpts = {
+        host: redisUrlObj.hostname,
+        port: parseInt(redisUrlObj.port, 10) || 6379,
+        password: redisUrlObj.password || undefined,
+      };
+
+      const queues: Record<string, unknown>[] = [];
+      for (const name of queueNames) {
+        try {
+          const queue = new Bull.default(name, { redis: redisOpts });
+          const counts = await queue.getJobCounts();
+          queues.push({ name, ...counts });
+          await queue.close();
+        } catch {
+          queues.push({ name, status: 'fehler' });
+        }
+      }
+      ergebnis.queues = queues;
+    } catch {
+      ergebnis.queues = [];
+    }
+
+    // Server
+    const mem = process.memoryUsage();
+    ergebnis.server = {
+      uptime: process.uptime(),
+      uptimeFormatiert: this.formatUptime(process.uptime()),
+      speicher: {
+        rss: this.formatBytes(mem.rss),
+        heapUsed: this.formatBytes(mem.heapUsed),
+        heapTotal: this.formatBytes(mem.heapTotal),
+        rssBytes: mem.rss,
+        heapUsedBytes: mem.heapUsed,
+        heapTotalBytes: mem.heapTotal,
+      },
+      nodeVersion: process.version,
+    };
+
+    // Statistiken
+    try {
+      const [tenants, users, events, members] = await Promise.all([
+        this.prisma.tenant.count(),
+        this.prisma.user.count(),
+        this.prisma.event.count(),
+        this.prisma.member.count(),
+      ]);
+      ergebnis.statistiken = { tenants, users, events, members };
+    } catch {
+      ergebnis.statistiken = { tenants: 0, users: 0, events: 0, members: 0 };
+    }
+
+    return ergebnis;
+  }
+
+  private formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const einheiten = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${einheiten[i]}`;
+  }
+
+  private formatUptime(sekunden: number): string {
+    const tage = Math.floor(sekunden / 86400);
+    const stunden = Math.floor((sekunden % 86400) / 3600);
+    const minuten = Math.floor((sekunden % 3600) / 60);
+    const teile: string[] = [];
+    if (tage > 0) teile.push(`${tage}d`);
+    if (stunden > 0) teile.push(`${stunden}h`);
+    teile.push(`${minuten}m`);
+    return teile.join(' ');
   }
 
   private berechneStatus(verein: {

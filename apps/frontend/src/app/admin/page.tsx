@@ -21,6 +21,8 @@ import {
   EyeOff,
   Save,
   FileText,
+  Activity,
+  Server,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useBenutzer } from '@/hooks/use-auth';
@@ -431,7 +433,53 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               </div>
-              <Badge variant="outline">Oeffnen</Badge>
+              <Badge variant="outline">Öffnen</Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Audit-Log */}
+        <Card
+          className="cursor-pointer hover:border-primary/50 transition-colors"
+          onClick={() => router.push('/admin/audit-log')}
+        >
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-amber-100 p-2">
+                  <Activity className="h-5 w-5 text-amber-700" />
+                </div>
+                <div>
+                  <p className="font-medium">Audit-Log</p>
+                  <p className="text-xs text-muted-foreground">
+                    Alle Admin-Aktionen protokolliert
+                  </p>
+                </div>
+              </div>
+              <Badge variant="outline">Öffnen</Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* System-Status */}
+        <Card
+          className="cursor-pointer hover:border-primary/50 transition-colors"
+          onClick={() => router.push('/admin/system-status')}
+        >
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-green-100 p-2">
+                  <Server className="h-5 w-5 text-green-700" />
+                </div>
+                <div>
+                  <p className="font-medium">System-Status</p>
+                  <p className="text-xs text-muted-foreground">
+                    Server, Datenbank, Queues überwachen
+                  </p>
+                </div>
+              </div>
+              <Badge variant="outline">Öffnen</Badge>
             </div>
           </CardContent>
         </Card>

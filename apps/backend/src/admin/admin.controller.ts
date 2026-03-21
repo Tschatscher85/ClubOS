@@ -5,19 +5,27 @@ import {
   Post,
   Param,
   Body,
+  Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { AdminService } from './admin.service';
+import { AuditService } from './audit.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RollenGuard } from '../common/guards/rollen.guard';
 import { Rollen } from '../common/decorators/rollen.decorator';
+import { AktuellerBenutzer } from '../common/decorators/aktueller-benutzer.decorator';
 import { Role, Plan } from '@prisma/client';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RollenGuard)
 @Rollen(Role.SUPERADMIN)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly auditService: AuditService,
+  ) {}
 
   /** Plattform-Statistiken */
   @Get('statistiken')
@@ -42,17 +50,28 @@ export class AdminController {
   async vereinSperren(
     @Param('id') id: string,
     @Body('grund') grund: string,
+    @AktuellerBenutzer() benutzer: { id: string; email: string },
+    @Req() req: Request,
   ) {
     return this.adminService.vereinSperren(
       id,
       grund || 'Kein Grund angegeben',
+      { userId: benutzer.id, userEmail: benutzer.email, ipAdresse: req.ip },
     );
   }
 
   /** Verein entsperren */
   @Put('vereine/:id/entsperren')
-  async vereinEntsperren(@Param('id') id: string) {
-    return this.adminService.vereinEntsperren(id);
+  async vereinEntsperren(
+    @Param('id') id: string,
+    @AktuellerBenutzer() benutzer: { id: string; email: string },
+    @Req() req: Request,
+  ) {
+    return this.adminService.vereinEntsperren(id, {
+      userId: benutzer.id,
+      userEmail: benutzer.email,
+      ipAdresse: req.ip,
+    });
   }
 
   /** Plan aendern */
@@ -60,14 +79,28 @@ export class AdminController {
   async planAendern(
     @Param('id') id: string,
     @Body('plan') plan: Plan,
+    @AktuellerBenutzer() benutzer: { id: string; email: string },
+    @Req() req: Request,
   ) {
-    return this.adminService.planAendern(id, plan);
+    return this.adminService.planAendern(id, plan, {
+      userId: benutzer.id,
+      userEmail: benutzer.email,
+      ipAdresse: req.ip,
+    });
   }
 
   /** Als Verein einloggen (Impersonation) */
   @Post('vereine/:id/impersonate')
-  async impersonate(@Param('id') id: string) {
-    return this.adminService.impersonate(id);
+  async impersonate(
+    @Param('id') id: string,
+    @AktuellerBenutzer() benutzer: { id: string; email: string },
+    @Req() req: Request,
+  ) {
+    return this.adminService.impersonate(id, {
+      userId: benutzer.id,
+      userEmail: benutzer.email,
+      ipAdresse: req.ip,
+    });
   }
 
   /** KI pro Verein freischalten / sperren + Provider waehlen */
@@ -75,8 +108,14 @@ export class AdminController {
   async kiToggle(
     @Param('id') id: string,
     @Body() body: { freigeschaltet: boolean; provider?: string },
+    @AktuellerBenutzer() benutzer: { id: string; email: string },
+    @Req() req: Request,
   ) {
-    return this.adminService.kiToggle(id, body.freigeschaltet, body.provider);
+    return this.adminService.kiToggle(id, body.freigeschaltet, body.provider, {
+      userId: benutzer.id,
+      userEmail: benutzer.email,
+      ipAdresse: req.ip,
+    });
   }
 
   /** Plattform KI-Einstellungen laden */
@@ -89,13 +128,41 @@ export class AdminController {
   @Put('ki-einstellungen')
   async plattformKiSpeichern(
     @Body() daten: { anthropicApiKey?: string; openaiApiKey?: string; standardProvider?: string; standardModell?: string },
+    @AktuellerBenutzer() benutzer: { id: string; email: string },
+    @Req() req: Request,
   ) {
-    return this.adminService.plattformKiSpeichern(daten);
+    return this.adminService.plattformKiSpeichern(daten, {
+      userId: benutzer.id,
+      userEmail: benutzer.email,
+      ipAdresse: req.ip,
+    });
   }
 
   /** Vereins-Daten exportieren */
   @Get('vereine/:id/export')
   async vereinExport(@Param('id') id: string) {
     return this.adminService.vereinExport(id);
+  }
+
+  /** Audit-Log abrufen */
+  @Get('audit-log')
+  async auditLog(
+    @Query('seite') seite?: string,
+    @Query('aktion') aktion?: string,
+    @Query('von') von?: string,
+    @Query('bis') bis?: string,
+  ) {
+    return this.auditService.alleAbrufen({
+      seite: seite ? parseInt(seite, 10) : 1,
+      aktion: aktion || undefined,
+      von: von || undefined,
+      bis: bis || undefined,
+    });
+  }
+
+  /** System-Status abrufen */
+  @Get('system-status')
+  async systemStatus() {
+    return this.adminService.systemStatus();
   }
 }
