@@ -469,6 +469,11 @@ model FAQ {
 - [x] Foto-/Fahrgemeinschaft-Einverstaendnis (Checkboxen bei Minderjaehrigen, KUG §22 + §832 BGB)
 - [x] Galerie DSGVO-Filterung (nur eigene Team-Fotos sichtbar)
 - [x] Multi-Upload mit Fortschrittsbalken (Galerie + Team-Fotos + Dokumente)
+- [x] Offline-Indikator (rotes Banner bei Verbindungsverlust, Heartbeat gegen /api/health)
+- [x] CSP-Header + Permissions-Policy + HSTS preload + X-XSS-Protection
+- [x] Rate-Limiting verschaerft (Login 5/min, Registrierung 3/min)
+- [x] Dashboard Geburtstage-Widget (diese Woche)
+- [x] Onboarding 4. Schritt: Mitglieder einladen
 - [x] Audit-Log + System-Status (Admin)
 - [x] NDA/Vertrags-System (Token-basiert, Unterschrift, IP-Log)
 - [x] Eltern-Einverstaendnis digital (Token-basiert, pro Event)
