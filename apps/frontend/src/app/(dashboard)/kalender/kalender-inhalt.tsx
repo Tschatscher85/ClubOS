@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
 import { EventFormular } from '@/components/kalender/event-formular';
 import { apiClient } from '@/lib/api-client';
+import { useBenutzer } from '@/hooks/use-auth';
 import { getEventFarben, EVENT_TYP_LABEL } from '@/lib/event-farben';
 import type { EventFarben } from '@/lib/event-farben';
 
@@ -56,6 +57,8 @@ function formatUhrzeit(iso: string): string {
 
 export default function KalenderInhalt() {
   const router = useRouter();
+  const benutzer = useBenutzer();
+  const istTrainerOderAdmin = benutzer && ['SUPERADMIN', 'ADMIN', 'TRAINER'].includes(benutzer.rolle);
   const [events, setEvents] = useState<EventData[]>([]);
   const [belegungen, setBelegungen] = useState<BelegungData[]>([]);
   const [abteilungen, setAbteilungen] = useState<AbteilungData[]>([]);
@@ -368,10 +371,12 @@ export default function KalenderInhalt() {
             </div>
           )}
         </div>
-        <Button onClick={() => setFormularOffen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Neue Veranstaltung
-        </Button>
+        {istTrainerOderAdmin && (
+          <Button onClick={() => setFormularOffen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Neue Veranstaltung
+          </Button>
+        )}
       </div>
 
       {/* Monatsansicht */}
@@ -527,7 +532,7 @@ export default function KalenderInhalt() {
                   >
                     {EVENT_TYP_LABEL[event.type] || event.type}
                   </Badge>
-                  {!event.id.startsWith('turnier-') && (
+                  {istTrainerOderAdmin && !event.id.startsWith('turnier-') && (
                     <Button
                       variant="ghost"
                       size="icon"
