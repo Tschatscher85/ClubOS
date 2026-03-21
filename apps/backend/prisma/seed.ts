@@ -133,10 +133,10 @@ async function main() {
 
   // Vereins-Admin (Vorstand)
   const vereinsAdmin = await prisma.user.upsert({
-    where: { email: 'vorstand@fckunchen.de' },
+    where: { email: 'vorstand@vereinbase.de' },
     update: {},
     create: {
-      email: 'vorstand@fckunchen.de',
+      email: 'vorstand@vereinbase.de',
       passwordHash: passwortHash,
       role: Role.ADMIN,
       tenantId: tenant.id,
@@ -148,10 +148,10 @@ async function main() {
 
   // Trainer
   const trainer = await prisma.user.upsert({
-    where: { email: 'trainer@fckunchen.de' },
+    where: { email: 'trainer@vereinbase.de' },
     update: {},
     create: {
-      email: 'trainer@fckunchen.de',
+      email: 'trainer@vereinbase.de',
       passwordHash: passwortHash,
       role: Role.TRAINER,
       tenantId: tenant.id,
@@ -163,10 +163,10 @@ async function main() {
 
   // Mitglied (Spieler)
   const mitglied = await prisma.user.upsert({
-    where: { email: 'spieler@fckunchen.de' },
+    where: { email: 'spieler@vereinbase.de' },
     update: {},
     create: {
-      email: 'spieler@fckunchen.de',
+      email: 'spieler@vereinbase.de',
       passwordHash: passwortHash,
       role: Role.MEMBER,
       tenantId: tenant.id,
@@ -178,10 +178,10 @@ async function main() {
 
   // Elternteil
   const eltern = await prisma.user.upsert({
-    where: { email: 'eltern@fckunchen.de' },
+    where: { email: 'eltern@vereinbase.de' },
     update: {},
     create: {
-      email: 'eltern@fckunchen.de',
+      email: 'eltern@vereinbase.de',
       passwordHash: passwortHash,
       role: Role.PARENT,
       tenantId: tenant.id,
@@ -196,10 +196,10 @@ async function main() {
   console.log('');
   console.log('Test-Zugangsdaten (Passwort: siehe .env):');
   console.log('  Superadmin:  admin@vereinbase.de');
-  console.log('  Vorstand:    vorstand@fckunchen.de');
-  console.log('  Trainer:     trainer@fckunchen.de');
-  console.log('  Spieler:     spieler@fckunchen.de');
-  console.log('  Elternteil:  eltern@fckunchen.de');
+  console.log('  Vorstand:    vorstand@vereinbase.de');
+  console.log('  Trainer:     trainer@vereinbase.de');
+  console.log('  Spieler:     spieler@vereinbase.de');
+  console.log('  Elternteil:  eltern@vereinbase.de');
 }
 
 main()
