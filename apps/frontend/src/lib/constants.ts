@@ -34,4 +34,5 @@ export const ROUTEN = {
   UMFRAGEN: '/umfragen',
   SCHWARZES_BRETT: '/schwarzes-brett',
   FAMILIEN: '/familien',
+  MARKTPLATZ: '/marktplatz',
 } as const;

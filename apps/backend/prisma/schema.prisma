@@ -120,6 +120,7 @@ model Tenant {
   beitragsklassen    Beitragsklasse[]
   umfragen           Umfrage[]
   aushaenge          Aushang[]
+  marktplatzInserate MarktplatzInserat[]
 
   @@index([slug])
 }
@@ -1735,4 +1736,77 @@ enum FamilienRolle {
   VATER                      // Father (linked to User)
   ERZIEHUNGSBERECHTIGTER     // Guardian
   PARTNER                    // Partner/Spouse
+}
+
+// ==================== Marktplatz (vereinsuebergreifend) ====================
+
+model MarktplatzInserat {
+  id              String              @id @default(cuid())
+  tenantId        String
+  tenant          Tenant              @relation(fields: [tenantId], references: [id])
+  erstelltVon     String              // userId
+  kategorie       InseratKategorie
+  typ             InseratTyp          // ANGEBOT or GESUCH
+  titel           String
+  beschreibung    String
+  sportart        String?             // z.B. FUSSBALL, HANDBALL
+  bildUrl         String?
+  preis           Float?              // null = kostenlos/VB
+  plz             String              // Fuer Standort-Filterung
+  ort             String
+  kontaktEmail    String
+  kontaktTelefon  String?
+  // Fuer Trainer/Spiel-spezifisch
+  datum           DateTime?           // Wann wird der Trainer/Gegner gebraucht
+  altersgruppe    String?             // z.B. U12, Senioren
+  // Status
+  aktiv           Boolean             @default(true)
+  ablaufDatum     DateTime?           // Auto-Deaktivierung
+  erstelltAm      DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  bewerbungen     MarktplatzBewerbung[]
+
+  @@index([tenantId])
+  @@index([kategorie])
+  @@index([plz])
+  @@index([aktiv])
+}
+
+model MarktplatzBewerbung {
+  id                String              @id @default(cuid())
+  inseratId         String
+  inserat           MarktplatzInserat   @relation(fields: [inseratId], references: [id], onDelete: Cascade)
+  bewerberTenantId  String
+  bewerberUserId    String
+  bewerberName      String              // Vereinsname
+  nachricht         String
+  kontaktEmail      String
+  status            BewerbungStatus     @default(NEU)
+  erstelltAm        DateTime            @default(now())
+
+  @@index([inseratId])
+  @@index([bewerberTenantId])
+}
+
+enum InseratKategorie {
+  SPORTGERAETE        // Baelle, Tore, Netze, Matten
+  TRIKOTS             // Trikots, Schuhe, Ausruestung
+  TRAINER             // Trainer gesucht/angeboten
+  FREUNDSCHAFTSSPIEL  // Gegner fuer Freundschaftsspiel
+  TURNIER             // Teams fuer Turnier gesucht
+  SCHIEDSRICHTER      // SR gesucht/angeboten
+  SONSTIGES           // Alles andere
+}
+
+enum InseratTyp {
+  ANGEBOT     // Wir bieten an
+  GESUCH      // Wir suchen
+}
+
+enum BewerbungStatus {
+  NEU
+  KONTAKTIERT
+  ABGELEHNT
+  ERLEDIGT
 }
