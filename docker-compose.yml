@@ -1,25 +1,25 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: clubos-postgres
+    container_name: vereinbase-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-clubos_dev}
-      POSTGRES_USER: ${DB_USER:-clubos}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-clubos_dev_pw}
+      POSTGRES_DB: ${DB_NAME:-vereinbase_dev}
+      POSTGRES_USER: ${DB_USER:-vereinbase}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vereinbase_dev_pw}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-clubos} -d ${DB_NAME:-clubos_dev}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-vereinbase} -d ${DB_NAME:-vereinbase_dev}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: clubos-redis
+    container_name: vereinbase-redis
     restart: unless-stopped
     ports:
       - "6379:6379"

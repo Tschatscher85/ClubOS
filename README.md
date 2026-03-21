@@ -187,7 +187,7 @@ Test-Zugangsdaten: Siehe `apps/backend/prisma/seed.ts` und lokal konfigurieren.
 ## Projektstruktur
 
 ```
-clubos/
+vereinbase/
 ├── apps/
 │   ├── backend/               # NestJS API (Port 3001)
 │   │   ├── prisma/            # Schema, Migrations, Seed

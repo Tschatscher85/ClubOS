@@ -1,6 +1,6 @@
 #!/bin/bash
 # Vereinbase - Taegliches Datenbank-Backup
-# Ausfuehren per Cronjob: 0 3 * * * /home/tschatscher/clubos/scripts/backup.sh
+# Ausfuehren per Cronjob: 0 3 * * * /home/tschatscher/vereinbase/scripts/backup.sh
 #
 # Konfiguration:
 #   BACKUP_DIR    - Lokales Backup-Verzeichnis (Standard: /home/tschatscher/backups/vereinbase)
@@ -19,7 +19,7 @@ MONATSTAG=$(date +%d)
 LOG_DATEI="${BACKUP_DIR}/backup.log"
 
 # .env laden falls vorhanden
-ENV_DATEI="/home/tschatscher/clubos/apps/backend/.env"
+ENV_DATEI="/home/tschatscher/vereinbase/apps/backend/.env"
 if [ -f "$ENV_DATEI" ]; then
   export $(grep -E '^DATABASE_URL=' "$ENV_DATEI" | xargs)
 fi

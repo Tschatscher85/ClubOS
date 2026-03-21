@@ -1,5 +1,5 @@
 # ============================================================
-# ClubOS Frontend - Multi-Stage Docker Build (Next.js Standalone)
+# Vereinbase Frontend - Multi-Stage Docker Build (Next.js Standalone)
 # ============================================================
 
 # ==================== Dependencies ====================
@@ -57,8 +57,8 @@ RUN apk --no-cache add wget
 WORKDIR /app
 
 # Nicht-Root-Benutzer erstellen
-RUN addgroup --system --gid 1001 clubos && \
-    adduser --system --uid 1001 clubos
+RUN addgroup --system --gid 1001 vereinbase && \
+    adduser --system --uid 1001 vereinbase
 
 # Next.js Standalone-Output kopieren
 COPY --from=builder /app/apps/frontend/.next/standalone ./
@@ -66,10 +66,10 @@ COPY --from=builder /app/apps/frontend/.next/static ./apps/frontend/.next/static
 COPY --from=builder /app/apps/frontend/public ./apps/frontend/public
 
 # Dateiberechtigungen setzen
-RUN chown -R clubos:clubos /app
+RUN chown -R vereinbase:vereinbase /app
 
 # Als Nicht-Root-Benutzer ausfuehren
-USER clubos
+USER vereinbase
 
 ENV NODE_ENV=production
 ENV PORT=3000

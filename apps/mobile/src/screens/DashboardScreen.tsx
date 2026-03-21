@@ -34,7 +34,7 @@ export function DashboardScreen() {
       style={styles.container}
       refreshControl={<RefreshControl refreshing={ladend} onRefresh={laden} />}
     >
-      <Text style={styles.vereinsname}>{tenant?.name || 'ClubOS'}</Text>
+      <Text style={styles.vereinsname}>{tenant?.name || 'Vereinbase'}</Text>
       <Text style={styles.willkommen}>
         Willkommen, {benutzer?.email}
       </Text>

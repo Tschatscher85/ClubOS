@@ -49,7 +49,7 @@ DSGVO-konform. Der Trainer gibt seine private Nummer nie wieder raus."
 ## 📁 Projektstruktur (Monorepo)
 
 ```
-clubos/
+vereinbase/
 ├── apps/
 │   ├── backend/          # NestJS API
 │   ├── frontend/         # Next.js Web-App

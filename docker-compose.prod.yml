@@ -1,5 +1,5 @@
 # ============================================================
-# ClubOS - Produktions Docker Compose
+# Vereinbase - Produktions Docker Compose
 # ============================================================
 # Nutzung:
 #   docker compose -f docker-compose.prod.yml up -d --build
@@ -14,7 +14,7 @@ services:
   # --------------------------------------------------------
   traefik:
     image: traefik:v3.3
-    container_name: clubos-traefik
+    container_name: vereinbase-traefik
     restart: unless-stopped
     command:
       - "--providers.docker=true"
@@ -39,7 +39,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - letsencrypt:/letsencrypt
     networks:
-      - clubos-netz
+      - vereinbase-netz
     profiles:
       - ssl
 
@@ -48,21 +48,21 @@ services:
   # --------------------------------------------------------
   postgres:
     image: postgres:16-alpine
-    container_name: clubos-postgres
+    container_name: vereinbase-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-clubos}
-      POSTGRES_USER: ${DB_USER:-clubos}
+      POSTGRES_DB: ${DB_NAME:-vereinbase}
+      POSTGRES_USER: ${DB_USER:-vereinbase}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD muss in .env gesetzt sein}
       # Performance-Tuning
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - clubos-netz
+      - vereinbase-netz
     # Kein Port-Mapping - nur intern erreichbar
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-clubos} -d ${DB_NAME:-clubos}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-vereinbase} -d ${DB_NAME:-vereinbase}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -73,13 +73,13 @@ services:
   # --------------------------------------------------------
   redis:
     image: redis:7-alpine
-    container_name: clubos-redis
+    container_name: vereinbase-redis
     restart: unless-stopped
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
     networks:
-      - clubos-netz
+      - vereinbase-netz
     # Kein Port-Mapping - nur intern erreichbar
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -95,10 +95,10 @@ services:
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
-    container_name: clubos-backend
+    container_name: vereinbase-backend-docker
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${DB_USER:-clubos}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-clubos}
+      DATABASE_URL: postgresql://${DB_USER:-vereinbase}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-vereinbase}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET muss in .env gesetzt sein}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET muss in .env gesetzt sein}
@@ -123,7 +123,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - clubos-netz
+      - vereinbase-netz
     ports:
       # Port nur direkt exponiert wenn kein Traefik (localhost-Modus)
       - "${BACKEND_PORT:-3001}:3001"
@@ -147,7 +147,7 @@ services:
     build:
       context: .
       dockerfile: apps/frontend/Dockerfile
-    container_name: clubos-frontend
+    container_name: vereinbase-frontend-docker
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
@@ -156,7 +156,7 @@ services:
       backend:
         condition: service_healthy
     networks:
-      - clubos-netz
+      - vereinbase-netz
     ports:
       # Port nur direkt exponiert wenn kein Traefik (localhost-Modus)
       - "${FRONTEND_PORT:-3000}:3000"
@@ -178,16 +178,16 @@ services:
 # --------------------------------------------------------
 volumes:
   postgres_data:
-    name: clubos-postgres-data
+    name: vereinbase-postgres-data
   redis_data:
-    name: clubos-redis-data
+    name: vereinbase-redis-data
   letsencrypt:
-    name: clubos-letsencrypt
+    name: vereinbase-letsencrypt
 
 # --------------------------------------------------------
 # Netzwerk - Isoliertes internes Netzwerk
 # --------------------------------------------------------
 networks:
-  clubos-netz:
-    name: clubos-netz
+  vereinbase-netz:
+    name: vereinbase-netz
     driver: bridge

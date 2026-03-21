@@ -1,5 +1,5 @@
 # ============================================================
-# ClubOS Backend - Multi-Stage Docker Build
+# Vereinbase Backend - Multi-Stage Docker Build
 # ============================================================
 
 # ==================== Build-Stage ====================
@@ -40,8 +40,8 @@ RUN apk --no-cache add wget
 WORKDIR /app
 
 # Nicht-Root-Benutzer erstellen
-RUN addgroup --system --gid 1001 clubos && \
-    adduser --system --uid 1001 clubos
+RUN addgroup --system --gid 1001 vereinbase && \
+    adduser --system --uid 1001 vereinbase
 
 # Nur Production-Dependencies
 COPY package.json package-lock.json* ./
@@ -59,10 +59,10 @@ COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 
 # Dateiberechtigungen setzen
-RUN chown -R clubos:clubos /app
+RUN chown -R vereinbase:vereinbase /app
 
 # Als Nicht-Root-Benutzer ausfuehren
-USER clubos
+USER vereinbase
 
 ENV NODE_ENV=production
 ENV PORT=3001

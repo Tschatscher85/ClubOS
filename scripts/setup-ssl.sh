@@ -26,7 +26,7 @@ fi
 
 # 2. Caddyfile kopieren
 echo "Caddyfile wird konfiguriert..."
-sudo cp /home/tschatscher/clubos/Caddyfile /etc/caddy/Caddyfile
+sudo cp /home/tschatscher/vereinbase/Caddyfile /etc/caddy/Caddyfile
 
 # 3. Log-Verzeichnis erstellen
 sudo mkdir -p /var/log/caddy

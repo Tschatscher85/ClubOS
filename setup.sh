@@ -2,7 +2,7 @@
 set -e
 
 echo "=========================================="
-echo "  ClubOS - Installation"
+echo "  Vereinbase - Installation"
 echo "=========================================="
 echo ""
 
@@ -68,7 +68,7 @@ if [ ! -f "$SCRIPT_DIR/.env" ]; then
   JWT_REFRESH_SECRET=$(openssl rand -hex 32)
 
   cp "$SCRIPT_DIR/.env.example" "$SCRIPT_DIR/.env"
-  sed -i "s/clubos_dev_pw/$DB_PASSWORD/g" "$SCRIPT_DIR/.env"
+  sed -i "s/vereinbase_dev_pw/$DB_PASSWORD/g" "$SCRIPT_DIR/.env"
   sed -i "s/dein-geheimer-jwt-schluessel-hier-aendern/$JWT_SECRET/g" "$SCRIPT_DIR/.env"
   sed -i "s/dein-geheimer-refresh-schluessel-hier-aendern/$JWT_REFRESH_SECRET/g" "$SCRIPT_DIR/.env"
 
@@ -80,13 +80,13 @@ else
 fi
 
 # PostgreSQL Benutzer und Datenbank erstellen
-sudo -u postgres psql -tc "SELECT 1 FROM pg_roles WHERE rolname='clubos'" | grep -q 1 || \
-  sudo -u postgres psql -c "CREATE USER clubos WITH PASSWORD '$DB_PASSWORD';"
+sudo -u postgres psql -tc "SELECT 1 FROM pg_roles WHERE rolname='vereinbase'" | grep -q 1 || \
+  sudo -u postgres psql -c "CREATE USER vereinbase WITH PASSWORD '$DB_PASSWORD';"
 
-sudo -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname='clubos_dev'" | grep -q 1 || \
-  sudo -u postgres psql -c "CREATE DATABASE clubos_dev OWNER clubos;"
+sudo -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname='vereinbase_dev'" | grep -q 1 || \
+  sudo -u postgres psql -c "CREATE DATABASE vereinbase_dev OWNER vereinbase;"
 
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE clubos_dev TO clubos;" 2>/dev/null || true
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE vereinbase_dev TO vereinbase;" 2>/dev/null || true
 
 echo -e "${GREEN}Datenbank eingerichtet.${NC}"
 
@@ -100,13 +100,13 @@ sudo -u "$REAL_USER" npx prisma db seed --schema=apps/backend/prisma/schema.pris
 
 echo ""
 echo "=========================================="
-echo -e "${GREEN}  ClubOS erfolgreich installiert!${NC}"
+echo -e "${GREEN}  Vereinbase erfolgreich installiert!${NC}"
 echo "=========================================="
 echo ""
 echo "Starten mit:  bash start.sh"
 echo ""
 echo "Test-Zugangsdaten (Passwort: siehe .env):"
-echo "  Superadmin: admin@clubos.de"
+echo "  Superadmin: admin@vereinbase.de"
 echo "  Admin:      vorstand@fckunchen.de"
 echo "  Trainer:    trainer@fckunchen.de"
 echo "  Mitglied:   spieler@fckunchen.de"

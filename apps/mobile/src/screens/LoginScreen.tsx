@@ -40,7 +40,7 @@ export function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.card}>
-        <Text style={styles.titel}>ClubOS</Text>
+        <Text style={styles.titel}>Vereinbase</Text>
         <Text style={styles.untertitel}>
           Melden Sie sich mit Ihrem Vereinskonto an
         </Text>

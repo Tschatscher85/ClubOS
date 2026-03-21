@@ -1218,7 +1218,7 @@ model Homepage {
   tenantId         String   @unique
   tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   istAktiv         Boolean  @default(false)
-  subdomain        String?  @unique // z.B. "fckunchen" -> fckunchen.clubos.de
+  subdomain        String?  @unique // z.B. "fckunchen" -> fckunchen.vereinbase.de
   customDomain     String?  @unique // z.B. "www.fc-kunchen.de"
   // Inhalte
   heroTitel        String? // z.B. "Willkommen beim FC Kunchen"

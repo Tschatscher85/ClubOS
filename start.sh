@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "=========================================="
-echo "  ClubOS starten"
+echo "  Vereinbase starten"
 echo "=========================================="
 echo ""
 

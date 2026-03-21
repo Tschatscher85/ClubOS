@@ -1,12 +1,12 @@
 #!/bin/bash
 # ============================================================
-# ClubOS - Schnelle Installation
+# Vereinbase - Schnelle Installation
 # ============================================================
 # Voraussetzungen: Docker + Docker Compose (v2) installiert
 # Ausfuehrung:
 #   curl -fsSL https://raw.githubusercontent.com/.../install.sh | bash
 # Oder:
-#   git clone ... && cd clubos && chmod +x install.sh && ./install.sh
+#   git clone ... && cd vereinbase && chmod +x install.sh && ./install.sh
 # ============================================================
 
 set -e
@@ -43,7 +43,7 @@ zufalls_secret() {
 
 echo ""
 echo -e "${BLAU}============================================================${NC}"
-echo -e "${BLAU}       ClubOS - Self-Hosting Installation${NC}"
+echo -e "${BLAU}       Vereinbase - Self-Hosting Installation${NC}"
 echo -e "${BLAU}       Die Plattform fuer Sportvereine${NC}"
 echo -e "${BLAU}============================================================${NC}"
 echo ""
@@ -116,7 +116,7 @@ setze_env() {
     aktueller_wert=$(grep "^${key}=" "$datei" | cut -d'=' -f2-)
     if [ "$aktueller_wert" = "dein-geheimer-jwt-schluessel-hier-aendern" ] || \
        [ "$aktueller_wert" = "dein-geheimer-refresh-schluessel-hier-aendern" ] || \
-       [ "$aktueller_wert" = "clubos_dev_pw" ] || \
+       [ "$aktueller_wert" = "vereinbase_dev_pw" ] || \
        [ -z "$aktueller_wert" ]; then
       sed -i "s|^${key}=.*|${key}=${wert}|" "$datei"
       info "${key} wurde mit sicherem Wert aktualisiert."
@@ -137,8 +137,8 @@ setze_env "JWT_REFRESH_SECRET" "$JWT_REFRESH_SECRET_NEU"
 setze_env "DB_PASSWORD" "$DB_PASSWORD_NEU"
 
 # Standard-Datenbankwerte sicherstellen
-setze_env "DB_NAME" "clubos"
-setze_env "DB_USER" "clubos"
+setze_env "DB_NAME" "vereinbase"
+setze_env "DB_USER" "vereinbase"
 setze_env "NODE_ENV" "production"
 setze_env "PORT" "3001"
 setze_env "JWT_EXPIRATION" "15m"
@@ -254,7 +254,7 @@ echo ""
 info "Warte auf Datenbank..."
 
 RETRIES=30
-until docker compose -f docker-compose.prod.yml exec -T postgres pg_isready -U "${DB_USER:-clubos}" -d "${DB_NAME:-clubos}" > /dev/null 2>&1; do
+until docker compose -f docker-compose.prod.yml exec -T postgres pg_isready -U "${DB_USER:-vereinbase}" -d "${DB_NAME:-vereinbase}" > /dev/null 2>&1; do
   RETRIES=$((RETRIES - 1))
   if [ $RETRIES -le 0 ]; then
     fehler "Datenbank ist nach 30 Versuchen nicht bereit. Pruefe: docker compose -f docker-compose.prod.yml logs postgres"
@@ -308,7 +308,7 @@ echo ""
 # ============================================================
 echo ""
 echo -e "${GRUEN}============================================================${NC}"
-echo -e "${GRUEN}       ClubOS wurde erfolgreich installiert!${NC}"
+echo -e "${GRUEN}       Vereinbase wurde erfolgreich installiert!${NC}"
 echo -e "${GRUEN}============================================================${NC}"
 echo ""
 
