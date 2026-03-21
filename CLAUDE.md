@@ -417,7 +417,7 @@ model FAQ {
 
 **ALLE Features implementiert. Nur Infrastruktur (DNS, Docker, Mobile) offen.**
 
-### 70+ Backend-Module:
+### 80+ Backend-Module:
 - [x] Auth (JWT, Refresh, 2FA/TOTP, Google OAuth, Passwort-Reset, E-Mail-Verifizierung)
 - [x] Multi-Tenant (Schema-per-Tenant, RLS auf 35 Tabellen, mitTenant() Extension)
 - [x] Superadmin (/admin: Vereine listen/sperren/entsperren/Plan/Impersonation)
@@ -457,6 +457,16 @@ model FAQ {
 - [x] Wartelisten-Management (maxKader, Auto-Einladung, 48h-Frist)
 - [x] Familie-Verknuepfung (Partner, Kinder, Geschwister - Mama+Papa synchronisiert)
 - [x] Vereinbase Marktplatz (vereinsuebergreifend, PLZ-Filter, Bewerbungen)
+- [x] Geburtstags-E-Mail an Mitglieder (HTML mit Logo)
+- [x] Eltern-Einverstaendnis digital (Token-basiert, Unterschrift)
+- [x] Foto-Galerie pro Team/Event (Upload, Lightbox, Grid)
+- [x] Vereins-Wiki (internes Wissensmanagement, Suche, Kategorien)
+- [x] Saisonplanung (visuelle Timeline, Phasen, Auto-Events)
+- [x] Jahres-Statistik-Poster (PDF, Vereinsfarbe, Social Media)
+- [x] Sponsoren-Portal (Magic-Link Login, Dashboard)
+- [x] Impressum, Datenschutz, AGB Seiten
+- [x] Audit-Log + System-Status (Admin)
+- [x] NDA/Vertrags-System (Token-basiert, Unterschrift, IP-Log)
 
 ### 55+ Frontend-Seiten:
 Dashboard, Mitglieder (+Detail, +Entwicklung), Mitarbeiter,
