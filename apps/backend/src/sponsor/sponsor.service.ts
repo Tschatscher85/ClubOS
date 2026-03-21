@@ -17,6 +17,12 @@ export class SponsorService {
         beschreibung: dto.beschreibung,
         kontaktName: dto.kontaktName,
         kontaktEmail: dto.kontaktEmail,
+        loginEmail: dto.loginEmail,
+        paketName: dto.paketName,
+        betrag: dto.betrag,
+        vertragStart: dto.vertragStart ? new Date(dto.vertragStart) : undefined,
+        vertragEnde: dto.vertragEnde ? new Date(dto.vertragEnde) : undefined,
+        sichtbarkeit: dto.sichtbarkeit || [],
       },
     });
   }
@@ -65,6 +71,12 @@ export class SponsorService {
         ...(dto.kontaktName !== undefined && { kontaktName: dto.kontaktName }),
         ...(dto.kontaktEmail !== undefined && { kontaktEmail: dto.kontaktEmail }),
         ...(dto.istAktiv !== undefined && { istAktiv: dto.istAktiv }),
+        ...(dto.loginEmail !== undefined && { loginEmail: dto.loginEmail }),
+        ...(dto.paketName !== undefined && { paketName: dto.paketName }),
+        ...(dto.betrag !== undefined && { betrag: dto.betrag }),
+        ...(dto.vertragStart !== undefined && { vertragStart: new Date(dto.vertragStart) }),
+        ...(dto.vertragEnde !== undefined && { vertragEnde: new Date(dto.vertragEnde) }),
+        ...(dto.sichtbarkeit !== undefined && { sichtbarkeit: dto.sichtbarkeit }),
       },
     });
   }

@@ -1100,20 +1100,31 @@ model Hallenbelegung {
 // ==================== Sponsoren ====================
 
 model Sponsor {
-  id           String   @id @default(cuid())
-  tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name         String
-  logoUrl      String?
-  webseite     String?
-  beschreibung String?
-  kontaktName  String?
-  kontaktEmail String?
-  istAktiv     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String    @id @default(cuid())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name            String
+  logoUrl         String?
+  webseite        String?
+  beschreibung    String?
+  kontaktName     String?
+  kontaktEmail    String?
+  istAktiv        Boolean   @default(true)
+  // Sponsoren-Portal (Magic Link Login)
+  loginEmail      String?   @unique // Sponsor login E-Mail
+  loginToken      String?            // Magic Link Token
+  tokenGueltigBis DateTime?
+  // Paket-Informationen
+  paketName       String?   // z.B. "Gold-Sponsor", "Hauptsponsor"
+  betrag          Float?    // Jahresbetrag in EUR
+  vertragStart    DateTime?
+  vertragEnde     DateTime?
+  sichtbarkeit    String[]  @default([]) // z.B. ["Homepage", "Trikots", "Events", "Bandenwerbung"]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([tenantId])
+  @@index([loginToken])
 }
 
 // ==================== E-Mail-Einstellungen (pro Benutzer) ====================

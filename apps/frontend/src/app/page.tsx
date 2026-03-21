@@ -39,6 +39,10 @@ import {
   Smartphone,
   ChevronRight,
   Mail,
+  BookOpen,
+  Coins,
+  Receipt,
+  Handshake,
 } from 'lucide-react';
 
 /* ============================================================
@@ -53,8 +57,8 @@ const featureSections = [
     icon: Users,
     color: 'from-blue-500 to-blue-600',
     features: [
-      'Digitale Mitgliedsanträge + QR-Ausweis',
-      'Familien-Verknüpfung (ein Login für alle Kinder)',
+      'Digitale Mitgliedsantraege + QR-Ausweis',
+      'Familien-Verknuepfung (ein Login fuer alle Kinder)',
       'Selbstverwaltungs-Portal',
       'DSGVO-Export auf Knopfdruck',
     ],
@@ -79,8 +83,8 @@ const featureSections = [
     features: [
       'Spielplan erstellen (Gruppe, KO, Schweizer)',
       'Live-Scoring mit Public-URL',
-      'QR-Code für Zuschauer',
-      'Öffentliche Turnier-Seite',
+      'QR-Code fuer Zuschauer',
+      'Oeffentliche Turnier-Seite',
     ],
   },
   {
@@ -91,9 +95,10 @@ const featureSections = [
       'Nachrichten (WhatsApp-Ersatz)',
       'Eltern-Umfragen (Doodle-Ersatz)',
       'Digitales Schwarzes Brett',
+      'Einverstaendniserklaerungen digital',
       'Push-Notifications',
       'Notfall-Broadcast',
-      'Stille-Stunden (22–07 Uhr)',
+      'Stille-Stunden (22-07 Uhr)',
     ],
   },
   {
@@ -115,8 +120,33 @@ const featureSections = [
       'KI-Trainingsplan-Generator',
       'Aufstellungsplaner (Drag & Drop)',
       'Spielberichte mit KI-Text',
+      'Saisonplanung (visuelle Timeline)',
+      'QR-Code Check-In (papierlos)',
+      'KI-Mitgliederbindung (Churn Prevention)',
       'Anwesenheitsstatistik (Heatmap)',
-      'Spieler-Entwicklungsbögen',
+      'Spieler-Entwicklungsboegen',
+    ],
+  },
+  {
+    title: 'Ehrenamt & Vereinsleben',
+    icon: Heart,
+    color: 'from-pink-500 to-pink-600',
+    features: [
+      'Ehrenamt-Modul (Helfer-Aufgaben)',
+      'Vereinsfest-Planer (Schichten, Einkauf, Kasse)',
+      'Uebungsleiter-Stunden (3.300 EUR Warnung)',
+      'Foto-Galerie pro Team/Event',
+    ],
+  },
+  {
+    title: 'Wissen & Planung',
+    icon: BookOpen,
+    color: 'from-cyan-500 to-cyan-600',
+    features: [
+      'Vereins-Wiki (internes Wissensmanagement)',
+      'Foerdermittel-Jahresbericht (PDF)',
+      'Jahres-Statistik-Poster',
+      'Sponsoren-Portal',
     ],
   },
   {
@@ -124,10 +154,12 @@ const featureSections = [
     icon: ShoppingBag,
     color: 'from-orange-500 to-orange-600',
     features: [
-      'Sportgeräte kaufen/verkaufen',
+      'Sportgeraete kaufen/verkaufen',
       'Trainer-Vertretung finden',
       'Freundschaftsspiele organisieren',
       'PLZ-basierte Suche',
+      'Wartelisten-Management',
+      'Familien-Verknuepfung',
     ],
   },
   {
@@ -136,21 +168,21 @@ const featureSections = [
     color: 'from-slate-500 to-slate-600',
     features: [
       'Vereinshomepage-Editor (Drag & Drop)',
-      'Event-Landingpages für Werbung',
+      'Event-Landingpages fuer Werbung',
       'Rollen & Berechtigungen',
       'DFBnet Import/Export',
-      'Wartelisten-Management',
+      'Audit-Log (Protokollierung)',
+      'NDA/Vertrags-System',
+      'Mitglieder-Selbstverwaltung',
     ],
   },
 ];
 
 const comingSoon = [
-  { title: 'Ehrenamt-Modul', icon: Heart },
-  { title: 'Vereinsfest-Planer', icon: PartyPopper },
-  { title: 'Fördermittel-Jahresbericht (PDF)', icon: FileText },
-  { title: 'KI-Mitgliederbindung', icon: Brain },
-  { title: 'Vereins-Gesundheitscheck', icon: Stethoscope },
   { title: 'Mobile App (iOS + Android)', icon: Smartphone },
+  { title: 'Vereins-Crowdfunding', icon: Coins },
+  { title: 'E-Rechnung (ZUGFeRD)', icon: Receipt },
+  { title: 'Vereins-Gesundheitscheck', icon: Stethoscope },
 ];
 
 // Preise werden noch definiert - Platzhalter
@@ -301,7 +333,7 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-blue-500" />
-            <span>60+ Funktionen in einer Plattform</span>
+            <span>80+ Funktionen in einer Plattform</span>
           </div>
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-green-500" />
