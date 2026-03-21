@@ -514,7 +514,7 @@ Oeffentlich: /umfrage/[token], /verein/[slug]/aktuell (Schwarzes Brett)
 - [x] Passwort aus CLAUDE.md entfernt (Sicherheit)
 - [x] Umlaute in 100+ UI-Strings korrigiert
 - [x] DNS auf vereinbase.de (nginx extern in Docker)
-- [x] Alle ClubOS-Referenzen zu Vereinbase umbenannt
+- [x] Alle ClubOS-Referenzen zu Vereinbase umbenannt (Code komplett, nur DB-Name offen)
 - [x] Login-E-Mails auf @vereinbase.de
 - [ ] DB umbenennen: clubos_dev -> vereinbase_dev (sudo bash scripts/db-umbenennen.sh)
 - [ ] NocoDB mit PostgreSQL verbinden

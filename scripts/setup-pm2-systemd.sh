@@ -2,9 +2,11 @@
 # Vereinbase PM2 Systemd Setup Script
 # Macht PM2 zum systemd-Service fuer Auto-Start nach Reboot
 #
-# Ausfuehren mit: sudo bash /home/tschatscher/clubos/scripts/setup-pm2-systemd.sh
+# Ausfuehren mit: sudo bash scripts/setup-pm2-systemd.sh (aus dem Projektordner)
 
 set -e
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 echo "=== Vereinbase PM2 Systemd Setup ==="
 echo ""
@@ -27,7 +29,7 @@ echo ""
 
 # Step 4: Apps mit PM2 starten
 echo "[4/6] Vereinbase Apps starten..."
-su - tschatscher -c "cd /home/tschatscher/clubos && pm2 start ecosystem.config.js"
+su - tschatscher -c "cd $PROJECT_DIR && pm2 start ecosystem.config.js"
 echo ""
 
 # Step 5: PM2 Prozessliste speichern
