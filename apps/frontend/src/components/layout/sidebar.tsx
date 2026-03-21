@@ -69,8 +69,7 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
     titel: 'Aktivitäten',
     eintraege: [
       { href: ROUTEN.KALENDER, label: 'Kalender & Saison', icon: Calendar, rollen: null, berechtigung: 'KALENDER' },
-      { href: ROUTEN.NACHRICHTEN, label: 'Nachrichten', icon: MessageSquare, rollen: null, berechtigung: 'NACHRICHTEN' },
-      { href: ROUTEN.UMFRAGEN, label: 'Umfragen', icon: BarChart3, rollen: null },
+      { href: ROUTEN.NACHRICHTEN, label: 'Nachrichten & Umfragen', icon: MessageSquare, rollen: null, berechtigung: 'NACHRICHTEN' },
       { href: ROUTEN.SCHWARZES_BRETT, label: 'Pinnwand', icon: ClipboardList, rollen: null },
       { href: ROUTEN.GALERIE, label: 'Galerie', icon: Camera, rollen: null },
     ],

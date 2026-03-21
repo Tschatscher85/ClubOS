@@ -560,6 +560,22 @@ export function MitgliedFormular({
             </div>
           )}
 
+          {/* Trainer-Lizenz Hinweis */}
+          {Object.values(gewaehlteTeams).some((r) => ['TRAINER', 'CO_TRAINER', 'TORWART_TRAINER'].includes(r)) && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <p className="text-sm font-medium text-blue-800">
+                Dieses Mitglied ist als Trainer eingetragen
+              </p>
+              <p className="text-xs text-blue-700 mt-1">
+                Trainer-Lizenzen können auf der Mitglied-Detailseite oder unter{' '}
+                <a href="/trainer-lizenzen" className="underline font-medium">
+                  Trainer-Lizenzen
+                </a>{' '}
+                hinterlegt werden (inkl. Lizenz-Dokument als PDF).
+              </p>
+            </div>
+          )}
+
           {/* Eltern-E-Mail - nur bei Minderjährigen */}
           {istMinderjaehrig && (
             <div className="space-y-2 rounded-lg border border-orange-200 bg-orange-50 p-4">

@@ -210,23 +210,24 @@ export default function SchwarzesBrettPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <ClipboardList className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold">Pinnwand</h1>
-            <Badge variant="secondary">{aushaenge.length}</Badge>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1 ml-9">
-            Aushänge & Infos |{' '}
-            <a href="/fahrgemeinschaften" className="text-primary hover:underline">Fahrtenbörse</a>
-          </p>
+        <div className="flex items-center gap-3">
+          <ClipboardList className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">Pinnwand</h1>
+          <Badge variant="secondary">{aushaenge.length}</Badge>
         </div>
-        {istTrainerOderAdmin && (
-          <Button onClick={() => dialogOeffnen()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Neuer Aushang
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <a href="/fahrgemeinschaften">
+            <Button variant="outline" size="sm">
+              Fahrtenbörse
+            </Button>
+          </a>
+          {istTrainerOderAdmin && (
+            <Button onClick={() => dialogOeffnen()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Neuer Aushang
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Aushaenge-Liste */}

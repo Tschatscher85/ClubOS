@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { MitgliedDokumente } from '@/components/mitglieder/mitglied-dokumente';
+import { TrainerLizenzenBereich } from '@/components/mitglieder/trainer-lizenzen-bereich';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -994,6 +995,13 @@ export default function MitgliedDetailPage() {
         memberId={mitglied.id}
         mitgliedName={`${mitglied.firstName} ${mitglied.lastName}`}
       />
+
+      {/* Trainer-Lizenzen (nur wenn Trainer-Rolle in einem Team) */}
+      {mitglied.teamMembers?.some((tm) =>
+        ['TRAINER', 'CO_TRAINER', 'TORWART_TRAINER'].includes(tm.rolle),
+      ) && mitglied.user && (
+        <TrainerLizenzenBereich userId={mitglied.user.id} mitgliedName={`${mitglied.firstName} ${mitglied.lastName}`} />
+      )}
 
       {/* Benutzerkonto */}
       <Card>
