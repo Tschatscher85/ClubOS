@@ -35,6 +35,10 @@ export class MemberService {
         sport: dto.sportarten || [],
         joinDate: dto.eintrittsdatum ? new Date(dto.eintrittsdatum) : new Date(),
         parentEmail: dto.elternEmail,
+        fotoErlaubnis: dto.fotoErlaubnis ?? false,
+        fotoErlaubnisAm: dto.fotoErlaubnis ? new Date() : null,
+        fahrgemeinschaftErlaubnis: dto.fahrgemeinschaftErlaubnis ?? false,
+        fahrgemeinschaftErlaubnisAm: dto.fahrgemeinschaftErlaubnis ? new Date() : null,
       },
     });
   }
@@ -104,6 +108,14 @@ export class MemberService {
         ...(dto.beitragsklasseId !== undefined && { beitragsklasseId: dto.beitragsklasseId }),
         ...(dto.beitragBetrag !== undefined && { beitragBetrag: dto.beitragBetrag }),
         ...(dto.beitragIntervall !== undefined && { beitragIntervall: dto.beitragIntervall }),
+        ...(dto.fotoErlaubnis !== undefined && {
+          fotoErlaubnis: dto.fotoErlaubnis,
+          fotoErlaubnisAm: dto.fotoErlaubnis ? new Date() : null,
+        }),
+        ...(dto.fahrgemeinschaftErlaubnis !== undefined && {
+          fahrgemeinschaftErlaubnis: dto.fahrgemeinschaftErlaubnis,
+          fahrgemeinschaftErlaubnisAm: dto.fahrgemeinschaftErlaubnis ? new Date() : null,
+        }),
       },
     });
   }

@@ -34,6 +34,8 @@ interface Mitglied {
   beitragBetrag?: number | null;
   beitragIntervall?: string | null;
   userId?: string | null;
+  fotoErlaubnis?: boolean;
+  fahrgemeinschaftErlaubnis?: boolean;
 }
 
 interface RollenVorlage {
@@ -121,6 +123,8 @@ export function MitgliedFormular({
   const [gewaehlteSportarten, setGewaehlteSportarten] = useState<string[]>([]);
   const [elternEmail, setElternEmail] = useState('');
   const [status, setStatus] = useState('PENDING');
+  const [fotoErlaubnis, setFotoErlaubnis] = useState(false);
+  const [fahrgemeinschaftErlaubnis, setFahrgemeinschaftErlaubnis] = useState(false);
   const [ladend, setLadend] = useState(false);
   const [fehler, setFehler] = useState('');
 
@@ -200,6 +204,8 @@ export function MitgliedFormular({
       setAdresse(mitglied.address || '');
       setGewaehlteSportarten(mitglied.sport || []);
       setElternEmail(mitglied.parentEmail || '');
+      setFotoErlaubnis(mitglied.fotoErlaubnis ?? false);
+      setFahrgemeinschaftErlaubnis(mitglied.fahrgemeinschaftErlaubnis ?? false);
       setStatus(mitglied.status || 'PENDING');
       setBeitragsklasseId(mitglied.beitragsklasseId || '');
       if (mitglied.beitragBetrag && mitglied.beitragBetrag > 0 && !mitglied.beitragsklasseId) {
@@ -234,6 +240,8 @@ export function MitgliedFormular({
       setAdresse('');
       setGewaehlteSportarten([]);
       setElternEmail('');
+      setFotoErlaubnis(false);
+      setFahrgemeinschaftErlaubnis(false);
       setStatus('PENDING');
       setBeitragsklasseId('');
       setIndividuellerBeitrag(false);
@@ -278,6 +286,8 @@ export function MitgliedFormular({
         ...(adresse && { adresse }),
         sportarten: gewaehlteSportarten,
         ...(istMinderjaehrig && elternEmail && { elternEmail }),
+        ...(istMinderjaehrig && { fotoErlaubnis }),
+        ...(istMinderjaehrig && { fahrgemeinschaftErlaubnis }),
         status,
         beitragsklasseId: individuellerBeitrag ? null : (beitragsklasseId || null),
         ...(individuellerBeitrag && individuellerBetrag && {
@@ -566,6 +576,52 @@ export function MitgliedFormular({
               <p className="text-xs text-orange-700">
                 Eltern erhalten Zugang zum Eltern-Portal und sehen Teams, Kalender und Nachrichten ihres Kindes.
               </p>
+            </div>
+          )}
+
+          {/* Einverständniserklärungen - nur bei Minderjährigen */}
+          {istMinderjaehrig && (
+            <div className="space-y-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <Label className="text-base font-medium text-blue-800">
+                Einverständniserklärungen der Erziehungsberechtigten
+              </Label>
+              <p className="text-xs text-blue-700">
+                Für Minderjährige unter 18 Jahren sind folgende Einwilligungen der Eltern/Erziehungsberechtigten erforderlich.
+              </p>
+
+              <label className="flex items-start gap-3 cursor-pointer rounded-md border border-blue-200 bg-white p-3">
+                <input
+                  type="checkbox"
+                  checked={fotoErlaubnis}
+                  onChange={(e) => setFotoErlaubnis(e.target.checked)}
+                  className="rounded border-gray-300 mt-0.5"
+                />
+                <div>
+                  <span className="text-sm font-medium">Fotoerlaubnis</span>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Die Erziehungsberechtigten erlauben, dass Fotos des Kindes im Rahmen
+                    der Vereinsaktivitäten erstellt und in der internen Vereins-Galerie
+                    angezeigt werden dürfen (KUG §22, DSGVO Art. 6).
+                  </p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 cursor-pointer rounded-md border border-blue-200 bg-white p-3">
+                <input
+                  type="checkbox"
+                  checked={fahrgemeinschaftErlaubnis}
+                  onChange={(e) => setFahrgemeinschaftErlaubnis(e.target.checked)}
+                  className="rounded border-gray-300 mt-0.5"
+                />
+                <div>
+                  <span className="text-sm font-medium">Fahrgemeinschaft erlaubt</span>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Die Erziehungsberechtigten erlauben, dass das Kind im Rahmen von
+                    Vereinsaktivitäten in Fahrgemeinschaften mit anderen Eltern/Betreuern
+                    mitfahren darf (§832 BGB Aufsichtspflicht).
+                  </p>
+                </div>
+              </label>
             </div>
           )}
 

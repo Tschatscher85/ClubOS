@@ -256,6 +256,12 @@ model Member {
   createdAt                  DateTime       @default(now())
   updatedAt                  DateTime       @updatedAt
 
+  // Einverstaendniserklaerungen (DSGVO + Aufsichtspflicht)
+  fotoErlaubnis                Boolean   @default(false) // Eltern erlauben Fotos (KUG §22, DSGVO Art. 6)
+  fotoErlaubnisAm              DateTime? // Datum der Einwilligung
+  fahrgemeinschaftErlaubnis    Boolean   @default(false) // Eltern erlauben Mitfahrt (§832 BGB Aufsichtspflicht)
+  fahrgemeinschaftErlaubnisAm  DateTime? // Datum der Einwilligung
+
   // Selbstverwaltung
   notfallKontakt     String?
   notfallTelefon     String?

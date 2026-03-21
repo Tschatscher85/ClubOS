@@ -52,6 +52,7 @@ export default function GaleriePage() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [filter, setFilter] = useState<'alle' | 'team' | 'event'>('alle');
   const [uploadLadend, setUploadLadend] = useState(false);
+  const [uploadFortschritt, setUploadFortschritt] = useState({ aktuell: 0, gesamt: 0 });
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [selectedEventId, setSelectedEventId] = useState('');
   const [beschreibung, setBeschreibung] = useState('');
@@ -85,8 +86,10 @@ export default function GaleriePage() {
   const handleUpload = async (dateien: FileList | null) => {
     if (!dateien || dateien.length === 0) return;
     setUploadLadend(true);
+    setUploadFortschritt({ aktuell: 0, gesamt: dateien.length });
 
     for (let i = 0; i < dateien.length; i++) {
+      setUploadFortschritt({ aktuell: i + 1, gesamt: dateien.length });
       const formData = new FormData();
       formData.append('foto', dateien[i]);
       if (selectedTeamId) formData.append('teamId', selectedTeamId);
@@ -106,6 +109,7 @@ export default function GaleriePage() {
     }
 
     setUploadLadend(false);
+    setUploadFortschritt({ aktuell: 0, gesamt: 0 });
     setUploadOffen(false);
     setSelectedTeamId('');
     setSelectedEventId('');
@@ -304,10 +308,10 @@ export default function GaleriePage() {
             >
               <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">
-                Klicken oder Foto hierher ziehen
+                Klicken oder Fotos hierher ziehen
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                PNG, JPG, WebP oder GIF (max. 10 MB)
+                Mehrere Fotos gleichzeitig möglich — PNG, JPG, WebP oder GIF (max. 10 MB pro Bild)
               </p>
               <input
                 ref={fileInputRef}
@@ -319,9 +323,21 @@ export default function GaleriePage() {
               />
             </div>
             {uploadLadend && (
-              <p className="text-sm text-muted-foreground text-center">
-                Wird hochgeladen...
-              </p>
+              <div className="space-y-2">
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all"
+                    style={{
+                      width: uploadFortschritt.gesamt > 0
+                        ? `${(uploadFortschritt.aktuell / uploadFortschritt.gesamt) * 100}%`
+                        : '0%',
+                    }}
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground text-center">
+                  Foto {uploadFortschritt.aktuell} von {uploadFortschritt.gesamt} wird hochgeladen...
+                </p>
+              </div>
             )}
           </div>
         </DialogContent>

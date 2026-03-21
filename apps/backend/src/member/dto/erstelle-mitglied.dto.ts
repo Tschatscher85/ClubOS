@@ -62,6 +62,14 @@ export class ErstelleMitgliedDto {
   @IsOptional()
   @IsEmail({}, { message: 'Bitte eine gueltige E-Mail-Adresse angeben.' })
   elternEmail?: string;
+
+  @ApiPropertyOptional({ description: 'Eltern erlauben Fotos (Minderjährige, KUG §22)' })
+  @IsOptional()
+  fotoErlaubnis?: boolean;
+
+  @ApiPropertyOptional({ description: 'Eltern erlauben Mitfahrt in Fahrgemeinschaften (Minderjährige, §832 BGB)' })
+  @IsOptional()
+  fahrgemeinschaftErlaubnis?: boolean;
 }
 
 export class VerknuepfeMitgliedDto {
@@ -198,4 +206,12 @@ export class AktualisiereMitgliedDto {
   @IsOptional()
   @IsString()
   beitragIntervall?: string | null;
+
+  @ApiPropertyOptional({ description: 'Eltern erlauben Fotos (Minderjährige, KUG §22)' })
+  @IsOptional()
+  fotoErlaubnis?: boolean;
+
+  @ApiPropertyOptional({ description: 'Eltern erlauben Mitfahrt in Fahrgemeinschaften (Minderjährige, §832 BGB)' })
+  @IsOptional()
+  fahrgemeinschaftErlaubnis?: boolean;
 }

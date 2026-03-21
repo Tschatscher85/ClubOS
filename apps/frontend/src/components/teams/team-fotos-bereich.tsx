@@ -29,6 +29,7 @@ export function TeamFotosBereich({ teamId }: TeamFotosBereichProps) {
   const [ladend, setLadend] = useState(true);
   const [uploadOffen, setUploadOffen] = useState(false);
   const [uploadLadend, setUploadLadend] = useState(false);
+  const [uploadFortschritt, setUploadFortschritt] = useState({ aktuell: 0, gesamt: 0 });
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [beschreibung, setBeschreibung] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,8 +54,10 @@ export function TeamFotosBereich({ teamId }: TeamFotosBereichProps) {
   const handleUpload = async (dateien: FileList | null) => {
     if (!dateien || dateien.length === 0) return;
     setUploadLadend(true);
+    setUploadFortschritt({ aktuell: 0, gesamt: dateien.length });
 
     for (let i = 0; i < dateien.length; i++) {
+      setUploadFortschritt({ aktuell: i + 1, gesamt: dateien.length });
       const formData = new FormData();
       formData.append('foto', dateien[i]);
       formData.append('teamId', teamId);
@@ -74,6 +77,7 @@ export function TeamFotosBereich({ teamId }: TeamFotosBereichProps) {
     }
 
     setUploadLadend(false);
+    setUploadFortschritt({ aktuell: 0, gesamt: 0 });
     setUploadOffen(false);
     setBeschreibung('');
     datenLaden();
@@ -168,7 +172,10 @@ export function TeamFotosBereich({ teamId }: TeamFotosBereichProps) {
               onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleUpload(e.dataTransfer.files); }}
             >
               <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Klicken oder Foto hierher ziehen</p>
+              <p className="text-sm text-muted-foreground">Klicken oder Fotos hierher ziehen</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Mehrere Fotos gleichzeitig möglich (max. 10 MB pro Bild)
+              </p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -179,7 +186,21 @@ export function TeamFotosBereich({ teamId }: TeamFotosBereichProps) {
               />
             </div>
             {uploadLadend && (
-              <p className="text-sm text-muted-foreground text-center">Wird hochgeladen...</p>
+              <div className="space-y-2">
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all"
+                    style={{
+                      width: uploadFortschritt.gesamt > 0
+                        ? `${(uploadFortschritt.aktuell / uploadFortschritt.gesamt) * 100}%`
+                        : '0%',
+                    }}
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground text-center">
+                  Foto {uploadFortschritt.aktuell} von {uploadFortschritt.gesamt} wird hochgeladen...
+                </p>
+              </div>
             )}
           </div>
         </DialogContent>
