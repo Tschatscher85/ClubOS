@@ -183,6 +183,7 @@ model User {
   buchungen              Buchung[]
   webPushSubscriptions   WebPushSubscription[]
   familieMitgliedschaften FamilieMitglied[]
+  trainerLizenzen        TrainerLizenz[]
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
 
@@ -2109,4 +2110,25 @@ model SaisonPhase {
   reihenfolge     Int        @default(0)
 
   @@index([saisonplanId])
+}
+
+// ==================== Trainer-Lizenzen ====================
+
+model TrainerLizenz {
+  id              String    @id @default(cuid())
+  tenantId        String
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bezeichnung     String              // z.B. "C-Lizenz Fussball", "Uebungsleiter-C"
+  ausstellerVerband String?           // z.B. "WFV", "DOSB"
+  lizenznummer    String?
+  erhaltenAm      DateTime
+  gueltigBis      DateTime?           // null = unbefristet
+  dokumentUrl     String?             // Upload der Lizenz-Urkunde
+  notizen         String?
+  erstelltAm      DateTime  @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([gueltigBis])
 }

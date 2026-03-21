@@ -27,6 +27,8 @@ import {
   Camera,
   BookOpen,
   CalendarRange,
+  Activity,
+  Award,
 } from 'lucide-react';
 import { useTenant, useBenutzer } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -91,6 +93,8 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
       { href: ROUTEN.DOKUMENTE, label: 'Dokumente & Formulare', icon: FolderOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'DOKUMENTE' },
       { href: ROUTEN.BERICHTE, label: 'Berichte', icon: FileBarChart, rollen: ['SUPERADMIN', 'ADMIN'] },
       { href: ROUTEN.MITGLIEDERBINDUNG, label: 'Mitgliederbindung', icon: UserX, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
+      { href: ROUTEN.GESUNDHEITSCHECK, label: 'Gesundheitscheck', icon: Activity, rollen: ['SUPERADMIN', 'ADMIN'] },
+      { href: ROUTEN.TRAINER_LIZENZEN, label: 'Trainer-Lizenzen', icon: Award, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
     ],
   },
   {

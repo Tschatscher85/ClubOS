@@ -41,4 +41,6 @@ export const ROUTEN = {
   GALERIE: '/galerie',
   WIKI: '/wiki',
   SAISONPLANUNG: '/saisonplanung',
+  GESUNDHEITSCHECK: '/gesundheitscheck',
+  TRAINER_LIZENZEN: '/trainer-lizenzen',
 } as const;

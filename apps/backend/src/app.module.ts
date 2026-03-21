@@ -63,6 +63,8 @@ import { EinverstaendnisModule } from './einverstaendnis/einverstaendnis.module'
 import { GalerieModule } from './galerie/galerie.module';
 import { WikiModule } from './wiki/wiki.module';
 import { SaisonplanModule } from './saisonplan/saisonplan.module';
+import { GesundheitscheckModule } from './gesundheitscheck/gesundheitscheck.module';
+import { TrainerLizenzModule } from './trainer-lizenz/trainer-lizenz.module';
 import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
 import { TenantStatusMiddleware } from './common/middleware/tenant-status.middleware';
 import configuration from './config/configuration';
@@ -151,6 +153,8 @@ import configuration from './config/configuration';
     GalerieModule,
     WikiModule,
     SaisonplanModule,
+    GesundheitscheckModule,
+    TrainerLizenzModule,
   ],
   providers: [
     {
