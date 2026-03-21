@@ -94,6 +94,7 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
       { href: ROUTEN.EHRENAMT, label: 'Ehrenamt', icon: HandHeart, rollen: null },
       { href: ROUTEN.SCHIEDSRICHTER, label: 'Schiedsrichter', icon: UserCheck, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'SCHIEDSRICHTER' },
       { href: ROUTEN.MARKTPLATZ, label: 'Marktplatz', icon: Store, rollen: ['SUPERADMIN', 'ADMIN'] },
+      { href: '/partner', label: 'Partner & Dienstleister', icon: HandHeart, rollen: ['SUPERADMIN', 'ADMIN'] },
     ],
   },
   {

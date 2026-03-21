@@ -62,12 +62,14 @@ import { MitgliederbindungModule } from './mitgliederbindung/mitgliederbindung.m
 import { EinverstaendnisModule } from './einverstaendnis/einverstaendnis.module';
 import { GalerieModule } from './galerie/galerie.module';
 import { MitgliedDokumentModule } from './mitglied-dokument/mitglied-dokument.module';
+import { KooperationspartnerModule } from './kooperationspartner/kooperationspartner.module';
 import { WikiModule } from './wiki/wiki.module';
 import { SaisonplanModule } from './saisonplan/saisonplan.module';
 import { GesundheitscheckModule } from './gesundheitscheck/gesundheitscheck.module';
 import { TrainerLizenzModule } from './trainer-lizenz/trainer-lizenz.module';
 import { FundingModule } from './funding/funding.module';
 import { VersicherungModule } from './versicherung/versicherung.module';
+import { VereinsPartnerModule } from './vereins-partner/vereins-partner.module';
 import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
 import { TenantStatusMiddleware } from './common/middleware/tenant-status.middleware';
 import configuration from './config/configuration';
@@ -155,12 +157,14 @@ import configuration from './config/configuration';
     EinverstaendnisModule,
     GalerieModule,
     MitgliedDokumentModule,
+    KooperationspartnerModule,
     WikiModule,
     SaisonplanModule,
     GesundheitscheckModule,
     TrainerLizenzModule,
     FundingModule,
     VersicherungModule,
+    VereinsPartnerModule,
   ],
   providers: [
     {

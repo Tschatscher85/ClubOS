@@ -125,6 +125,7 @@ model Tenant {
   uebungsleiterStunden UebungsleiterStunden[]
   wikiSeiten         WikiSeite[]
   fundingProjekte    FundingProjekt[]
+  vereinsPartner     VereinsPartner[]
 
   @@index([slug])
 }
@@ -2212,4 +2213,84 @@ enum MitgliedDokumentTyp {
   EINVERSTAENDNIS
   AENDERUNGSANTRAG
   SONSTIGES
+}
+
+// ==================== Kooperationspartner (Plattform-Level, Superadmin) ====================
+
+model Kooperationspartner {
+  id               String              @id @default(cuid())
+  name             String
+  logoUrl          String?
+  webseite         String?
+  beschreibung     String?
+  kategorie        PartnerKategorie
+  kontaktEmail     String?
+  kontaktTelefon   String?
+  provisionProzent Float?              // Provision fuer Vereinbase in Prozent
+  rabattProzent    Float?              // Rabatt fuer Vereine in Prozent
+  rabattCode       String?             // Rabatt-Code fuer Bestellungen
+  istAktiv         Boolean             @default(true)
+  prioritaet       Int                 @default(0) // Sortierung (hoeher = weiter oben)
+  erstelltAm       DateTime            @default(now())
+  aktualisiertAm   DateTime            @updatedAt
+}
+
+enum PartnerKategorie {
+  DRUCKEREI          // Trikot-/Bannerdruck
+  AUSRUESTER         // Sportbekleidung, Baelle, etc.
+  SPORTGERAETE       // Tore, Netze, Trainingsgeraete
+  CATERING           // Vereinsfest, Turniere
+  VERSICHERUNG       // Sportversicherungen
+  MEDIEN             // Fotografie, Video, Social Media
+  IT_DIENSTLEISTER   // Webseite, Hosting
+  REISEN             // Trainingslager, Mannschaftsfahrten
+  SONSTIGES
+}
+
+// ==================== Vereins-Partner/Dienstleister (Tenant-Level) ====================
+
+model VereinsPartner {
+  id               String              @id @default(cuid())
+  tenantId         String
+  tenant           Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name             String
+  logoUrl          String?
+  webseite         String?
+  beschreibung     String?
+  kategorie        PartnerKategorie
+  kontaktName      String?
+  kontaktEmail     String?
+  kontaktTelefon   String?
+  notizen          String?             // Interne Notizen (z.B. "hat 2024 Bambini-Trikots gemacht")
+  istAktiv         Boolean             @default(true)
+  auftraege        VereinsPartnerAuftrag[]
+  erstelltAm       DateTime            @default(now())
+  aktualisiertAm   DateTime            @updatedAt
+
+  @@index([tenantId])
+  @@index([kategorie])
+}
+
+model VereinsPartnerAuftrag {
+  id               String              @id @default(cuid())
+  tenantId         String
+  partnerId        String
+  partner          VereinsPartner      @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  teamId           String?             // Fuer welches Team (optional)
+  beschreibung     String              // z.B. "50 Trikots Bambini bedruckt"
+  betrag           Float?              // Kosten in EUR
+  datum            DateTime            @default(now())
+  status           AuftragStatus       @default(OFFEN)
+  erstelltVon      String              // userId
+  erstelltAm       DateTime            @default(now())
+
+  @@index([tenantId])
+  @@index([partnerId])
+}
+
+enum AuftragStatus {
+  OFFEN
+  IN_BEARBEITUNG
+  ABGESCHLOSSEN
+  STORNIERT
 }

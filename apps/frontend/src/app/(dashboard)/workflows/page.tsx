@@ -254,9 +254,11 @@ export default function WorkflowsPage() {
                     Formulare
                   </p>
                   <div className="flex flex-wrap gap-1">
-                    {wf.vorlagen.map((v) => (
+                    {wf.vorlagen.map((v, idx) => (
                       <Badge key={v.id} variant="outline" className="text-xs">
-                        <FileText className="h-3 w-3 mr-1" />
+                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary/10 text-primary text-[10px] font-bold mr-1">
+                          {idx + 1}
+                        </span>
                         {v.name}
                       </Badge>
                     ))}
@@ -347,12 +349,53 @@ export default function WorkflowsPage() {
               />
             </div>
 
-            {/* Formulare */}
+            {/* Formulare mit Reihenfolge */}
             <div className="space-y-2">
-              <Label>Formulare *</Label>
+              <Label>Formulare & Reihenfolge *</Label>
               <p className="text-xs text-muted-foreground">
-                Welche Formulare sollen bei diesem Workflow versendet werden?
+                Wählen Sie Formulare aus und legen Sie die Reihenfolge fest.
+                Das Mitglied füllt Schritt 1 aus, unterschreibt, dann Schritt 2, usw.
               </p>
+
+              {/* Gewählte Formulare mit Reihenfolge */}
+              {gewaehlteTemplates.length > 0 && (
+                <div className="space-y-1 mb-3 p-3 rounded-lg border bg-muted/30">
+                  <p className="text-xs font-medium text-muted-foreground uppercase mb-2">
+                    Reihenfolge (Mitglied füllt von oben nach unten aus):
+                  </p>
+                  {gewaehlteTemplates.map((tId, idx) => {
+                    const vorlage = vorlagen.find((v) => v.id === tId);
+                    if (!vorlage) return null;
+                    return (
+                      <div key={tId} className="flex items-center gap-2 rounded-md bg-background border px-3 py-2">
+                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0">
+                          {idx + 1}
+                        </span>
+                        <span className="text-sm font-medium flex-1">{vorlage.name}</span>
+                        <div className="flex gap-1">
+                          {idx > 0 && (
+                            <button type="button" className="text-xs px-1.5 py-0.5 rounded border hover:bg-muted"
+                              onClick={() => {
+                                const neu = [...gewaehlteTemplates];
+                                [neu[idx - 1], neu[idx]] = [neu[idx], neu[idx - 1]];
+                                setGewaehlteTemplates(neu);
+                              }}>↑</button>
+                          )}
+                          {idx < gewaehlteTemplates.length - 1 && (
+                            <button type="button" className="text-xs px-1.5 py-0.5 rounded border hover:bg-muted"
+                              onClick={() => {
+                                const neu = [...gewaehlteTemplates];
+                                [neu[idx], neu[idx + 1]] = [neu[idx + 1], neu[idx]];
+                                setGewaehlteTemplates(neu);
+                              }}>↓</button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               {vorlagen.length === 0 ? (
                 <p className="text-sm text-muted-foreground p-3 border rounded-lg">
                   Noch keine Formularvorlagen vorhanden. Erstellen Sie zuerst
