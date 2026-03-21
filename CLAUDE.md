@@ -467,6 +467,19 @@ model FAQ {
 - [x] Impressum, Datenschutz, AGB Seiten
 - [x] Audit-Log + System-Status (Admin)
 - [x] NDA/Vertrags-System (Token-basiert, Unterschrift, IP-Log)
+- [x] Eltern-Einverstaendnis digital (Token-basiert, pro Event)
+- [x] Foto-Galerie pro Team/Event (Upload, Lightbox)
+- [x] Vereins-Wiki (Wissensmanagement, Suche, Kategorien)
+- [x] Saisonplanung (Timeline, Phasen, Auto-Events)
+- [x] Jahres-Statistik-Poster (PDF, Vereinsfarbe)
+- [x] Sponsoren-Portal (Magic-Link Login, Dashboard)
+- [x] Vereins-Gesundheitscheck (Score 0-100, 4 Kategorien)
+- [x] Vereins-Crowdfunding (Spenden, Fortschrittsbalken)
+- [x] Versicherungs-Check (Empfehlungen, Warnungen)
+- [x] Trainer-Lizenzen-Tracker (Ablauf-Warnung)
+- [x] Foerdermittel-Jahresbericht (PDF mit pdfkit)
+- [x] Ehrenamt-Modul (Helfer-Aufgaben, Uebungsleiter 3.300 EUR)
+- [x] Vereinsfest-Planer (Schichten, Einkauf, Kasse)
 
 ### 65+ Frontend-Seiten:
 Dashboard, Mitglieder (+Detail, +Entwicklung), Mitarbeiter,
@@ -490,13 +503,16 @@ Oeffentlich: /umfrage/[token], /verein/[slug]/aktuell (Schwarzes Brett)
 
 ---
 
-## 🚨 Feature-Roadmap (Stand: 20.03.2026)
+## 🚨 Feature-Roadmap (Stand: 21.03.2026)
 
 ### SOFORT (Diese Woche)
 - [x] Passwort aus CLAUDE.md entfernt (Sicherheit)
 - [x] Umlaute in 100+ UI-Strings korrigiert
-- [x] DNS auf vereinbase.de umstellt + SSL via Caddy
-- [ ] NocoDB mit PostgreSQL verbinden (Read-only User)
+- [x] DNS auf vereinbase.de (nginx extern in Docker)
+- [x] Alle ClubOS-Referenzen zu Vereinbase umbenannt
+- [x] Login-E-Mails auf @vereinbase.de
+- [ ] DB umbenennen: clubos_dev -> vereinbase_dev (sudo bash scripts/db-umbenennen.sh)
+- [ ] NocoDB mit PostgreSQL verbinden
 - [ ] Stripe Billing fertigstellen (Checkout, Webhook, PlanGuard)
 
 ### Phase A — Schnell umsetzbar, hohe Wirkung
@@ -539,12 +555,14 @@ Oeffentlich: /umfrage/[token], /verein/[slug]/aktuell (Schwarzes Brett)
 - [ ] KI-Kosten-Tracking
 
 ### Deployment (aktuell):
-- Server: Eigene Ubuntu VM (kein Docker)
-- Domain: vereinbase.de (SSL via Caddy, Wildcard *.vereinbase.de)
-- Frontend: `cd apps/frontend && npm run build && npx next start -p 3000`
-- Backend: `cd apps/backend && npm run build && node dist/main.js`
-- Prozesse via PM2 (ecosystem.config.js, Auto-Restart)
+- Server: Ubuntu VM (192.168.0.151)
+- nginx: Extern in Docker, leitet vereinbase.de auf Port 3000
+- Frontend: PM2 (vereinbase-frontend, Port 3000)
+- Backend: PM2 (vereinbase-backend, Port 3001)
+- Domain: vereinbase.de
+- DB: PostgreSQL (aktuell clubos_dev, Umbenennung mit sudo)
 - DB-Backup: Cron taeglich 3:00 Uhr
+- Frontend .env.local: NEXT_PUBLIC_API_URL=http://localhost:3001
 
 ---
 
