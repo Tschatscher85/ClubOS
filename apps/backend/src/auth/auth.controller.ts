@@ -34,6 +34,7 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('registrieren')
+  @Throttle({ short: { ttl: 60000, limit: 3 } }) // Max 3 Registrierungen pro Minute
   @ApiOperation({ summary: 'Neuen Verein und Admin-Benutzer registrieren' })
   @ApiResponse({ status: 201, description: 'Verein erfolgreich registriert' })
   @ApiResponse({ status: 409, description: 'E-Mail oder Slug bereits vergeben' })
@@ -42,7 +43,7 @@ export class AuthController {
   }
 
   @Post('anmelden')
-  @Throttle({ short: { ttl: 10000, limit: 5 } }) // Max 5 Login-Versuche pro 10 Sekunden
+  @Throttle({ short: { ttl: 60000, limit: 5 } }) // Max 5 Login-Versuche pro Minute (Brute-Force-Schutz)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Benutzer anmelden' })
   @ApiResponse({ status: 200, description: 'Erfolgreich angemeldet' })

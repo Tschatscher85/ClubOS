@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, Users, Palette, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import { Upload, Users, Palette, ArrowRight, ArrowLeft, Check, UserPlus, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,6 +37,7 @@ export default function OnboardingPage() {
   const [sportarten, setSportarten] = useState<string[]>([]);
   const [teamName, setTeamName] = useState('');
   const [altersgruppe, setAltersgruppe] = useState('');
+  const [einladungEmails, setEinladungEmails] = useState('');
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   if (!accessToken) {
@@ -99,6 +100,24 @@ export default function OnboardingPage() {
       }
     } catch {
       // Einstellungen optional
+    }
+    // Einladungen versenden wenn E-Mails angegeben
+    if (einladungEmails.trim()) {
+      const emails = einladungEmails
+        .split('\n')
+        .map((e) => e.trim())
+        .filter((e) => e.includes('@'));
+      for (const email of emails) {
+        try {
+          await apiClient.post('/einladungen', {
+            email,
+            vorname: '',
+            nachname: '',
+          });
+        } catch {
+          // Einladung optional
+        }
+      }
     }
     router.push('/dashboard');
   };
@@ -228,6 +247,36 @@ export default function OnboardingPage() {
           </div>
         </div>
       )}
+    </div>,
+
+    // Schritt 3: Mitglieder einladen
+    <div key="einladen" className="space-y-6">
+      <div className="text-center space-y-2">
+        <UserPlus className="h-8 w-8 mx-auto text-primary" />
+        <h2 className="text-xl font-semibold">Trainer & Mitglieder einladen</h2>
+        <p className="text-muted-foreground">
+          Geben Sie E-Mail-Adressen ein (eine pro Zeile). Diese erhalten eine Einladung per E-Mail.
+        </p>
+      </div>
+      <div className="space-y-2">
+        <Label>E-Mail-Adressen</Label>
+        <textarea
+          className="w-full min-h-[120px] rounded-md border bg-background px-3 py-2 text-sm"
+          value={einladungEmails}
+          onChange={(e) => setEinladungEmails(e.target.value)}
+          placeholder={`trainer@beispiel.de\nmitglied1@beispiel.de\nmitglied2@beispiel.de`}
+        />
+        <p className="text-xs text-muted-foreground">
+          Optional — Sie können auch später unter Mitglieder → Einladen starten.
+        </p>
+      </div>
+      <div className="rounded-lg border bg-muted/30 p-4 text-center space-y-2">
+        <Sparkles className="h-6 w-6 text-primary mx-auto" />
+        <p className="text-sm font-medium">Bereit zum Loslegen!</p>
+        <p className="text-xs text-muted-foreground">
+          Sie können alle Einstellungen jederzeit unter Einstellungen ändern.
+        </p>
+      </div>
     </div>,
   ];
 

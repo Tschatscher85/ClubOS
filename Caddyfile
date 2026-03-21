@@ -15,7 +15,10 @@ vereinbase.de, *.vereinbase.de {
 		X-Frame-Options "SAMEORIGIN"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
-		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-XSS-Protection "1; mode=block"
+		Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=()"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://api.vereinbase.de wss://vereinbase.de; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
 	}
 
 	# Komprimierung
@@ -28,14 +31,16 @@ vereinbase.de, *.vereinbase.de {
 	}
 }
 
-# API-Subdomain (optional)
+# API-Subdomain
 api.vereinbase.de {
 	reverse_proxy localhost:3001
 
 	header {
-		Access-Control-Allow-Origin "*"
+		Access-Control-Allow-Origin "https://vereinbase.de"
 		Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
 		Access-Control-Allow-Headers "Authorization, Content-Type"
+		Access-Control-Allow-Credentials "true"
+		X-Content-Type-Options "nosniff"
 	}
 
 	encode gzip

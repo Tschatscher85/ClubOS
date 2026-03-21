@@ -10,6 +10,7 @@ import {
   FileText,
   Mail,
   Activity,
+  Cake,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -60,6 +61,13 @@ interface Einladung {
   email: string;
   status: string;
   createdAt: string;
+}
+
+interface GeburtstagsMitglied {
+  id: string;
+  firstName: string;
+  lastName: string;
+  birthDate: string;
 }
 
 // --- Hilfsfunktionen ---
@@ -193,6 +201,7 @@ export default function DashboardPage() {
   const [einreichungen, setEinreichungen] = useState<Einreichung[]>([]);
   const [veranstaltungen, setVeranstaltungen] = useState<Veranstaltung[]>([]);
   const [einladungen, setEinladungen] = useState<Einladung[]>([]);
+  const [geburtstage, setGeburtstage] = useState<GeburtstagsMitglied[]>([]);
   const [ladend, setLadend] = useState(true);
 
   const datenLaden = useCallback(async () => {
@@ -203,6 +212,7 @@ export default function DashboardPage() {
         apiClient.get<Einreichung[]>('/formulare/einreichungen'),
         apiClient.get<Veranstaltung[]>('/veranstaltungen/kommende'),
         apiClient.get<Einladung[]>('/einladungen'),
+        apiClient.get<GeburtstagsMitglied[]>('/mitglieder').catch(() => []),
       ]);
 
       if (ergebnisse[0].status === 'fulfilled') {
@@ -219,6 +229,20 @@ export default function DashboardPage() {
       }
       if (ergebnisse[4].status === 'fulfilled') {
         setEinladungen(ergebnisse[4].value);
+      }
+      // Geburtstage diese Woche berechnen
+      if (ergebnisse[5].status === 'fulfilled') {
+        const heute = new Date();
+        const inEinerWoche = new Date();
+        inEinerWoche.setDate(heute.getDate() + 7);
+        const mitglieder = ergebnisse[5].value as GeburtstagsMitglied[];
+        const dieseWoche = mitglieder.filter((m) => {
+          if (!m.birthDate) return false;
+          const geb = new Date(m.birthDate);
+          const gebDiesesJahr = new Date(heute.getFullYear(), geb.getMonth(), geb.getDate());
+          return gebDiesesJahr >= heute && gebDiesesJahr <= inEinerWoche;
+        });
+        setGeburtstage(dieseWoche);
       }
     } catch (error) {
       console.error('Fehler beim Laden der Dashboard-Daten:', error);
@@ -315,6 +339,40 @@ export default function DashboardPage() {
 
       {/* Mitgliederbindung Widget */}
       <MitgliederbindungWidget />
+
+      {/* Geburtstage diese Woche */}
+      {!ladend && geburtstage.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Cake className="h-4 w-4 text-pink-500" />
+              Geburtstage diese Woche
+              <Badge variant="secondary" className="ml-auto">{geburtstage.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              {geburtstage.map((m) => {
+                const geb = new Date(m.birthDate);
+                const alter = new Date().getFullYear() - geb.getFullYear();
+                const tag = geb.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                return (
+                  <div
+                    key={m.id}
+                    className="flex items-center gap-2 rounded-lg border bg-pink-50 dark:bg-pink-950/20 px-3 py-2"
+                  >
+                    <Cake className="h-4 w-4 text-pink-500 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium">{m.firstName} {m.lastName}</p>
+                      <p className="text-xs text-muted-foreground">{tag} — wird {alter}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Mittlerer Bereich: Sportarten-Verteilung + Letzte Einreichungen */}
       <div className="grid gap-6 lg:grid-cols-2">
