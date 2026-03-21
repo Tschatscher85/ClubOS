@@ -58,6 +58,7 @@ import { VertragModule } from './vertrag/vertrag.module';
 import { BerichtModule } from './bericht/bericht.module';
 import { EhrenamtModule } from './ehrenamt/ehrenamt.module';
 import { FestModule } from './fest/fest.module';
+import { MitgliederbindungModule } from './mitgliederbindung/mitgliederbindung.module';
 import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
 import { TenantStatusMiddleware } from './common/middleware/tenant-status.middleware';
 import configuration from './config/configuration';
@@ -141,6 +142,7 @@ import configuration from './config/configuration';
     BerichtModule,
     EhrenamtModule,
     FestModule,
+    MitgliederbindungModule,
   ],
   providers: [
     {

@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api-client';
 import { sportartLabel } from '@/lib/sportarten';
+import { MitgliederbindungWidget } from '@/components/dashboard/mitgliederbindung-widget';
 
 // --- Typen ---
 
@@ -311,6 +312,9 @@ export default function DashboardPage() {
           </Card>
         </div>
       )}
+
+      {/* Mitgliederbindung Widget */}
+      <MitgliederbindungWidget />
 
       {/* Mittlerer Bereich: Sportarten-Verteilung + Letzte Einreichungen */}
       <div className="grid gap-6 lg:grid-cols-2">

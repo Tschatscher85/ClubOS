@@ -63,6 +63,8 @@ export class QueueService {
     private readonly geburtstagQueue: Queue,
     @InjectQueue('warteliste')
     private readonly wartelisteQueue: Queue,
+    @InjectQueue('mitgliederbindung')
+    private readonly mitgliederbindungQueue: Queue,
   ) {
     // Geburtstags-CronJob: taeglich um 08:00 Uhr
     this.geburtstagQueue.add(
@@ -92,6 +94,21 @@ export class QueueService {
       this.logger.log('Wartelisten-CronJob registriert (stuendlich)');
     }).catch((err) => {
       this.logger.warn(`Wartelisten-CronJob Registrierung: ${err.message}`);
+    });
+
+    // Mitgliederbindungs-CronJob: woechentlich Montag um 07:00 Uhr
+    this.mitgliederbindungQueue.add(
+      'woechentlich-analysieren',
+      {},
+      {
+        repeat: { pattern: '0 7 * * 1' }, // Jeden Montag um 07:00
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
+    ).then(() => {
+      this.logger.log('Mitgliederbindungs-CronJob registriert (Montag 07:00)');
+    }).catch((err) => {
+      this.logger.warn(`Mitgliederbindungs-CronJob Registrierung: ${err.message}`);
     });
   }
 

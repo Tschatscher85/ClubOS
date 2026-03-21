@@ -37,4 +37,5 @@ export const ROUTEN = {
   MARKTPLATZ: '/marktplatz',
   BERICHTE: '/berichte',
   EHRENAMT: '/ehrenamt',
+  MITGLIEDERBINDUNG: '/mitgliederbindung',
 } as const;

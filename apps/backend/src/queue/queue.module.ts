@@ -6,8 +6,10 @@ import { EmailProcessor } from './email.processor';
 import { ReminderProcessor } from './reminder.processor';
 import { GeburtstagProcessor } from './geburtstag.processor';
 import { WartelisteProcessor } from './warteliste.processor';
+import { MitgliederbindungProcessor } from './mitgliederbindung.processor';
 import { EinladungModule } from '../einladung/einladung.module';
 import { WartelisteModule } from '../warteliste/warteliste.module';
+import { MitgliederbindungModule } from '../mitgliederbindung/mitgliederbindung.module';
 
 @Module({
   imports: [
@@ -31,11 +33,13 @@ import { WartelisteModule } from '../warteliste/warteliste.module';
       { name: 'benachrichtigung' },
       { name: 'geburtstag' },
       { name: 'warteliste' },
+      { name: 'mitgliederbindung' },
     ),
     EinladungModule,
     forwardRef(() => WartelisteModule),
+    MitgliederbindungModule,
   ],
-  providers: [QueueService, EmailProcessor, ReminderProcessor, GeburtstagProcessor, WartelisteProcessor],
+  providers: [QueueService, EmailProcessor, ReminderProcessor, GeburtstagProcessor, WartelisteProcessor, MitgliederbindungProcessor],
   exports: [QueueService],
 })
 export class QueueModule {}
