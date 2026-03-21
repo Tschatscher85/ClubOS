@@ -74,25 +74,109 @@ export class AushangService {
     return aushang;
   }
 
-  /** Alle Aushaenge eines Vereins abrufen (aktive + kuerzlich abgelaufene). */
-  async alleAbrufen(tenantId: string) {
+  /**
+   * Aushaenge abrufen — MEMBER/PARENT sehen nur Aushaenge ihrer eigenen Teams
+   * + Aushaenge ohne Team-Zuordnung (vereinsweite Aushenge).
+   * ADMIN/TRAINER/SUPERADMIN sehen alle.
+   */
+  async alleAbrufen(tenantId: string, userId?: string, rolle?: string) {
     const jetzt = new Date();
-    // Zeige abgelaufene der letzten 7 Tage noch an
     const siebenTageZurueck = new Date(jetzt.getTime() - 7 * 24 * 60 * 60 * 1000);
 
+    // Team-IDs ermitteln fuer MEMBER/PARENT
+    let teamFilter: string[] | null = null;
+    if (userId && rolle && ['MEMBER', 'PARENT'].includes(rolle)) {
+      teamFilter = await this.meineTeamIds(userId, tenantId);
+    }
+
+    const zeitFilter = {
+      OR: [
+        { ablaufDatum: null },
+        { ablaufDatum: { gte: siebenTageZurueck } },
+      ],
+    };
+
+    const ablaufFilter = [
+      { ablaufDatum: null },
+      { ablaufDatum: { gte: siebenTageZurueck } },
+    ];
+
+    if (teamFilter !== null) {
+      // MEMBER/PARENT: nur eigene Teams + vereinsweite (teamId = null)
+      return this.prisma.aushang.findMany({
+        where: {
+          tenantId,
+          AND: [
+            { OR: ablaufFilter },
+            { OR: [{ teamId: { in: teamFilter } }, { teamId: null }] },
+          ],
+        },
+        include: {
+          team: { select: { id: true, name: true } },
+        },
+        orderBy: { erstelltAm: 'desc' },
+      });
+    }
+
+    // ADMIN/TRAINER/SUPERADMIN: alle
     return this.prisma.aushang.findMany({
       where: {
         tenantId,
-        OR: [
-          { ablaufDatum: null },
-          { ablaufDatum: { gte: siebenTageZurueck } },
-        ],
+        OR: ablaufFilter,
       },
       include: {
         team: { select: { id: true, name: true } },
       },
       orderBy: { erstelltAm: 'desc' },
     });
+  }
+
+  /** Team-IDs eines Users ermitteln (ueber Member -> TeamMember) */
+  private async meineTeamIds(userId: string, tenantId: string): Promise<string[]> {
+    const member = await this.prisma.member.findFirst({
+      where: { userId, tenantId },
+      select: {
+        teamMembers: { select: { teamId: true } },
+      },
+    });
+
+    if (!member) {
+      // Fuer PARENT: Kinder-Teams suchen
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          familieMitgliedschaften: {
+            select: {
+              familie: {
+                select: {
+                  mitglieder: {
+                    select: {
+                      member: {
+                        select: {
+                          teamMembers: { select: { teamId: true } },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const teamIds = new Set<string>();
+      user?.familieMitgliedschaften?.forEach((fm) => {
+        fm.familie?.mitglieder?.forEach((m) => {
+          m.member?.teamMembers?.forEach((tm) => {
+            teamIds.add(tm.teamId);
+          });
+        });
+      });
+      return Array.from(teamIds);
+    }
+
+    return member.teamMembers.map((tm) => tm.teamId);
   }
 
   /** Oeffentliche Aushaenge fuer Vereinsseite (nur aktive, ohne erstelltVon). */

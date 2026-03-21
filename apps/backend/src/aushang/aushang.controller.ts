@@ -38,11 +38,13 @@ export class AushangController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Alle Aushaenge abrufen' })
+  @ApiOperation({ summary: 'Aushaenge abrufen (MEMBER/PARENT: nur eigene Teams)' })
   async alleAbrufen(
     @AktuellerBenutzer('tenantId') tenantId: string,
+    @AktuellerBenutzer('id') userId: string,
+    @AktuellerBenutzer('rolle') rolle: string,
   ) {
-    return this.aushangService.alleAbrufen(tenantId);
+    return this.aushangService.alleAbrufen(tenantId, userId, rolle);
   }
 
   @Put(':id')
