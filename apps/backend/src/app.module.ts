@@ -61,6 +61,7 @@ import { FestModule } from './fest/fest.module';
 import { MitgliederbindungModule } from './mitgliederbindung/mitgliederbindung.module';
 import { EinverstaendnisModule } from './einverstaendnis/einverstaendnis.module';
 import { GalerieModule } from './galerie/galerie.module';
+import { MitgliedDokumentModule } from './mitglied-dokument/mitglied-dokument.module';
 import { WikiModule } from './wiki/wiki.module';
 import { SaisonplanModule } from './saisonplan/saisonplan.module';
 import { GesundheitscheckModule } from './gesundheitscheck/gesundheitscheck.module';
@@ -153,6 +154,7 @@ import configuration from './config/configuration';
     MitgliederbindungModule,
     EinverstaendnisModule,
     GalerieModule,
+    MitgliedDokumentModule,
     WikiModule,
     SaisonplanModule,
     GesundheitscheckModule,

@@ -279,6 +279,7 @@ model Member {
   ehrenamtMeldungen          EhrenamtMeldung[]
   festSchichtHelfer          FestSchichtHelfer[]
   einverstaendnisAntworten   EinverstaendnisAntwort[]
+  dokumente                  MitgliedDokument[]
 
   @@index([tenantId])
   @@index([email])
@@ -2181,4 +2182,34 @@ enum FundingStatus {
   ERREICHT
   ABGELAUFEN
   GESCHLOSSEN
+}
+
+// ==================== Mitglied-Dokumente (Papierantraege, Scans) ====================
+
+model MitgliedDokument {
+  id               String                  @id @default(cuid())
+  tenantId         String
+  memberId         String
+  member           Member                  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  name             String                  // z.B. "Mitgliedsantrag 2019", "Beitrittserklaerung"
+  beschreibung     String?
+  dateiUrl         String                  // /uploads/mitglied-dokumente/...
+  dateiGroesse     Int                     // Bytes
+  dateiTyp         String                  // MIME: application/pdf, image/jpeg, image/png
+  kategorie        MitgliedDokumentTyp     @default(MITGLIEDSANTRAG)
+  istFamilienantrag Boolean               @default(false) // Wenn true: auch fuer Familienmitglieder sichtbar
+  hochgeladenVon   String                  // userId des Uploaders
+  erstelltAm       DateTime               @default(now())
+
+  @@index([tenantId])
+  @@index([memberId])
+}
+
+enum MitgliedDokumentTyp {
+  MITGLIEDSANTRAG
+  BEITRITTSERKLAERUNG
+  KUENDIGUNG
+  EINVERSTAENDNIS
+  AENDERUNGSANTRAG
+  SONSTIGES
 }

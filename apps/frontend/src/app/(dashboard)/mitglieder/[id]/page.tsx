@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { MitgliedDokumente } from '@/components/mitglieder/mitglied-dokumente';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -987,6 +988,12 @@ export default function MitgliedDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Mitglied-Dokumente (Scans, Papieranträge) */}
+      <MitgliedDokumente
+        memberId={mitglied.id}
+        mitgliedName={`${mitglied.firstName} ${mitglied.lastName}`}
+      />
 
       {/* Benutzerkonto */}
       <Card>
