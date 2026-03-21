@@ -153,6 +153,9 @@ export default function GaleriePage() {
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
             {fotos.length} Foto{fotos.length !== 1 ? 's' : ''}
+            {benutzer && !['ADMIN', 'SUPERADMIN'].includes(benutzer.rolle) && (
+              <span className="ml-2 text-xs">(nur deine Teams)</span>
+            )}
           </p>
         </div>
         {istAdmin && (

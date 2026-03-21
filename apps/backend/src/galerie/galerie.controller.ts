@@ -80,21 +80,27 @@ export class GalerieController {
    * Alle Fotos des Vereins laden
    */
   @Get()
-  @ApiOperation({ summary: 'Alle Fotos des Vereins' })
-  async alleLaden(@AktuellerBenutzer('tenantId') tenantId: string) {
-    return this.service.alleLaden(tenantId);
+  @ApiOperation({ summary: 'Alle Fotos des Vereins (DSGVO: nach Teamzugehoerigkeit gefiltert)' })
+  async alleLaden(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @AktuellerBenutzer('id') userId: string,
+    @AktuellerBenutzer('rolle') rolle: string,
+  ) {
+    return this.service.alleLaden(tenantId, userId, rolle);
   }
 
   /**
    * Fotos fuer ein Team laden
    */
   @Get('team/:teamId')
-  @ApiOperation({ summary: 'Fotos fuer ein Team' })
+  @ApiOperation({ summary: 'Fotos fuer ein Team (DSGVO: nur eigene Teams)' })
   async fuerTeam(
     @AktuellerBenutzer('tenantId') tenantId: string,
+    @AktuellerBenutzer('id') userId: string,
+    @AktuellerBenutzer('rolle') rolle: string,
     @Param('teamId') teamId: string,
   ) {
-    return this.service.fuerTeamLaden(tenantId, teamId);
+    return this.service.fuerTeamLaden(tenantId, teamId, userId, rolle);
   }
 
   /**

@@ -33,9 +33,18 @@ export class GalerieService {
   }
 
   /**
-   * Fotos fuer ein Team laden
+   * Fotos fuer ein Team laden — DSGVO: Teamzugehoerigkeit pruefen
    */
-  async fuerTeamLaden(tenantId: string, teamId: string) {
+  async fuerTeamLaden(tenantId: string, teamId: string, userId?: string, rolle?: string) {
+    const istAdmin = rolle && ['ADMIN', 'SUPERADMIN'].includes(rolle);
+
+    if (!istAdmin && userId) {
+      const teamIds = await this.meineTeamIds(userId, tenantId);
+      if (!teamIds.includes(teamId)) {
+        throw new ForbiddenException('Du hast keinen Zugriff auf Fotos dieses Teams.');
+      }
+    }
+
     return this.prisma.foto.findMany({
       where: { tenantId, teamId },
       orderBy: { erstelltAm: 'desc' },
@@ -53,19 +62,62 @@ export class GalerieService {
   }
 
   /**
-   * Alle Fotos des Vereins laden (gruppiert nach Team/Event)
+   * Team-IDs ermitteln, in denen der User Mitglied ist
    */
-  async alleLaden(tenantId: string) {
-    const fotos = await this.prisma.foto.findMany({
-      where: { tenantId },
+  private async meineTeamIds(userId: string, tenantId: string): Promise<string[]> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        profile: {
+          select: {
+            teamMembers: {
+              select: { teamId: true },
+            },
+          },
+        },
+      },
+    });
+
+    return user?.profile?.teamMembers?.map((tm) => tm.teamId) ?? [];
+  }
+
+  /**
+   * Alle Fotos laden — DSGVO-konform nach Rolle gefiltert:
+   * ADMIN/SUPERADMIN: alle Fotos
+   * TRAINER/MEMBER/PARENT: nur Fotos der eigenen Teams
+   */
+  async alleLaden(tenantId: string, userId: string, rolle: string) {
+    const istAdmin = ['ADMIN', 'SUPERADMIN'].includes(rolle);
+
+    if (istAdmin) {
+      return this.prisma.foto.findMany({
+        where: { tenantId },
+        include: {
+          team: { select: { id: true, name: true } },
+          event: { select: { id: true, title: true } },
+        },
+        orderBy: { erstelltAm: 'desc' },
+      });
+    }
+
+    // TRAINER/MEMBER/PARENT: nur Fotos der eigenen Teams
+    const teamIds = await this.meineTeamIds(userId, tenantId);
+
+    return this.prisma.foto.findMany({
+      where: {
+        tenantId,
+        OR: [
+          { teamId: { in: teamIds } },
+          // Eigene Uploads ohne Team-Zuordnung auch anzeigen
+          { hochgeladenVon: userId, teamId: null },
+        ],
+      },
       include: {
         team: { select: { id: true, name: true } },
         event: { select: { id: true, title: true } },
       },
       orderBy: { erstelltAm: 'desc' },
     });
-
-    return fotos;
   }
 
   /**
