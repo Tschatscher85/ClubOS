@@ -49,11 +49,60 @@ export class KasseService {
       },
     });
 
+    const gesamt = await this.prisma.kasseBuchung.count({
+      where: { kasseId: kasse.id },
+    });
+
     return {
       id: kasse.id,
       teamId: kasse.teamId,
       stand: kasse.stand,
       buchungen,
+      gesamtBuchungen: gesamt,
+    };
+  }
+
+  /** Kompletter Verlauf mit Pagination (transparent fuer Trainer) */
+  async verlaufAbrufen(
+    tenantId: string,
+    teamId: string,
+    seite: number = 1,
+    proSeite: number = 50,
+    typ?: string,
+  ) {
+    const kasse = await this.kasseHolenOderErstellen(tenantId, teamId);
+
+    const where: Record<string, unknown> = { kasseId: kasse.id };
+    if (typ && ['STRAFE', 'EINZAHLUNG', 'AUSGABE'].includes(typ)) {
+      where.typ = typ;
+    }
+
+    const [buchungen, gesamt] = await Promise.all([
+      this.prisma.kasseBuchung.findMany({
+        where,
+        orderBy: { erstelltAm: 'desc' },
+        skip: (seite - 1) * proSeite,
+        take: proSeite,
+        include: {
+          member: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              memberNumber: true,
+            },
+          },
+        },
+      }),
+      this.prisma.kasseBuchung.count({ where }),
+    ]);
+
+    return {
+      buchungen,
+      gesamt,
+      seite,
+      proSeite,
+      seiten: Math.ceil(gesamt / proSeite),
     };
   }
 

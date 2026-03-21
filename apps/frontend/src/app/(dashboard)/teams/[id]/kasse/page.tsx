@@ -55,6 +55,15 @@ interface KassenDaten {
   teamId: string;
   stand: number;
   buchungen: Buchung[];
+  gesamtBuchungen: number;
+}
+
+interface VerlaufDaten {
+  buchungen: Buchung[];
+  gesamt: number;
+  seite: number;
+  proSeite: number;
+  seiten: number;
 }
 
 interface SaldoEintrag {
@@ -134,6 +143,7 @@ export default function KassePage() {
 
   // Filter-State
   const [buchungenFilter, setBuchungenFilter] = useState<string>('ALLE');
+  const [verlaufDaten, setVerlaufDaten] = useState<VerlaufDaten | null>(null);
 
   // Dialog-State
   const [strafeDialogOffen, setStrafeDialogOffen] = useState(false);
@@ -284,6 +294,20 @@ export default function KassePage() {
     setStrafeDialogOffen(true);
   };
 
+  // ==================== Kompletter Verlauf laden ====================
+
+  const verlaufLaden = async (seite: number) => {
+    try {
+      const typParam = buchungenFilter !== 'ALLE' ? `&typ=${buchungenFilter}` : '';
+      const result = await apiClient.get<VerlaufDaten>(
+        `/kasse/${teamId}/verlauf?seite=${seite}${typParam}`,
+      );
+      setVerlaufDaten(result);
+    } catch {
+      // Ignore
+    }
+  };
+
   // ==================== Gefilterte Buchungen ====================
 
   const gefilterteBuchungen = kasse?.buchungen.filter((b) => {
@@ -419,7 +443,7 @@ export default function KassePage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {gefilterteBuchungen.map((buchung) => (
+                {(verlaufDaten ? verlaufDaten.buchungen : gefilterteBuchungen).map((buchung) => (
                   <Card key={buchung.id}>
                     <CardContent className="flex items-center justify-between py-3">
                       <div className="flex-1">
@@ -455,6 +479,31 @@ export default function KassePage() {
                 ))}
               </div>
             )}
+
+            {/* Kompletter Verlauf: Pagination */}
+            {verlaufDaten ? (
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-xs text-muted-foreground">
+                  Seite {verlaufDaten.seite} von {verlaufDaten.seiten} ({verlaufDaten.gesamt} Buchungen)
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={verlaufDaten.seite <= 1}
+                    onClick={() => verlaufLaden(verlaufDaten.seite - 1)}>
+                    Zurück
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={verlaufDaten.seite >= verlaufDaten.seiten}
+                    onClick={() => verlaufLaden(verlaufDaten.seite + 1)}>
+                    Weiter
+                  </Button>
+                </div>
+              </div>
+            ) : kasse && kasse.gesamtBuchungen > 20 ? (
+              <div className="text-center pt-2">
+                <Button variant="outline" size="sm" onClick={() => verlaufLaden(1)}>
+                  Kompletten Verlauf anzeigen ({kasse.gesamtBuchungen} Buchungen)
+                </Button>
+              </div>
+            ) : null}
           </div>
         </TabsContent>
 

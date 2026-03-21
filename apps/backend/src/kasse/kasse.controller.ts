@@ -5,6 +5,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -36,6 +37,23 @@ export class KasseController {
     @Param('teamId') teamId: string,
   ) {
     return this.kasseService.kassenstandAbrufen(tenantId, teamId);
+  }
+
+  @Get(':teamId/verlauf')
+  @ApiOperation({ summary: 'Kompletter Kassenverlauf mit Pagination (transparent)' })
+  async verlaufAbrufen(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('teamId') teamId: string,
+    @Query('seite') seite?: string,
+    @Query('typ') typ?: string,
+  ) {
+    return this.kasseService.verlaufAbrufen(
+      tenantId,
+      teamId,
+      seite ? parseInt(seite, 10) : 1,
+      50,
+      typ,
+    );
   }
 
   @Post(':teamId/strafe')
