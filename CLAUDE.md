@@ -455,6 +455,8 @@ model FAQ {
 - [x] Eltern-Umfragen / Doodle-Ersatz (Token-basiert, oeffentlich)
 - [x] Digitales Schwarzes Brett (Kategorien, Push bei AUSFALL, oeffentlich)
 - [x] Wartelisten-Management (maxKader, Auto-Einladung, 48h-Frist)
+- [x] Familie-Verknuepfung (Partner, Kinder, Geschwister - Mama+Papa synchronisiert)
+- [x] Vereinbase Marktplatz (vereinsuebergreifend, PLZ-Filter, Bewerbungen)
 
 ### 45+ Frontend-Seiten:
 Dashboard, Mitglieder (+Detail, +Entwicklung), Mitarbeiter,
@@ -502,11 +504,11 @@ Oeffentlich: /umfrage/[token], /verein/[slug]/aktuell (Schwarzes Brett)
 - [ ] B4: KI-Mitgliederbindung / Churn Prevention (Risiko-Score, Dashboard)
 
 ### Phase C — Vereinbase als Plattform
-- [ ] C1: Trainer-Marktplatz (vereinsuebergreifend, Vertretungs-Anfragen)
+- [x] C1: Vereinbase Marktplatz (vereinsuebergreifend: Geraete, Trikots, Trainer, Spiele, Turniere, SR, PLZ-Filter)
 - [ ] C2: Vereins-Gesundheitscheck Dashboard (Score 0-100, Quartals-Analyse)
 - [x] C3: iCal Feed (erledigt, /homepage/ical/:slug)
 - [ ] C4: Vereins-Crowdfunding (Stripe, Fortschrittsbalken)
-- [ ] C5: Regionaler Schiedsrichter-Pool (vereinsuebergreifend)
+- [x] C5: Regionaler Schiedsrichter-Pool (im Marktplatz integriert)
 
 ### Phase D — Langfristig
 - [ ] D1: E-Sport Integration
