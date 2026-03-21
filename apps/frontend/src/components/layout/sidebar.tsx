@@ -50,6 +50,14 @@ interface NavGruppe {
   eintraege: NavEintrag[];
 }
 
+// ==================== RECHTE-MATRIX ====================
+// SUPERADMIN: Alles
+// ADMIN:      Alles im eigenen Verein
+// TRAINER:    Eigene Teams, Kalender, Nachrichten, Galerie, Lizenzen
+// MEMBER:     Eigenes Team, Kalender, Nachrichten, Pinnwand, Profil
+// PARENT:     Eltern-Portal, Kalender der Kinder, Nachrichten
+// ==========================================================
+
 const NAVIGATION_GRUPPEN: NavGruppe[] = [
   {
     titel: '',
@@ -61,34 +69,34 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
   {
     titel: 'Verein',
     eintraege: [
-      { href: ROUTEN.MITGLIEDER, label: 'Mitglieder & Familien', icon: Users, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'MITGLIEDER' },
-      { href: ROUTEN.TEAMS, label: 'Teams & Abteilungen', icon: Shield, rollen: null, berechtigung: 'TEAMS' },
+      { href: ROUTEN.MITGLIEDER, label: 'Mitglieder & Familien', icon: Users, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
+      { href: ROUTEN.TEAMS, label: 'Teams & Abteilungen', icon: Shield, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
     ],
   },
   {
     titel: 'Aktivitäten',
     eintraege: [
-      { href: ROUTEN.KALENDER, label: 'Kalender & Saison', icon: Calendar, rollen: null, berechtigung: 'KALENDER' },
-      { href: ROUTEN.NACHRICHTEN, label: 'Nachrichten & Umfragen', icon: MessageSquare, rollen: null, berechtigung: 'NACHRICHTEN' },
-      { href: ROUTEN.SCHWARZES_BRETT, label: 'Pinnwand', icon: ClipboardList, rollen: null },
-      { href: ROUTEN.GALERIE, label: 'Galerie', icon: Camera, rollen: null },
+      { href: ROUTEN.KALENDER, label: 'Kalender & Saison', icon: Calendar, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER', 'MEMBER'] },
+      { href: ROUTEN.NACHRICHTEN, label: 'Nachrichten & Umfragen', icon: MessageSquare, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER', 'MEMBER'] },
+      { href: ROUTEN.SCHWARZES_BRETT, label: 'Pinnwand', icon: ClipboardList, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER', 'MEMBER'] },
+      { href: ROUTEN.GALERIE, label: 'Galerie', icon: Camera, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER', 'MEMBER'] },
     ],
   },
   {
     titel: 'Finanzen',
     eintraege: [
-      { href: ROUTEN.BUCHHALTUNG, label: 'Buchhaltung & Beiträge', icon: Receipt, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'BUCHHALTUNG' },
-      { href: ROUTEN.SPONSOREN, label: 'Sponsoren', icon: Heart, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'SPONSOREN' },
-      { href: ROUTEN.FUNDING, label: 'Crowdfunding', icon: Coins, rollen: null },
+      { href: ROUTEN.BUCHHALTUNG, label: 'Buchhaltung & Beiträge', icon: Receipt, rollen: ['SUPERADMIN', 'ADMIN'] },
+      { href: ROUTEN.SPONSOREN, label: 'Sponsoren', icon: Heart, rollen: ['SUPERADMIN', 'ADMIN'] },
+      { href: ROUTEN.FUNDING, label: 'Crowdfunding', icon: Coins, rollen: ['SUPERADMIN', 'ADMIN'] },
     ],
   },
   {
     titel: 'Verwaltung',
     eintraege: [
-      { href: ROUTEN.DOKUMENTE, label: 'Dokumente & Formulare', icon: FolderOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'DOKUMENTE' },
-      { href: ROUTEN.WIKI, label: 'Wiki', icon: BookOpen, rollen: null },
-      { href: ROUTEN.EHRENAMT, label: 'Ehrenamt', icon: HandHeart, rollen: null },
-      { href: ROUTEN.SCHIEDSRICHTER, label: 'Schiedsrichter', icon: UserCheck, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'], berechtigung: 'SCHIEDSRICHTER' },
+      { href: ROUTEN.DOKUMENTE, label: 'Dokumente & Formulare', icon: FolderOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
+      { href: ROUTEN.WIKI, label: 'Wiki', icon: BookOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
+      { href: ROUTEN.EHRENAMT, label: 'Ehrenamt', icon: HandHeart, rollen: ['SUPERADMIN', 'ADMIN'] },
+      { href: ROUTEN.SCHIEDSRICHTER, label: 'Schiedsrichter', icon: UserCheck, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
       { href: ROUTEN.MARKTPLATZ, label: 'Marktplatz & Partner', icon: Store, rollen: ['SUPERADMIN', 'ADMIN'] },
     ],
   },
@@ -96,7 +104,7 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
     titel: 'Berichte & Qualität',
     eintraege: [
       { href: ROUTEN.BERICHTE, label: 'Berichte', icon: FileBarChart, rollen: ['SUPERADMIN', 'ADMIN'] },
-      { href: ROUTEN.MITGLIEDERBINDUNG, label: 'Mitgliederbindung', icon: UserX, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
+      { href: ROUTEN.MITGLIEDERBINDUNG, label: 'Mitgliederbindung', icon: UserX, rollen: ['SUPERADMIN', 'ADMIN'] },
       { href: ROUTEN.GESUNDHEITSCHECK, label: 'Gesundheitscheck', icon: Activity, rollen: ['SUPERADMIN', 'ADMIN'] },
       { href: ROUTEN.TRAINER_LIZENZEN, label: 'Trainer-Lizenzen', icon: Award, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
       { href: ROUTEN.VERSICHERUNG, label: 'Versicherungs-Check', icon: ShieldAlert, rollen: ['SUPERADMIN', 'ADMIN'] },
@@ -105,8 +113,8 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
   {
     titel: 'System',
     eintraege: [
-      { href: ROUTEN.EINSTELLUNGEN, label: 'Einstellungen', icon: Settings, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'EINSTELLUNGEN' },
-      { href: ROUTEN.WORKFLOWS, label: 'Workflows', icon: Zap, rollen: ['SUPERADMIN', 'ADMIN'], berechtigung: 'WORKFLOWS' },
+      { href: ROUTEN.EINSTELLUNGEN, label: 'Einstellungen', icon: Settings, rollen: ['SUPERADMIN', 'ADMIN'] },
+      { href: ROUTEN.WORKFLOWS, label: 'Workflows', icon: Zap, rollen: ['SUPERADMIN', 'ADMIN'] },
       { href: ROUTEN.DFBNET, label: 'DFBnet Import/Export', icon: Database, rollen: ['SUPERADMIN', 'ADMIN'] },
       { href: ROUTEN.AENDERUNGSANTRAEGE, label: 'Änderungsanträge', icon: FileEdit, rollen: ['SUPERADMIN', 'ADMIN'] },
     ],
