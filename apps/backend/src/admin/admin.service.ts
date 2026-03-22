@@ -453,8 +453,9 @@ export class AdminService {
         to: empfaenger,
         subject: 'Vereinbase — Test-Mail',
         html: `<h2>E-Mail-Versand funktioniert!</h2>
-          <p>Diese Test-Mail wurde von <strong>${absenderEmail}</strong> aus dem Vereinbase Admin-Dashboard gesendet.</p>
-          <p>SMTP-Server: ${config.smtpHost}:${config.smtpPort}</p>
+          <p>Diese Test-Mail wurde aus dem Vereinbase Admin-Dashboard gesendet.</p>
+          <p><strong>Absender:</strong> ${config.smtpFromName || 'Vereinbase'} &lt;${config.smtpFrom || config.smtpUser}&gt;</p>
+          <p><strong>SMTP-Server:</strong> ${config.smtpHost}:${config.smtpPort}</p>
           <p style="color:#888;font-size:12px">Zeitpunkt: ${new Date().toLocaleString('de-DE')}</p>`,
       });
 
