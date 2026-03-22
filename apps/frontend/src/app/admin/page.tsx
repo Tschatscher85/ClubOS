@@ -120,6 +120,24 @@ export default function AdminDashboard() {
   const [kiErfolg, setKiErfolg] = useState('');
   const [kiOffen, setKiOffen] = useState(false);
 
+  // Plattform E-Mail-Einstellungen
+  const [emailSmtpHost, setEmailSmtpHost] = useState('');
+  const [emailSmtpPort, setEmailSmtpPort] = useState('587');
+  const [emailSmtpUser, setEmailSmtpUser] = useState('');
+  const [emailSmtpPass, setEmailSmtpPass] = useState('');
+  const [emailSmtpFrom, setEmailSmtpFrom] = useState('');
+  const [emailSmtpFromName, setEmailSmtpFromName] = useState('Vereinbase');
+  const [emailImapHost, setEmailImapHost] = useState('');
+  const [emailImapPort, setEmailImapPort] = useState('993');
+  const [emailImapUser, setEmailImapUser] = useState('');
+  const [emailImapPass, setEmailImapPass] = useState('');
+  const [emailLadend, setEmailLadend] = useState(false);
+  const [emailErfolg, setEmailErfolg] = useState('');
+  const [emailFehler, setEmailFehler] = useState('');
+  const [emailOffen, setEmailOffen] = useState(false);
+  const [testMailAdresse, setTestMailAdresse] = useState('');
+  const [testMailErgebnis, setTestMailErgebnis] = useState('');
+
   // Auth initialisieren (diese Seite liegt ausserhalb des Dashboard-Layouts)
   useEffect(() => {
     if (!accessToken) {
@@ -179,6 +197,55 @@ export default function AdminDashboard() {
     }
   };
 
+  const emailEinstellungenLaden = useCallback(async () => {
+    try {
+      const data = await apiClient.get<Record<string, unknown>>('/admin/email-einstellungen');
+      setEmailSmtpHost((data.smtpHost as string) || '');
+      setEmailSmtpPort(String(data.smtpPort || 587));
+      setEmailSmtpUser((data.smtpUser as string) || '');
+      setEmailSmtpPass((data.smtpPass as string) || '');
+      setEmailSmtpFrom((data.smtpFrom as string) || '');
+      setEmailSmtpFromName((data.smtpFromName as string) || 'Vereinbase');
+      setEmailImapHost((data.imapHost as string) || '');
+      setEmailImapPort(String(data.imapPort || 993));
+      setEmailImapUser((data.imapUser as string) || '');
+      setEmailImapPass((data.imapPass as string) || '');
+    } catch { /* Noch keine Konfiguration */ }
+  }, []);
+
+  const emailEinstellungenSpeichern = async () => {
+    setEmailLadend(true);
+    setEmailFehler('');
+    try {
+      await apiClient.put('/admin/email-einstellungen', {
+        smtpHost: emailSmtpHost, smtpPort: parseInt(emailSmtpPort, 10),
+        smtpUser: emailSmtpUser, smtpPass: emailSmtpPass,
+        smtpFrom: emailSmtpFrom, smtpFromName: emailSmtpFromName,
+        imapHost: emailImapHost, imapPort: parseInt(emailImapPort, 10),
+        imapUser: emailImapUser, imapPass: emailImapPass,
+      });
+      setEmailErfolg('E-Mail-Einstellungen gespeichert!');
+      setTimeout(() => setEmailErfolg(''), 3000);
+    } catch (err) {
+      setEmailFehler(err instanceof Error ? err.message : 'Fehler beim Speichern.');
+    } finally {
+      setEmailLadend(false);
+    }
+  };
+
+  const testMailSenden = async () => {
+    if (!testMailAdresse) return;
+    setTestMailErgebnis('Wird gesendet...');
+    try {
+      const result = await apiClient.post<{ erfolg: boolean; nachricht?: string; fehler?: string }>('/admin/email-test', {
+        empfaenger: testMailAdresse,
+      });
+      setTestMailErgebnis(result.erfolg ? result.nachricht || 'Gesendet!' : result.fehler || 'Fehler');
+    } catch (err) {
+      setTestMailErgebnis(err instanceof Error ? err.message : 'Fehler');
+    }
+  };
+
   useEffect(() => {
     if (!bereit) return;
     if (benutzer && benutzer.rolle !== 'SUPERADMIN') {
@@ -188,8 +255,9 @@ export default function AdminDashboard() {
     if (benutzer) {
       laden_daten();
       kiEinstellungenLaden();
+      emailEinstellungenLaden();
     }
-  }, [bereit, benutzer, router, laden_daten, kiEinstellungenLaden]);
+  }, [bereit, benutzer, router, laden_daten, kiEinstellungenLaden, emailEinstellungenLaden]);
 
   const vereinSperren = async () => {
     if (!sperrDialog) return;
@@ -568,6 +636,118 @@ export default function AdminDashboard() {
                 </Button>
                 {kiErfolg && <span className="text-sm text-green-600">{kiErfolg}</span>}
               </div>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* Plattform E-Mail-Einstellungen */}
+        <Card>
+          <CardHeader
+            className="cursor-pointer select-none"
+            onClick={() => setEmailOffen(!emailOffen)}
+          >
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Server className="h-5 w-5 text-blue-600" />
+                E-Mail-Einstellungen (SMTP / IMAP)
+              </CardTitle>
+              <Badge variant={emailSmtpHost ? 'default' : 'destructive'}>
+                {emailSmtpHost ? 'Konfiguriert' : 'Nicht eingerichtet'}
+              </Badge>
+            </div>
+          </CardHeader>
+          {emailOffen && (
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Globale E-Mail-Einstellungen fuer die Plattform. Einladungen, Passwort-Reset und Erinnerungen werden hierueber versendet.
+              </p>
+
+              <div className="rounded-lg border p-4 space-y-3">
+                <p className="text-sm font-semibold">SMTP (Ausgehende Mails)</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">SMTP-Server</Label>
+                    <Input value={emailSmtpHost} onChange={(e) => setEmailSmtpHost(e.target.value)}
+                      placeholder="smtp.dein-provider.de" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Port</Label>
+                    <Input value={emailSmtpPort} onChange={(e) => setEmailSmtpPort(e.target.value)}
+                      placeholder="587" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Benutzername</Label>
+                    <Input value={emailSmtpUser} onChange={(e) => setEmailSmtpUser(e.target.value)}
+                      placeholder="info@vereinbase.de" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Passwort</Label>
+                    <Input type="password" value={emailSmtpPass} onChange={(e) => setEmailSmtpPass(e.target.value)}
+                      placeholder="****" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Absender-E-Mail</Label>
+                    <Input value={emailSmtpFrom} onChange={(e) => setEmailSmtpFrom(e.target.value)}
+                      placeholder="info@vereinbase.de" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Absender-Name</Label>
+                    <Input value={emailSmtpFromName} onChange={(e) => setEmailSmtpFromName(e.target.value)}
+                      placeholder="Vereinbase" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border p-4 space-y-3">
+                <p className="text-sm font-semibold">IMAP (Eingehende Mails)</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">IMAP-Server</Label>
+                    <Input value={emailImapHost} onChange={(e) => setEmailImapHost(e.target.value)}
+                      placeholder="imap.dein-provider.de" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Port</Label>
+                    <Input value={emailImapPort} onChange={(e) => setEmailImapPort(e.target.value)}
+                      placeholder="993" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Benutzername</Label>
+                    <Input value={emailImapUser} onChange={(e) => setEmailImapUser(e.target.value)}
+                      placeholder="info@vereinbase.de" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Passwort</Label>
+                    <Input type="password" value={emailImapPass} onChange={(e) => setEmailImapPass(e.target.value)}
+                      placeholder="****" />
+                  </div>
+                </div>
+              </div>
+
+              {emailFehler && (
+                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{emailFehler}</div>
+              )}
+              {emailErfolg && (
+                <div className="rounded-md bg-green-100 p-3 text-sm text-green-700">{emailErfolg}</div>
+              )}
+
+              <div className="flex items-center gap-3">
+                <Button onClick={emailEinstellungenSpeichern} disabled={emailLadend}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {emailLadend ? 'Speichern...' : 'Speichern'}
+                </Button>
+
+                <div className="flex items-center gap-2 ml-auto">
+                  <Input value={testMailAdresse} onChange={(e) => setTestMailAdresse(e.target.value)}
+                    placeholder="test@beispiel.de" className="w-48" />
+                  <Button variant="outline" onClick={testMailSenden} disabled={!testMailAdresse}>
+                    Test-Mail senden
+                  </Button>
+                </div>
+              </div>
+              {testMailErgebnis && (
+                <p className="text-sm text-muted-foreground">{testMailErgebnis}</p>
+              )}
             </CardContent>
           )}
         </Card>

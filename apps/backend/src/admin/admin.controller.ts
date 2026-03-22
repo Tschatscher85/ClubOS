@@ -138,6 +138,39 @@ export class AdminController {
     });
   }
 
+  /** Plattform E-Mail (SMTP/IMAP) laden */
+  @Get('email-einstellungen')
+  async plattformEmailLaden() {
+    return this.adminService.plattformEmailLaden();
+  }
+
+  /** Plattform E-Mail (SMTP/IMAP) speichern */
+  @Put('email-einstellungen')
+  async plattformEmailSpeichern(
+    @Body() daten: {
+      smtpHost?: string; smtpPort?: number; smtpUser?: string; smtpPass?: string;
+      smtpFrom?: string; smtpFromName?: string;
+      imapHost?: string; imapPort?: number; imapUser?: string; imapPass?: string;
+    },
+    @AktuellerBenutzer() benutzer: { id: string; email: string },
+    @Req() req: Request,
+  ) {
+    return this.adminService.plattformEmailSpeichern(daten, {
+      userId: benutzer.id,
+      userEmail: benutzer.email,
+      ipAdresse: req.ip,
+    });
+  }
+
+  /** Test-Mail senden */
+  @Post('email-test')
+  async testMailSenden(
+    @Body() daten: { empfaenger: string },
+    @AktuellerBenutzer() benutzer: { id: string; email: string },
+  ) {
+    return this.adminService.testMailSenden(daten.empfaenger, benutzer.email);
+  }
+
   /** Vereins-Daten exportieren */
   @Get('vereine/:id/export')
   async vereinExport(@Param('id') id: string) {

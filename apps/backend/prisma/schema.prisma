@@ -138,6 +138,18 @@ model PlattformConfig {
   openaiApiKey        String?  // Plattform OpenAI API Key
   standardProvider    String   @default("anthropic") // anthropic oder openai
   standardModell      String?  // Standard-Modell (optional)
+  // Globale SMTP-Einstellungen (Superadmin, Web-UI)
+  smtpHost            String?
+  smtpPort            Int?     @default(587)
+  smtpUser            String?
+  smtpPass            String?
+  smtpFrom            String?  // z.B. "info@vereinbase.de"
+  smtpFromName        String?  // z.B. "Vereinbase"
+  // Globale IMAP-Einstellungen
+  imapHost            String?
+  imapPort            Int?     @default(993)
+  imapUser            String?
+  imapPass            String?
   updatedAt           DateTime @updatedAt
 }
 

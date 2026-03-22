@@ -363,6 +363,107 @@ export class AdminService {
     return ergebnis;
   }
 
+  /** Plattform E-Mail-Konfiguration laden (Passwort maskiert) */
+  async plattformEmailLaden() {
+    const config = await this.prisma.plattformConfig.findUnique({
+      where: { id: 'singleton' },
+    });
+    if (!config) {
+      return {
+        smtpHost: null, smtpPort: 587, smtpUser: null, smtpPass: null,
+        smtpFrom: null, smtpFromName: null,
+        imapHost: null, imapPort: 993, imapUser: null, imapPass: null,
+      };
+    }
+    return {
+      smtpHost: config.smtpHost,
+      smtpPort: config.smtpPort || 587,
+      smtpUser: config.smtpUser,
+      smtpPass: config.smtpPass ? '****' : null,
+      smtpFrom: config.smtpFrom,
+      smtpFromName: config.smtpFromName,
+      imapHost: config.imapHost,
+      imapPort: config.imapPort || 993,
+      imapUser: config.imapUser,
+      imapPass: config.imapPass ? '****' : null,
+      hatSmtp: !!(config.smtpHost && config.smtpUser),
+      hatImap: !!(config.imapHost && config.imapUser),
+    };
+  }
+
+  /** Plattform E-Mail-Konfiguration speichern */
+  async plattformEmailSpeichern(
+    daten: {
+      smtpHost?: string; smtpPort?: number; smtpUser?: string; smtpPass?: string;
+      smtpFrom?: string; smtpFromName?: string;
+      imapHost?: string; imapPort?: number; imapUser?: string; imapPass?: string;
+    },
+    kontext: AuditKontext,
+  ) {
+    const updateData: Record<string, unknown> = {};
+    if (daten.smtpHost !== undefined) updateData.smtpHost = daten.smtpHost || null;
+    if (daten.smtpPort !== undefined) updateData.smtpPort = daten.smtpPort || 587;
+    if (daten.smtpUser !== undefined) updateData.smtpUser = daten.smtpUser || null;
+    if (daten.smtpPass !== undefined && daten.smtpPass !== '****') updateData.smtpPass = daten.smtpPass || null;
+    if (daten.smtpFrom !== undefined) updateData.smtpFrom = daten.smtpFrom || null;
+    if (daten.smtpFromName !== undefined) updateData.smtpFromName = daten.smtpFromName || null;
+    if (daten.imapHost !== undefined) updateData.imapHost = daten.imapHost || null;
+    if (daten.imapPort !== undefined) updateData.imapPort = daten.imapPort || 993;
+    if (daten.imapUser !== undefined) updateData.imapUser = daten.imapUser || null;
+    if (daten.imapPass !== undefined && daten.imapPass !== '****') updateData.imapPass = daten.imapPass || null;
+
+    const ergebnis = await this.prisma.plattformConfig.upsert({
+      where: { id: 'singleton' },
+      update: updateData,
+      create: { id: 'singleton', standardProvider: 'anthropic', ...updateData },
+    });
+
+    await this.audit.loggen({
+      aktion: 'EMAIL_EINSTELLUNGEN',
+      userId: kontext.userId,
+      userEmail: kontext.userEmail,
+      details: `SMTP: ${daten.smtpHost || 'nicht gesetzt'}, From: ${daten.smtpFrom || '-'}`,
+      ipAdresse: kontext.ipAdresse,
+    });
+
+    return { nachricht: 'E-Mail-Einstellungen gespeichert.' };
+  }
+
+  /** Test-Mail senden */
+  async testMailSenden(empfaenger: string, absenderEmail: string) {
+    const config = await this.prisma.plattformConfig.findUnique({
+      where: { id: 'singleton' },
+    });
+
+    if (!config?.smtpHost || !config?.smtpUser || !config?.smtpPass) {
+      return { erfolg: false, fehler: 'SMTP nicht konfiguriert. Bitte zuerst SMTP-Einstellungen speichern.' };
+    }
+
+    try {
+      const nodemailer = await import('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: config.smtpHost,
+        port: config.smtpPort || 587,
+        secure: (config.smtpPort || 587) === 465,
+        auth: { user: config.smtpUser, pass: config.smtpPass },
+      });
+
+      await transporter.sendMail({
+        from: `${config.smtpFromName || 'Vereinbase'} <${config.smtpFrom || config.smtpUser}>`,
+        to: empfaenger,
+        subject: 'Vereinbase — Test-Mail',
+        html: `<h2>E-Mail-Versand funktioniert!</h2>
+          <p>Diese Test-Mail wurde von <strong>${absenderEmail}</strong> aus dem Vereinbase Admin-Dashboard gesendet.</p>
+          <p>SMTP-Server: ${config.smtpHost}:${config.smtpPort}</p>
+          <p style="color:#888;font-size:12px">Zeitpunkt: ${new Date().toLocaleString('de-DE')}</p>`,
+      });
+
+      return { erfolg: true, nachricht: `Test-Mail an ${empfaenger} gesendet.` };
+    } catch (error) {
+      return { erfolg: false, fehler: `SMTP-Fehler: ${error instanceof Error ? error.message : 'Unbekannt'}` };
+    }
+  }
+
   /** KI pro Verein freischalten / sperren + Provider waehlen */
   async kiToggle(id: string, freigeschaltet: boolean, provider: string | undefined, kontext: AuditKontext) {
     const verein = await this.prisma.tenant.findUnique({ where: { id } });

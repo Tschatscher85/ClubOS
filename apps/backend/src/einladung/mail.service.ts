@@ -2,14 +2,17 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { EmailEinstellungenService } from '../email/email-einstellungen.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class MailService {
   private transporter: nodemailer.Transporter | null = null;
+  private dbTransporterGeladen = false;
 
   constructor(
     private configService: ConfigService,
     private emailEinstellungenService: EmailEinstellungenService,
+    private prisma: PrismaService,
   ) {
     const smtpHost = this.configService.get<string>('SMTP_HOST');
     if (smtpHost) {
@@ -22,6 +25,33 @@ export class MailService {
         },
       });
     }
+  }
+
+  /**
+   * Globalen Transporter aus PlattformConfig (DB) laden — Fallback wenn .env nicht gesetzt
+   */
+  private async globalenTransporterLaden(): Promise<nodemailer.Transporter | null> {
+    if (this.transporter) return this.transporter;
+    if (this.dbTransporterGeladen) return null;
+    this.dbTransporterGeladen = true;
+
+    try {
+      const config = await this.prisma.plattformConfig.findUnique({
+        where: { id: 'singleton' },
+      });
+      if (config?.smtpHost && config?.smtpUser && config?.smtpPass) {
+        this.transporter = nodemailer.createTransport({
+          host: config.smtpHost,
+          port: config.smtpPort || 587,
+          secure: (config.smtpPort || 587) === 465,
+          auth: { user: config.smtpUser, pass: config.smtpPass },
+        });
+        return this.transporter;
+      }
+    } catch {
+      // DB nicht erreichbar — ignorieren
+    }
+    return null;
   }
 
   /**
@@ -39,8 +69,8 @@ export class MailService {
       return persoenlicherTransporter;
     }
 
-    // Fallback auf globalen Transporter
-    return this.transporter;
+    // Fallback auf globalen Transporter (DB oder .env)
+    return this.globalenTransporterLaden();
   }
 
   async einladungSenden(
