@@ -13,7 +13,6 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { apiClient } from '@/lib/api-client';
-import { sportartenLaden, sportartenFallback } from '@/lib/sportarten';
 import { altersklassenLaden, altersklassenFallback } from '@/lib/altersklassen';
 
 interface Team {
@@ -68,7 +67,6 @@ export function TeamFormular({
   const [abteilungId, setAbteilungId] = useState('');
   const [trainerListe, setTrainerListe] = useState<{ id: string; name: string }[]>([]);
   const [abteilungen, setAbteilungen] = useState<Abteilung[]>([]);
-  const [sportartenListe, setSportartenListe] = useState<{ wert: string; label: string }[]>(sportartenFallback());
   const [altersklassenListe, setAltersklassenListe] = useState<string[]>(altersklassenFallback());
   const [trainerSuche, setTrainerSuche] = useState('');
   const [ladend, setLadend] = useState(false);
@@ -82,15 +80,6 @@ export function TeamFormular({
     apiClient.get<Abteilung[]>('/abteilungen')
       .then(setAbteilungen)
       .catch(() => {});
-
-    sportartenLaden().then((daten) => {
-      setSportartenListe(daten.map((s) => ({
-        wert: s.istVordefiniert
-          ? s.name.toUpperCase().replace(/[^A-Z]/g, '') || s.name
-          : s.name,
-        label: s.name,
-      })));
-    }).catch(() => {});
 
     altersklassenLaden().then(setAltersklassenListe).catch(() => {});
 
@@ -178,32 +167,36 @@ export function TeamFormular({
             {istBearbeitung ? 'Team bearbeiten' : 'Neues Team erstellen'}
           </DialogTitle>
           <DialogDescription>
-            Mannschaft einer Abteilung zuordnen, Sportart und Trainer festlegen
+            Mannschaft einer Abteilung zuordnen und Trainer festlegen
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Abteilung */}
-          {abteilungen.length > 0 && (
-            <div className="space-y-2">
-              <Label htmlFor="abteilung">Abteilung</Label>
-              <Select
-                id="abteilung"
-                value={abteilungId}
-                onChange={(e) => {
-                  setAbteilungId(e.target.value);
-                  // Sportart automatisch von Abteilung übernehmen
-                  const abt = abteilungen.find((a) => a.id === e.target.value);
-                  if (abt?.sport) setSportart(abt.sport);
-                }}
-              >
-                <option value="">-- Keine Abteilung --</option>
-                {abteilungen.map((a) => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
-                ))}
-              </Select>
-            </div>
-          )}
+          {/* Abteilung (Pflicht) */}
+          <div className="space-y-2">
+            <Label htmlFor="abteilung">Abteilung / Sportart *</Label>
+            <Select
+              id="abteilung"
+              value={abteilungId}
+              onChange={(e) => {
+                setAbteilungId(e.target.value);
+                // Sportart automatisch von Abteilung uebernehmen
+                const abt = abteilungen.find((a) => a.id === e.target.value);
+                if (abt?.sport) setSportart(abt.sport);
+              }}
+              required
+            >
+              <option value="">-- Abteilung waehlen --</option>
+              {abteilungen.map((a) => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </Select>
+            {abteilungen.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Erstellen Sie zuerst eine Abteilung im Tab &quot;Abteilungen&quot;.
+              </p>
+            )}
+          </div>
 
           {/* Teamname */}
           <div className="space-y-2">
@@ -217,31 +210,17 @@ export function TeamFormular({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="sportart">Sportart</Label>
-              <Select
-                id="sportart"
-                value={sportart}
-                onChange={(e) => setSportart(e.target.value)}
-              >
-                {sportartenListe.map((s) => (
-                  <option key={s.wert} value={s.wert}>{s.label}</option>
-                ))}
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="altersklasse">Altersklasse</Label>
-              <Select
-                id="altersklasse"
-                value={altersklasse}
-                onChange={(e) => setAltersklasse(e.target.value)}
-              >
-                {altersklassenListe.map((a) => (
-                  <option key={a} value={a}>{a}</option>
-                ))}
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="altersklasse">Altersklasse</Label>
+            <Select
+              id="altersklasse"
+              value={altersklasse}
+              onChange={(e) => setAltersklasse(e.target.value)}
+            >
+              {altersklassenListe.map((a) => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </Select>
           </div>
 
           {/* Trainer - mit Suchfeld */}

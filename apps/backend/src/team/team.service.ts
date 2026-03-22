@@ -9,10 +9,22 @@ export class TeamService {
   constructor(private prisma: PrismaService) {}
 
   async erstellen(tenantId: string, dto: ErstelleTeamDto) {
+    // Sportart von Abteilung uebernehmen, falls vorhanden
+    let sportart = dto.sportart as any;
+    if (dto.abteilungId) {
+      const abteilung = await this.prisma.abteilung.findFirst({
+        where: { id: dto.abteilungId, tenantId },
+        select: { sport: true },
+      });
+      if (abteilung) {
+        sportart = abteilung.sport;
+      }
+    }
+
     return this.prisma.team.create({
       data: {
         name: dto.name,
-        sport: dto.sportart as any,
+        sport: sportart,
         ageGroup: dto.altersklasse,
         trainerId: dto.trainerId || null,
         abteilungId: dto.abteilungId || null,
@@ -83,8 +95,20 @@ export class TeamService {
   async aktualisieren(tenantId: string, id: string, dto: AktualisiereTeamDto) {
     await this.nachIdAbrufen(tenantId, id);
 
-    const sportWert = dto.sportart || dto.sport;
     const altersklasseWert = dto.altersklasse || dto.ageGroup;
+
+    // Sportart von Abteilung uebernehmen, falls Abteilung geaendert wird
+    let sportWert = dto.sportart || dto.sport;
+    const abteilungId = dto.abteilungId !== undefined ? (dto.abteilungId || null) : undefined;
+    if (abteilungId) {
+      const abteilung = await this.prisma.abteilung.findFirst({
+        where: { id: abteilungId, tenantId },
+        select: { sport: true },
+      });
+      if (abteilung) {
+        sportWert = abteilung.sport as any;
+      }
+    }
 
     return this.prisma.team.update({
       where: { id },
@@ -93,7 +117,7 @@ export class TeamService {
         ...(sportWert !== undefined && { sport: sportWert }),
         ...(altersklasseWert !== undefined && { ageGroup: altersklasseWert }),
         ...(dto.trainerId !== undefined && { trainerId: dto.trainerId }),
-        ...(dto.abteilungId !== undefined && { abteilungId: dto.abteilungId || null }),
+        ...(abteilungId !== undefined && { abteilungId }),
       },
     });
   }
