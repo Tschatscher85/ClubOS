@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ErstelleTenantDto, AktualisiereTenantDto } from './dto/erstelle-tenant.dto';
@@ -101,6 +102,16 @@ export class TenantService {
 
   async loeschen(id: string) {
     await this.nachIdAbrufen(id);
+
+    // Pruefen ob SUPERADMIN-User im Verein existieren — diese duerfen nicht geloescht werden
+    const superadminCount = await this.prisma.user.count({
+      where: { tenantId: id, role: 'SUPERADMIN' },
+    });
+    if (superadminCount > 0) {
+      throw new BadRequestException(
+        'Dieser Verein enthaelt einen Plattform-Administrator und kann nicht geloescht werden. Verschieben Sie den SUPERADMIN zuerst in einen anderen Verein.',
+      );
+    }
 
     return this.prisma.tenant.delete({
       where: { id },
