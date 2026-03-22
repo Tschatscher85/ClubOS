@@ -6,6 +6,7 @@ import PinnwandInhalt from './pinnwand-inhalt';
 import GalerieInhalt from '../galerie/galerie-inhalt';
 import FahrgemeinschaftenInhalt from '../fahrgemeinschaften/fahrgemeinschaften-inhalt';
 
+
 export default function PinnwandPage() {
   return (
     <div className="space-y-6">
