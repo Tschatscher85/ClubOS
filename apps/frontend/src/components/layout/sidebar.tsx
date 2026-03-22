@@ -8,7 +8,6 @@ import {
   MessageSquare,
   Car,
   Heart,
-  HandHeart,
   UserCheck,
   Receipt,
   Zap,
@@ -68,7 +67,6 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
     eintraege: [
       { href: ROUTEN.MITGLIEDER, label: 'Mitglieder & Mitarbeiter', icon: Users, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
       { href: ROUTEN.TEAMS, label: 'Teams & Abteilungen', icon: Shield, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
-      { href: ROUTEN.EHRENAMT, label: 'Ehrenamt', icon: HandHeart, rollen: ['SUPERADMIN', 'ADMIN'] },
     ],
   },
   {

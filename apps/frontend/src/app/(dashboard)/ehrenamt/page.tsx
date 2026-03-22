@@ -126,14 +126,47 @@ const MELDUNG_STATUS_KONFIG: Record<
 
 // ==================== Hauptseite ====================
 
-export default function EhrenamtSeite() {
+function EhrenamtTabs() {
   const benutzer = useBenutzer();
   const istTrainer = benutzer && ['SUPERADMIN', 'ADMIN', 'TRAINER'].includes(benutzer.rolle);
   const istAdmin = benutzer && ['SUPERADMIN', 'ADMIN'].includes(benutzer.rolle);
 
   return (
+    <Tabs defaultValue="aufgaben">
+      <TabsList>
+        <TabsTrigger value="aufgaben">Helfer-Aufgaben</TabsTrigger>
+        {istTrainer && (
+          <TabsTrigger value="stunden">Meine Stunden</TabsTrigger>
+        )}
+        {istAdmin && (
+          <TabsTrigger value="uebersicht">
+            Uebungsleiter-Uebersicht
+          </TabsTrigger>
+        )}
+      </TabsList>
+
+      <TabsContent value="aufgaben">
+        <HelferAufgabenTab />
+      </TabsContent>
+
+      {istTrainer && (
+        <TabsContent value="stunden">
+          <MeineStundenTab />
+        </TabsContent>
+      )}
+
+      {istAdmin && (
+        <TabsContent value="uebersicht">
+          <UebersichtTab />
+        </TabsContent>
+      )}
+    </Tabs>
+  );
+}
+
+export default function EhrenamtSeite() {
+  return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <HandHeart className="h-7 w-7 text-primary" />
         <div>
@@ -143,36 +176,7 @@ export default function EhrenamtSeite() {
           </p>
         </div>
       </div>
-
-      <Tabs defaultValue="aufgaben">
-        <TabsList>
-          <TabsTrigger value="aufgaben">Helfer-Aufgaben</TabsTrigger>
-          {istTrainer && (
-            <TabsTrigger value="stunden">Meine Stunden</TabsTrigger>
-          )}
-          {istAdmin && (
-            <TabsTrigger value="uebersicht">
-              Uebungsleiter-Uebersicht
-            </TabsTrigger>
-          )}
-        </TabsList>
-
-        <TabsContent value="aufgaben">
-          <HelferAufgabenTab />
-        </TabsContent>
-
-        {istTrainer && (
-          <TabsContent value="stunden">
-            <MeineStundenTab />
-          </TabsContent>
-        )}
-
-        {istAdmin && (
-          <TabsContent value="uebersicht">
-            <UebersichtTab />
-          </TabsContent>
-        )}
-      </Tabs>
+      <EhrenamtTabs />
     </div>
   );
 }

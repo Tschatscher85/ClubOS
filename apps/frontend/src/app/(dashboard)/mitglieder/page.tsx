@@ -5,6 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useBenutzer } from '@/hooks/use-auth';
 import MitgliederInhalt from './mitglieder-inhalt';
 import MitarbeiterInhalt from './mitarbeiter-inhalt';
+import EhrenamtInhalt from '../ehrenamt/ehrenamt-inhalt';
 
 export default function PersonenPage() {
   const benutzer = useBenutzer();
@@ -15,9 +16,9 @@ export default function PersonenPage() {
       <div className="flex items-center gap-3">
         <Users className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">Mitglieder & Personal</h1>
+          <h1 className="text-2xl font-bold">Mitglieder & Mitarbeiter</h1>
           <p className="text-muted-foreground">
-            Vereinsmitglieder und Mitarbeiter verwalten
+            Vereinsmitglieder, Mitarbeiter und Ehrenamt verwalten
           </p>
         </div>
       </div>
@@ -28,6 +29,9 @@ export default function PersonenPage() {
           {istAdmin && (
             <TabsTrigger value="mitarbeiter">Mitarbeiter</TabsTrigger>
           )}
+          {istAdmin && (
+            <TabsTrigger value="ehrenamt">Ehrenamt</TabsTrigger>
+          )}
         </TabsList>
         <TabsContent value="mitglieder">
           <MitgliederInhalt />
@@ -35,6 +39,11 @@ export default function PersonenPage() {
         {istAdmin && (
           <TabsContent value="mitarbeiter">
             <MitarbeiterInhalt />
+          </TabsContent>
+        )}
+        {istAdmin && (
+          <TabsContent value="ehrenamt">
+            <EhrenamtInhalt />
           </TabsContent>
         )}
       </Tabs>
