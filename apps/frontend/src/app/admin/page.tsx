@@ -23,6 +23,7 @@ import {
   FileText,
   Activity,
   Server,
+  Trash2,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useBenutzer } from '@/hooks/use-auth';
@@ -105,6 +106,10 @@ export default function AdminDashboard() {
   // Sperr-Dialog
   const [sperrDialog, setSperrDialog] = useState<{ id: string; name: string } | null>(null);
   const [sperrGrund, setSperrGrund] = useState('');
+
+  // Loesch-Dialog
+  const [loeschDialog, setLoeschDialog] = useState<{ id: string; name: string } | null>(null);
+  const [loeschBestaetigung, setLoeschBestaetigung] = useState('');
 
   // Plan-Dialog
   const [planDialog, setPlanDialog] = useState<{ id: string; name: string; plan: string } | null>(null);
@@ -268,6 +273,18 @@ export default function AdminDashboard() {
       laden_daten();
     } catch (err) {
       console.error('Sperren fehlgeschlagen:', err);
+    }
+  };
+
+  const vereinLoeschen = async () => {
+    if (!loeschDialog || loeschBestaetigung !== loeschDialog.name) return;
+    try {
+      await apiClient.delete(`/vereine/${loeschDialog.id}`);
+      setLoeschDialog(null);
+      setLoeschBestaetigung('');
+      laden_daten();
+    } catch (err) {
+      console.error('Loeschen fehlgeschlagen:', err);
     }
   };
 
@@ -900,6 +917,15 @@ export default function AdminDashboard() {
                                   <CheckCircle className="h-4 w-4" />
                                 </Button>
                               )}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-red-600 hover:text-red-700"
+                                title="Verein loeschen"
+                                onClick={() => setLoeschDialog({ id: verein.id, name: verein.name })}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </td>
                         </tr>
@@ -939,6 +965,44 @@ export default function AdminDashboard() {
             </Button>
             <Button variant="destructive" onClick={vereinSperren}>
               Sperren
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Loesch-Dialog */}
+      <Dialog open={!!loeschDialog} onOpenChange={() => { setLoeschDialog(null); setLoeschBestaetigung(''); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Verein endgueltig loeschen</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-destructive font-medium">
+              Achtung: Diese Aktion kann nicht rueckgaengig gemacht werden! Alle Daten des Vereins
+              (Mitglieder, Teams, Events, Formulare, etc.) werden unwiderruflich geloescht.
+            </p>
+            <div>
+              <Label>
+                Geben Sie <span className="font-bold">{loeschDialog?.name}</span> ein, um zu bestaetigen:
+              </Label>
+              <Input
+                value={loeschBestaetigung}
+                onChange={(e) => setLoeschBestaetigung(e.target.value)}
+                placeholder={loeschDialog?.name}
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setLoeschDialog(null); setLoeschBestaetigung(''); }}>
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={vereinLoeschen}
+              disabled={loeschBestaetigung !== loeschDialog?.name}
+            >
+              Endgueltig loeschen
             </Button>
           </DialogFooter>
         </DialogContent>
