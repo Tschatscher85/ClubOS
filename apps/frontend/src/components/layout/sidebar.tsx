@@ -24,12 +24,9 @@ import {
   Store,
   FileBarChart,
   UserX,
-  Camera,
-  BookOpen,
   CalendarRange,
   Activity,
   Award,
-  Coins,
   ShieldAlert,
 } from 'lucide-react';
 import { useTenant, useBenutzer } from '@/hooks/use-auth';
@@ -69,8 +66,9 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
   {
     titel: 'Verein',
     eintraege: [
-      { href: ROUTEN.MITGLIEDER, label: 'Mitglieder & Familien', icon: Users, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
+      { href: ROUTEN.MITGLIEDER, label: 'Mitglieder & Mitarbeiter', icon: Users, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
       { href: ROUTEN.TEAMS, label: 'Teams & Abteilungen', icon: Shield, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
+      { href: ROUTEN.EHRENAMT, label: 'Ehrenamt', icon: HandHeart, rollen: ['SUPERADMIN', 'ADMIN'] },
     ],
   },
   {
@@ -78,24 +76,20 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
     eintraege: [
       { href: ROUTEN.KALENDER, label: 'Kalender & Saison', icon: Calendar, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER', 'MEMBER', 'PARENT'] },
       { href: ROUTEN.NACHRICHTEN, label: 'Nachrichten & Umfragen', icon: MessageSquare, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER', 'MEMBER', 'PARENT'] },
-      { href: ROUTEN.SCHWARZES_BRETT, label: 'Pinnwand', icon: ClipboardList, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER', 'MEMBER', 'PARENT'] },
-      { href: ROUTEN.GALERIE, label: 'Galerie', icon: Camera, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER', 'MEMBER'] },
+      { href: ROUTEN.SCHWARZES_BRETT, label: 'Pinnwand & Galerie', icon: ClipboardList, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER', 'MEMBER', 'PARENT'] },
     ],
   },
   {
     titel: 'Finanzen',
     eintraege: [
       { href: ROUTEN.BUCHHALTUNG, label: 'Buchhaltung & Beiträge', icon: Receipt, rollen: ['SUPERADMIN', 'ADMIN'] },
-      { href: ROUTEN.SPONSOREN, label: 'Sponsoren', icon: Heart, rollen: ['SUPERADMIN', 'ADMIN'] },
-      { href: ROUTEN.FUNDING, label: 'Crowdfunding', icon: Coins, rollen: ['SUPERADMIN', 'ADMIN'] },
+      { href: ROUTEN.SPONSOREN, label: 'Sponsoren & Crowdfunding', icon: Heart, rollen: ['SUPERADMIN', 'ADMIN'] },
     ],
   },
   {
     titel: 'Verwaltung',
     eintraege: [
-      { href: ROUTEN.DOKUMENTE, label: 'Dokumente & Formulare', icon: FolderOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
-      { href: ROUTEN.WIKI, label: 'Wiki', icon: BookOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
-      { href: ROUTEN.EHRENAMT, label: 'Ehrenamt', icon: HandHeart, rollen: ['SUPERADMIN', 'ADMIN'] },
+      { href: ROUTEN.DOKUMENTE, label: 'Dokumente & Wiki', icon: FolderOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
       { href: ROUTEN.SCHIEDSRICHTER, label: 'Schiedsrichter', icon: UserCheck, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
       { href: ROUTEN.MARKTPLATZ, label: 'Marktplatz & Partner', icon: Store, rollen: ['SUPERADMIN', 'ADMIN'] },
     ],
