@@ -191,7 +191,7 @@ export class KiService {
 
     const response = await client.messages.create({
       model: modell,
-      max_tokens: 4096,
+      max_tokens: 8192,
       messages: [
         {
           role: 'user',
@@ -263,7 +263,9 @@ export class KiService {
       const uint8 = new Uint8Array(pdfBuffer);
       const parser = new PDFParse(uint8);
       await parser.load();
-      const result = await parser.getText();
+      const result = await parser.getText({
+        pageJoiner: '--- Seite page_number von total_number ---',
+      });
       pdfText = result.text || '';
     } catch {
       throw new BadRequestException(
@@ -279,11 +281,11 @@ export class KiService {
 
     const response = await client.chat.completions.create({
       model: modell,
-      max_tokens: 4096,
+      max_tokens: 8192,
       messages: [
         {
           role: 'user',
-          content: `Hier ist der extrahierte Text eines PDF-Formulars:\n\n---\n${pdfText.slice(0, 8000)}\n---\n\n${prompt}`,
+          content: `Hier ist der extrahierte Text eines PDF-Formulars (alle Seiten):\n\n---\n${pdfText.slice(0, 30000)}\n---\n\n${prompt}`,
         },
       ],
     });
