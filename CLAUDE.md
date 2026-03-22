@@ -413,14 +413,14 @@ model FAQ {
 
 ---
 
-## 📦 Aktueller Status (Stand: 20.03.2026)
+## 📦 Aktueller Status (Stand: 22.03.2026)
 
 **ALLE Features implementiert. Nur Infrastruktur (DNS, Docker, Mobile) offen.**
 
 ### 90+ Backend-Module:
-- [x] Auth (JWT, Refresh, 2FA/TOTP, Google OAuth, Passwort-Reset, E-Mail-Verifizierung)
+- [x] Auth (JWT, Refresh, 2FA/TOTP, Google OAuth, Passwort-Reset, E-Mail-Verifizierung per SMTP)
 - [x] Multi-Tenant (Schema-per-Tenant, RLS auf 35 Tabellen, mitTenant() Extension)
-- [x] Superadmin (/admin: Vereine listen/sperren/entsperren/Plan/Impersonation)
+- [x] Superadmin (/admin: Vereine listen/sperren/entsperren/loeschen/Plan/Impersonation)
 - [x] KI-Freischaltung pro Verein (Plattform-Keys per Web-UI, Anthropic + OpenAI)
 - [x] Sperr-Middleware + Sperrseite (Auto-Sperre nach 3 Stripe-Fehlschlaegen)
 - [x] Mitgliederverwaltung (E-Mail, Multi-Sport, QR-Ausweis, DSGVO-Export Art.15+20)
@@ -432,7 +432,7 @@ model FAQ {
 - [x] Event-Landingpages (/event/[slug] - oeffentliche Werbeseiten)
 - [x] Nachrichten + Notfall-Broadcast + Stille-Stunden
 - [x] Einladungs-System (Multi-Formular, Wizard, Unterschrift)
-- [x] Formulare (PDF-Upload + KI-Felderkennung)
+- [x] Formulare (PDF-Upload + KI-Felderkennung, alle Seiten, 30k Zeichen)
 - [x] KI-FAQ-System + Multi-KI-Provider (Claude/OpenAI pro Verein)
 - [x] BullMQ Job-Queue (E-Mail, Erinnerungen, Push, Geburtstag async via Redis)
 - [x] Socket.io Realtime (Turnier-Live, Team-Chat)
@@ -495,38 +495,79 @@ model FAQ {
 - [x] Ehrenamt-Modul (Helfer-Aufgaben, Uebungsleiter 3.300 EUR)
 - [x] Vereinsfest-Planer (Schichten, Einkauf, Kasse)
 
+### Sidebar-Navigation (konsolidiert 22.03.2026):
+```
+Verein
+  - Mitglieder & Mitarbeiter    [Tabs: Mitglieder | Mitarbeiter | Ehrenamt]
+  - Teams & Abteilungen         [Tabs: Abteilungen | Teams]
+Aktivitaeten
+  - Kalender & Saison
+  - Nachrichten & Umfragen
+  - Pinnwand & Galerie          [Tabs: Pinnwand | Galerie | Fahrtenboerse]
+Finanzen
+  - Buchhaltung & Beitraege
+  - Sponsoren & Crowdfunding    [Tabs: Sponsoren | Crowdfunding]
+Verwaltung
+  - Dokumente & Wiki            [Tabs: Dokumente | Formulare | Wiki]
+  - Schiedsrichter
+  - Marktplatz & Partner
+Berichte & Qualitaet
+  - Berichte
+  - Mitgliederbindung
+  - Gesundheitscheck
+  - Trainer-Lizenzen
+  - Versicherungs-Check
+System
+  - Einstellungen
+  - Workflows
+  - DFBnet Import/Export
+  - Aenderungsantraege
+Spezial
+  - Eltern-Portal (nur PARENT)
+  - Belegungsplan (nur HALLENWART)
+  - Admin-Dashboard (nur SUPERADMIN)
+```
+
 ### 65+ Frontend-Seiten:
-Dashboard, Mitglieder (+Detail, +Entwicklung), Mitarbeiter,
+Dashboard, Mitglieder (+Detail, +Entwicklung, +Mitarbeiter-Tab, +Ehrenamt-Tab),
 Abteilungen, Teams (+Detail, +Anwesenheit, +Kasse, +Trikots, +Aufstellung),
 Kalender (+Detail, +Landingpage-Editor, +WetterBadge, +QR-Check-In),
-Turniere (+Detail, +Landingpage), Nachrichten, Fahrgemeinschaften,
+Turniere (+Detail, +Landingpage), Nachrichten,
+Pinnwand (+Galerie-Tab, +Fahrtenboerse-Tab),
+Sponsoren (+Crowdfunding-Tab), Dokumente (+Formulare-Tab, +Wiki-Tab),
 Eltern-Portal, Posteingang (IMAP), Belegung, Schiedsrichter, Buchhaltung,
-Sponsoren, Workflows, Formulare (+Detail), Dokumente, DFBnet, Ressourcen,
-Trainingsplaene, Spielberichte,
+Workflows, DFBnet, Ressourcen, Trainingsplaene, Spielberichte,
 Einstellungen (Verein, Vereinsdaten, Sportbetrieb [Abteilungen, Teams, Sportarten,
 Altersklassen, Veranstaltungstypen, Sportstaetten, Kalender-Farben, Kalender-Abo],
 Rollen, Benutzer, Sicherheit [2FA], E-Mail, Homepage-Editor [dnd-kit],
 Empfehlen, Abonnement, Beitraege),
 Oeffentlich: /verein/[slug], /verein/[slug]/kalender, /turnier/[publicUrl],
 /event/[slug] (Werbeseite), /aufstellung/[id], /checkin/[token],
-Mein Profil (Selbstverwaltung), Umfragen (Doodle-Ersatz), Schwarzes Brett,
+Mein Profil (Selbstverwaltung), Umfragen (Doodle-Ersatz),
 Aenderungsantraege (Admin),
 Oeffentlich: /avv (Auftragsverarbeitungsvertrag),
 Auth: Login, Registrierung, Passwort-Vergessen, E-Mail-Verifizierung, Onboarding,
-Admin: /admin Dashboard (Superadmin, KI-Verwaltung, Plattform-Keys),
+Admin: /admin Dashboard (Superadmin, KI-Verwaltung, Plattform-Keys, Verein loeschen),
 Oeffentlich: /umfrage/[token], /verein/[slug]/aktuell (Schwarzes Brett)
 
 ---
 
-## 🚨 Feature-Roadmap (Stand: 21.03.2026)
+## 🚨 Feature-Roadmap (Stand: 22.03.2026)
 
-### SOFORT (Diese Woche)
+### SOFORT (Diese Woche) — ERLEDIGT
 - [x] Passwort aus CLAUDE.md entfernt (Sicherheit)
 - [x] Umlaute in 100+ UI-Strings korrigiert
 - [x] DNS auf vereinbase.de (nginx extern in Docker)
 - [x] Alle ClubOS-Referenzen zu Vereinbase umbenannt (Code komplett, nur DB-Name offen)
 - [x] Login-E-Mails auf @vereinbase.de
-- [ ] DB umbenennen: clubos_dev -> vereinbase_dev (sudo bash scripts/db-umbenennen.sh)
+- [x] DB umbenannt: vereinbase_dev (DB-Berechtigungen fuer User vereinbase gefixt)
+- [x] FRONTEND_URL gefixt: https://vereinbase.de (Einladungslinks funktionieren extern)
+- [x] E-Mail-Verifizierung sendet echte Mails per SMTP (nicht mehr nur console.log)
+- [x] Registrierung: vereinsRollen=['Vorstand'] + 7 Standard-Rollenvorlagen automatisch
+- [x] Sidebar konsolidiert: 6 Bereiche zusammengelegt (Tab-basiert)
+- [x] Sportart+Abteilung vereint: Team-Sport wird von Abteilung abgeleitet
+- [x] KI PDF-Scan: Alle Seiten (30k Zeichen, Seitenmarkierungen)
+- [x] Admin: Verein loeschen (mit Namensbestaetigung + SUPERADMIN-Schutz)
 - [ ] NocoDB mit PostgreSQL verbinden
 - [ ] Stripe Billing fertigstellen (Checkout, Webhook, PlanGuard)
 
@@ -575,9 +616,12 @@ Oeffentlich: /umfrage/[token], /verein/[slug]/aktuell (Schwarzes Brett)
 - Frontend: PM2 (vereinbase-frontend, Port 3000)
 - Backend: PM2 (vereinbase-backend, Port 3001)
 - Domain: vereinbase.de
-- DB: PostgreSQL (aktuell clubos_dev, Umbenennung mit sudo)
+- DB: PostgreSQL (vereinbase_dev, User: vereinbase)
+- DB-Owner: Schema public gehoert User "clubos" — Rechte fuer "vereinbase" manuell gesetzt
 - DB-Backup: Cron taeglich 3:00 Uhr
 - Frontend .env.local: NEXT_PUBLIC_API_URL=http://localhost:3001
+- Backend .env: FRONTEND_URL=https://vereinbase.de
+- SMTP: Konfiguriert ueber PlattformConfig (DB) oder pro User (EmailEinstellungen)
 
 ---
 
