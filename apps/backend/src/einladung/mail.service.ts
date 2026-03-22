@@ -187,4 +187,35 @@ export class MailService {
       html: htmlInhalt,
     });
   }
+
+  async verifizierungsMailSenden(
+    email: string,
+    token: string,
+    frontendUrl: string,
+  ): Promise<void> {
+    const link = `${frontendUrl}/email-verifizieren?token=${token}`;
+
+    const htmlInhalt = `<h2>E-Mail-Adresse bestätigen</h2>
+      <p>Bitte bestätigen Sie Ihre E-Mail-Adresse, um Ihren Vereinbase-Account zu aktivieren.</p>
+      <p><a href="${link}" style="background:#1a56db;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;">E-Mail bestätigen</a></p>
+      <p>Der Link ist 24 Stunden gueltig.</p>
+      <p>Falls Sie sich nicht bei Vereinbase registriert haben, ignorieren Sie diese E-Mail.</p>
+      <p>Mit sportlichen Gruessen,<br>Vereinbase</p>`;
+
+    const transporter = await this.globalenTransporterLaden();
+    if (!transporter) {
+      console.log(`[Mail] SMTP nicht konfiguriert. Verifizierung fuer ${email}: ${link}`);
+      return;
+    }
+
+    const absenderEmail =
+      this.configService.get<string>('SMTP_FROM') || 'noreply@vereinbase.de';
+
+    await transporter.sendMail({
+      from: `"Vereinbase" <${absenderEmail}>`,
+      to: email,
+      subject: 'Vereinbase — E-Mail-Adresse bestätigen',
+      html: htmlInhalt,
+    });
+  }
 }

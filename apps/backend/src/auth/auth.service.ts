@@ -13,6 +13,8 @@ import { RegistrierenDto } from './dto/registrieren.dto';
 import { AnmeldenDto } from './dto/anmelden.dto';
 import { Role } from '@prisma/client';
 import { BCRYPT_ROUNDS } from '@vereinbase/shared';
+import { MailService } from '../einladung/mail.service';
+import { RollenVorlageService } from '../rollen-vorlage/rollen-vorlage.service';
 
 @Injectable()
 export class AuthService {
@@ -20,6 +22,8 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private mailService: MailService,
+    private rollenVorlageService: RollenVorlageService,
   ) {}
 
   /**
@@ -72,17 +76,34 @@ export class AuthService {
           tenantId: tenant.id,
           emailVerifyToken,
           emailVerifyExpiresAt,
+          vereinsRollen: ['Vorstand'],
         },
       });
 
       return { tenant, benutzer };
     });
 
+    // Standard-Rollenvorlagen und Berechtigungen fuer den neuen Verein erstellen
+    await this.rollenVorlageService.standardVorlagenErstellen(ergebnis.tenant.id);
+
+    // Berechtigungen des Admin-Users aus der Vorstand-Vorlage berechnen
+    const rollenInfo = await this.rollenVorlageService.berechtigungenBerechnen(
+      ergebnis.tenant.id,
+      ['Vorstand'],
+    );
+    await this.prisma.user.update({
+      where: { id: ergebnis.benutzer.id },
+      data: {
+        berechtigungen: rollenInfo.berechtigungen,
+        role: rollenInfo.systemRolle,
+      },
+    });
+
     // Tokens generieren
     const tokens = await this.generiereTokens(
       ergebnis.benutzer.id,
       ergebnis.benutzer.email,
-      ergebnis.benutzer.role,
+      rollenInfo.systemRolle,
       ergebnis.tenant.id,
     );
 
@@ -92,9 +113,13 @@ export class AuthService {
       tokens.refreshToken,
     );
 
-    // E-Mail-Verifizierung: Token in der Konsole loggen (SMTP nicht konfiguriert)
-    console.log(
-      `[Auth] E-Mail-Verifizierung fuer ${dto.email}: Token=${emailVerifyToken}`,
+    // Verifizierungs-E-Mail senden
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    await this.mailService.verifizierungsMailSenden(
+      dto.email,
+      emailVerifyToken,
+      frontendUrl,
     );
 
     return {
@@ -408,9 +433,13 @@ export class AuthService {
       data: { emailVerifyToken, emailVerifyExpiresAt },
     });
 
-    // Token loggen (in Produktion per E-Mail senden)
-    console.log(
-      `[Auth] Neuer Verifizierungs-Token fuer ${benutzer.email}: ${emailVerifyToken}`,
+    // Verifizierungs-E-Mail senden
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    await this.mailService.verifizierungsMailSenden(
+      benutzer.email,
+      emailVerifyToken,
+      frontendUrl,
     );
 
     return {
@@ -617,16 +646,33 @@ export class AuthService {
           role: Role.ADMIN,
           tenantId: tenant.id,
           emailVerifiziert: true, // Google verifiziert E-Mail
+          vereinsRollen: ['Vorstand'],
         },
       });
 
       return { tenant, benutzer: neuerBenutzer };
     });
 
+    // Standard-Rollenvorlagen und Berechtigungen fuer den neuen Verein erstellen
+    await this.rollenVorlageService.standardVorlagenErstellen(ergebnis.tenant.id);
+
+    // Berechtigungen des Admin-Users aus der Vorstand-Vorlage berechnen
+    const rollenInfo = await this.rollenVorlageService.berechtigungenBerechnen(
+      ergebnis.tenant.id,
+      ['Vorstand'],
+    );
+    await this.prisma.user.update({
+      where: { id: ergebnis.benutzer.id },
+      data: {
+        berechtigungen: rollenInfo.berechtigungen,
+        role: rollenInfo.systemRolle,
+      },
+    });
+
     const tokens = await this.generiereTokens(
       ergebnis.benutzer.id,
       ergebnis.benutzer.email,
-      ergebnis.benutzer.role,
+      rollenInfo.systemRolle,
       ergebnis.tenant.id,
     );
     await this.aktualisiereRefreshToken(
