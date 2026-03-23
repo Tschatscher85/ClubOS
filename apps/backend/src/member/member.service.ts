@@ -52,10 +52,11 @@ export class MemberService {
       }
     }
 
-    // Kind-Login erstellen wenn angefordert
-    if (dto.erstelleBenutzerKonto && (neuesMitglied.email || neuesMitglied.parentEmail)) {
+    // Automatisch User-Account erstellen wenn E-Mail vorhanden
+    if (neuesMitglied.email || neuesMitglied.parentEmail) {
+      const istJugendspieler = !!(dto.elternEmail || dto.elternMemberId || (dto.geburtsdatum && this.istUnter18(dto.geburtsdatum)));
       try {
-        const ergebnis = await this.loginErstellen(tenantId, neuesMitglied.id, Role.MEMBER, true);
+        const ergebnis = await this.loginErstellen(tenantId, neuesMitglied.id, Role.MEMBER, istJugendspieler);
         return { ...neuesMitglied, userId: ergebnis.user.id, temporaeresPasswort: ergebnis.temporaeresPasswort };
       } catch {
         // Login-Erstellung fehlgeschlagen, Mitglied trotzdem zurueckgeben
@@ -152,10 +153,11 @@ export class MemberService {
       }
     }
 
-    // Kind-Login erstellen wenn angefordert und noch kein User existiert
-    if (dto.erstelleBenutzerKonto && !aktualisiert.userId && (aktualisiert.email || aktualisiert.parentEmail)) {
+    // Automatisch User-Account erstellen wenn E-Mail neu hinzugefuegt und noch kein User existiert
+    if (!aktualisiert.userId && (aktualisiert.email || aktualisiert.parentEmail)) {
+      const istJugendspieler = !!(aktualisiert.parentEmail || (aktualisiert.birthDate && this.istUnter18(aktualisiert.birthDate.toISOString())));
       try {
-        const ergebnis = await this.loginErstellen(tenantId, id, Role.MEMBER, true);
+        const ergebnis = await this.loginErstellen(tenantId, id, Role.MEMBER, istJugendspieler);
         return { ...aktualisiert, userId: ergebnis.user.id, temporaeresPasswort: ergebnis.temporaeresPasswort };
       } catch {
         return aktualisiert;
@@ -408,6 +410,19 @@ export class MemberService {
       user: neuerUser,
       temporaeresPasswort,
     };
+  }
+
+  // ==================== Hilfsmethoden ====================
+
+  private istUnter18(geburtsdatumStr: string): boolean {
+    const geburtsdatum = new Date(geburtsdatumStr);
+    const heute = new Date();
+    let alter = heute.getFullYear() - geburtsdatum.getFullYear();
+    const monatsDiff = heute.getMonth() - geburtsdatum.getMonth();
+    if (monatsDiff < 0 || (monatsDiff === 0 && heute.getDate() < geburtsdatum.getDate())) {
+      alter--;
+    }
+    return alter < 18;
   }
 
   // ==================== Status & Suche ====================

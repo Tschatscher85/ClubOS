@@ -361,7 +361,7 @@ async function main() {
               rolle: 'KIND',
             },
             {
-              userId: eltern.id,
+              memberId: elternMember.id,
               rolle: 'MUTTER',
             },
           ],

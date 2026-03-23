@@ -78,10 +78,6 @@ export class ErstelleMitgliedDto {
   @IsOptional()
   fahrgemeinschaftErlaubnis?: boolean;
 
-  @ApiPropertyOptional({ description: 'Benutzerkonto fuer Kind erstellen (Eltern muessen zustimmen)' })
-  @IsOptional()
-  erstelleBenutzerKonto?: boolean;
-
   @ApiPropertyOptional({ description: 'Vereinsrollen (fuer Mitglieder ohne User-Account)', example: ['Jugendspieler'] })
   @IsOptional()
   @IsArray()
@@ -238,10 +234,6 @@ export class AktualisiereMitgliedDto {
   @ApiPropertyOptional({ description: 'Eltern erlauben Mitfahrt in Fahrgemeinschaften (Minderjährige, §832 BGB)' })
   @IsOptional()
   fahrgemeinschaftErlaubnis?: boolean;
-
-  @ApiPropertyOptional({ description: 'Benutzerkonto fuer Kind erstellen (Eltern muessen zustimmen)' })
-  @IsOptional()
-  erstelleBenutzerKonto?: boolean;
 
   @ApiPropertyOptional({ description: 'Vereinsrollen (fuer Mitglieder ohne User-Account)', example: ['Jugendspieler'] })
   @IsOptional()

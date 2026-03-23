@@ -114,10 +114,8 @@ interface FormularEinreichung {
 interface FamilieMitglied {
   id: string;
   memberId: string | null;
-  userId: string | null;
   rolle: string;
   member: { id: string; firstName: string; lastName: string; memberNumber: string } | null;
-  user: { id: string; email: string; role: string } | null;
 }
 
 interface FamilieInfo {
@@ -823,7 +821,7 @@ export default function MitgliedDetailPage() {
                         >
                           <User className="h-4 w-4 text-purple-500" />
                           <span className="text-sm">
-                            {fm.member ? `${fm.member.firstName} ${fm.member.lastName}` : fm.user ? fm.user.email : 'Unbekannt'}
+                            {fm.member ? `${fm.member.firstName} ${fm.member.lastName}` : 'Unbekannt'}
                           </span>
                           <Badge variant="outline" className="text-xs">
                             {fm.rolle === 'MUTTER' ? 'Mutter' : fm.rolle === 'VATER' ? 'Vater' : 'Erziehungsber.'}
@@ -864,7 +862,7 @@ export default function MitgliedDetailPage() {
                         >
                           <Baby className="h-4 w-4 text-blue-500" />
                           <span className="text-sm">
-                            {fm.member ? `${fm.member.firstName} ${fm.member.lastName}` : fm.user ? fm.user.email : 'Unbekannt'}
+                            {fm.member ? `${fm.member.firstName} ${fm.member.lastName}` : 'Unbekannt'}
                           </span>
                           <Badge variant="outline" className="text-xs">Kind</Badge>
                           {fm.memberId === mitgliedId && (
@@ -903,7 +901,7 @@ export default function MitgliedDetailPage() {
                         >
                           <Heart className="h-4 w-4 text-pink-500" />
                           <span className="text-sm">
-                            {fm.member ? `${fm.member.firstName} ${fm.member.lastName}` : fm.user ? fm.user.email : 'Unbekannt'}
+                            {fm.member ? `${fm.member.firstName} ${fm.member.lastName}` : 'Unbekannt'}
                           </span>
                           <Badge variant="outline" className="text-xs">Partner/in</Badge>
                           {fm.memberId === mitgliedId && (

@@ -21,7 +21,6 @@ export class FamilieService {
         mitglieder: {
           include: {
             member: { select: { id: true, firstName: true, lastName: true, memberNumber: true } },
-            user: { select: { id: true, email: true, role: true } },
           },
         },
       },
@@ -41,16 +40,29 @@ export class FamilieService {
       throw new NotFoundException('Familie nicht gefunden.');
     }
 
-    if (!daten.memberId && !daten.userId) {
-      throw new BadRequestException('Entweder memberId oder userId muss angegeben werden.');
+    // Immer memberId verwenden: userId zu memberId aufloesen
+    let resolvedMemberId = daten.memberId || null;
+    if (!resolvedMemberId && daten.userId) {
+      const member = await this.prisma.member.findFirst({
+        where: { userId: daten.userId },
+        select: { id: true },
+      });
+      if (member) {
+        resolvedMemberId = member.id;
+      } else {
+        throw new BadRequestException('Kein Member-Profil fuer diesen Benutzer gefunden.');
+      }
     }
 
-    // Duplikat-Pruefung: Ist dieses Mitglied/User schon in der Familie?
+    if (!resolvedMemberId) {
+      throw new BadRequestException('memberId oder userId muss angegeben werden.');
+    }
+
+    // Duplikat-Pruefung: Ist dieses Mitglied schon in der Familie?
     const bereitsVorhanden = await this.prisma.familieMitglied.findFirst({
       where: {
         familieId,
-        ...(daten.memberId ? { memberId: daten.memberId } : {}),
-        ...(daten.userId ? { userId: daten.userId } : {}),
+        memberId: resolvedMemberId,
       },
     });
     if (bereitsVorhanden) {
@@ -60,28 +72,23 @@ export class FamilieService {
     const neuesMitglied = await this.prisma.familieMitglied.create({
       data: {
         familieId,
-        memberId: daten.memberId || null,
-        userId: daten.userId || null,
+        memberId: resolvedMemberId,
+        userId: null,
         rolle: daten.rolle,
       },
       include: {
         member: { select: { id: true, firstName: true, lastName: true, memberNumber: true } },
-        user: { select: { id: true, email: true, role: true } },
       },
     });
 
-    // Partner-Spiegelung: Wenn ein PARTNER hinzugefuegt wird und es schon einen PARTNER gibt,
-    // sind beide automatisch in derselben Familie (natuerliches Mirroring).
-    // Zusaetzlich: Wenn ein neues Mitglied mit userId als PARTNER/MUTTER/VATER hinzugefuegt wird,
-    // pruefe ob der User schon eine eigene Familie hat und verknuepfe ggf. Kinder.
+    // Partner-Spiegelung: Wenn ein Elternteil/Partner hinzugefuegt wird,
+    // pruefe ob das Mitglied in einer anderen Familie Kinder hat und uebernehme diese.
     if (
-      daten.userId &&
       ([FamilienRolle.PARTNER, FamilienRolle.MUTTER, FamilienRolle.VATER, FamilienRolle.ERZIEHUNGSBERECHTIGTER] as FamilienRolle[]).includes(daten.rolle)
     ) {
-      // Pruefe ob der User in einer anderen Familie schon Elternteil ist
       const andereElternMitgliedschaften = await this.prisma.familieMitglied.findMany({
         where: {
-          userId: daten.userId,
+          memberId: resolvedMemberId,
           familieId: { not: familieId },
           rolle: { in: [FamilienRolle.MUTTER, FamilienRolle.VATER, FamilienRolle.PARTNER, FamilienRolle.ERZIEHUNGSBERECHTIGTER] },
         },
@@ -96,7 +103,7 @@ export class FamilieService {
         },
       });
 
-      // Wenn der User in einer anderen Familie Kinder hat, diese auch in die neue Familie uebernehmen
+      // Kinder aus anderen Familien uebernehmen
       for (const mitgliedschaft of andereElternMitgliedschaften) {
         for (const kind of mitgliedschaft.familie.mitglieder) {
           if (kind.memberId) {
@@ -120,24 +127,16 @@ export class FamilieService {
 
     // Auto-Name: Wenn Familie noch "Neue Familie" heisst, nach erstem Mitglied benennen
     if (familie.name === 'Neue Familie') {
-      let autoName = 'Neue Familie';
-      if (daten.memberId) {
-        const member = await this.prisma.member.findUnique({
-          where: { id: daten.memberId },
-          select: { lastName: true },
-        });
-        if (member) autoName = `Familie ${member.lastName}`;
-      } else if (daten.userId) {
-        const user = await this.prisma.user.findUnique({
-          where: { id: daten.userId },
-          select: { email: true },
-        });
-        if (user) autoName = `Familie ${user.email.split('@')[0]}`;
-      }
-      await this.prisma.familie.update({
-        where: { id: familieId },
-        data: { name: autoName },
+      const member = await this.prisma.member.findUnique({
+        where: { id: resolvedMemberId },
+        select: { lastName: true },
       });
+      if (member) {
+        await this.prisma.familie.update({
+          where: { id: familieId },
+          data: { name: `Familie ${member.lastName}` },
+        });
+      }
     }
 
     return neuesMitglied;
@@ -172,7 +171,6 @@ export class FamilieService {
         mitglieder: {
           include: {
             member: { select: { id: true, firstName: true, lastName: true, memberNumber: true } },
-            user: { select: { id: true, email: true, role: true } },
           },
         },
       },
@@ -202,7 +200,6 @@ export class FamilieService {
                 },
               },
             },
-            user: { select: { id: true, email: true, role: true } },
           },
         },
       },
@@ -229,8 +226,18 @@ export class FamilieService {
 
   /** Meine Familie finden (fuer eingeloggten User) */
   async meineFamilie(userId: string, tenantId: string) {
-    const familieMitgliedschaft = await this.prisma.familieMitglied.findFirst({
+    // Erst Member-Profil des Users finden, dann ueber memberId suchen
+    const member = await this.prisma.member.findFirst({
       where: { userId },
+      select: { id: true },
+    });
+
+    if (!member) {
+      return null;
+    }
+
+    const familieMitgliedschaft = await this.prisma.familieMitglied.findFirst({
+      where: { memberId: member.id },
       include: {
         familie: {
           include: {
@@ -251,7 +258,6 @@ export class FamilieService {
                     },
                   },
                 },
-                user: { select: { id: true, email: true, role: true } },
               },
             },
           },
@@ -280,10 +286,20 @@ export class FamilieService {
       FamilienRolle.PARTNER,
     ];
 
-    // Finde Familie(n) wo der User Elternteil ist
+    // userId zu memberId aufloesen
+    const member = await this.prisma.member.findFirst({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (!member) {
+      return [];
+    }
+
+    // Finde Familie(n) wo das Mitglied Elternteil ist
     const familienMitgliedschaften = await this.prisma.familieMitglied.findMany({
       where: {
-        userId,
+        memberId: member.id,
         rolle: { in: elternRollen },
       },
       select: { familieId: true },

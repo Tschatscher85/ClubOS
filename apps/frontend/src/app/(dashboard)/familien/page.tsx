@@ -31,18 +31,12 @@ import { useBenutzer } from '@/hooks/use-auth';
 interface FamilieMitglied {
   id: string;
   memberId: string | null;
-  userId: string | null;
   rolle: string;
   member: {
     id: string;
     firstName: string;
     lastName: string;
     memberNumber: string;
-  } | null;
-  user: {
-    id: string;
-    email: string;
-    role: string;
   } | null;
 }
 
@@ -360,7 +354,7 @@ export default function FamilienPage() {
                       >
                         <User className="h-3 w-3 mr-1" />
                         {ROLLEN_LABEL[fm.rolle] || fm.rolle}
-                        {fm.user ? `: ${fm.user.email}` : ''}
+                        {fm.member ? `: ${fm.member.firstName} ${fm.member.lastName}` : ''}
                       </Badge>
                     ))}
                   </div>
@@ -404,10 +398,6 @@ export default function FamilienPage() {
                                     <span className="text-muted-foreground ml-2 text-xs">
                                       ({fm.member.memberNumber})
                                     </span>
-                                  </p>
-                                ) : fm.user ? (
-                                  <p className="text-sm font-medium">
-                                    {fm.user.email}
                                   </p>
                                 ) : (
                                   <p className="text-sm text-muted-foreground">

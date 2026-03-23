@@ -134,7 +134,6 @@ export function MitgliedFormular({
   const [status, setStatus] = useState('PENDING');
   const [fotoErlaubnis, setFotoErlaubnis] = useState(false);
   const [fahrgemeinschaftErlaubnis, setFahrgemeinschaftErlaubnis] = useState(false);
-  const [erstelleLogin, setErstelleLogin] = useState(false);
   const [tempPasswort, setTempPasswort] = useState<string | null>(null);
   const [ladend, setLadend] = useState(false);
   const [fehler, setFehler] = useState('');
@@ -236,7 +235,6 @@ export function MitgliedFormular({
       setElternDropdownOffen(false);
       setFotoErlaubnis(mitglied.fotoErlaubnis ?? false);
       setFahrgemeinschaftErlaubnis(mitglied.fahrgemeinschaftErlaubnis ?? false);
-      setErstelleLogin(false);
       setTempPasswort(null);
       setStatus(mitglied.status || 'PENDING');
       setBeitragsklasseId(mitglied.beitragsklasseId || '');
@@ -279,7 +277,6 @@ export function MitgliedFormular({
       setElternDropdownOffen(false);
       setFotoErlaubnis(false);
       setFahrgemeinschaftErlaubnis(false);
-      setErstelleLogin(false);
       setTempPasswort(null);
       setStatus('PENDING');
       setBeitragsklasseId('');
@@ -348,8 +345,8 @@ export function MitgliedFormular({
     }
 
     try {
-      // Pruefen ob Mitglied einen User-Account hat (oder bekommt)
-      const hatUser = mitglied?.userId || (istMinderjaehrig && erstelleLogin);
+      // Pruefen ob Mitglied einen User-Account hat (oder automatisch bekommt weil E-Mail vorhanden)
+      const hatOderBekommtUser = mitglied?.userId || !!email;
       const daten = {
         vorname,
         nachname,
@@ -363,9 +360,8 @@ export function MitgliedFormular({
         ...(istMinderjaehrig && elternMemberId && { elternMemberId }),
         ...(istMinderjaehrig && { fotoErlaubnis }),
         ...(istMinderjaehrig && { fahrgemeinschaftErlaubnis }),
-        ...(istMinderjaehrig && erstelleLogin && { erstelleBenutzerKonto: true }),
         // Vereinsrollen auf Member speichern wenn kein User-Account vorhanden
-        ...(!hatUser && gewaehlteRollen.length > 0 && { vereinsRollen: gewaehlteRollen }),
+        ...(!hatOderBekommtUser && gewaehlteRollen.length > 0 && { vereinsRollen: gewaehlteRollen }),
         status,
         beitragsklasseId: individuellerBeitrag ? null : (beitragsklasseId || null),
         ...(individuellerBeitrag && individuellerBetrag && {
@@ -481,9 +477,15 @@ export function MitgliedFormular({
               onChange={(e) => setEmail(e.target.value)}
               placeholder="max@beispiel.de"
             />
-            <p className="text-xs text-muted-foreground">
-              Wird für den persönlichen Login verwendet
-            </p>
+            {email ? (
+              <p className="text-xs text-muted-foreground">
+                E-Mail = Login. Das Mitglied erhaelt automatisch ein temporaeres Passwort.
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Ohne E-Mail kein Login moeglich (z.B. bei kleinen Kindern).
+              </p>
+            )}
           </div>
 
           {/* Geburtsdatum + Eintrittsdatum */}
@@ -764,50 +766,6 @@ export function MitgliedFormular({
             </div>
           )}
 
-          {/* Kind-Login erstellen - nur bei Minderjährigen ohne bestehenden User */}
-          {istMinderjaehrig && !(istBearbeitung && mitglied?.userId) && (
-            <div className="space-y-2 rounded-lg border border-purple-200 bg-purple-50 p-4">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={erstelleLogin}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setErstelleLogin(checked);
-                    // Automatisch Jugendspieler-Rolle setzen / zuruecksetzen
-                    if (checked) {
-                      setGewaehlteRollen((prev) => {
-                        const ohneSpiel = prev.filter((r) => r !== 'Spieler');
-                        return ohneSpiel.includes('Jugendspieler') ? ohneSpiel : [...ohneSpiel, 'Jugendspieler'];
-                      });
-                    } else {
-                      setGewaehlteRollen((prev) => {
-                        const ohneJugend = prev.filter((r) => r !== 'Jugendspieler');
-                        return ohneJugend.includes('Spieler') ? ohneJugend : [...ohneJugend, 'Spieler'];
-                      });
-                    }
-                  }}
-                  className="rounded border-gray-300 mt-0.5"
-                />
-                <div>
-                  <span className="text-sm font-medium text-purple-800">
-                    Eigenen Login fuer Kind erstellen
-                  </span>
-                  <p className="text-xs text-purple-700 mt-0.5">
-                    Das Kind erhaelt einen eigenen Zugang zum Vereinsportal.
-                    Die Eltern muessen der Erstellung zustimmen.
-                    Ein temporaeres Passwort wird generiert.
-                  </p>
-                </div>
-              </label>
-              {erstelleLogin && !email && (
-                <p className="text-xs text-red-600 font-medium">
-                  Bitte eine E-Mail-Adresse fuer das Kind angeben, um einen Login zu erstellen.
-                </p>
-              )}
-            </div>
-          )}
-
           {/* Einverständniserklärungen - nur bei Minderjährigen */}
           {istMinderjaehrig && (
             <div className="space-y-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
@@ -997,10 +955,10 @@ export function MitgliedFormular({
           {tempPasswort && (
             <div className="space-y-3 rounded-lg border border-green-300 bg-green-50 p-4">
               <p className="text-sm font-medium text-green-800">
-                Kind-Login wurde erstellt!
+                Login wurde automatisch erstellt!
               </p>
               <p className="text-xs text-green-700">
-                Bitte notieren Sie das temporaere Passwort und geben Sie es an die Eltern weiter.
+                Bitte notieren Sie das temporaere Passwort und geben Sie es an das Mitglied weiter.
                 Es wird nur einmal angezeigt.
               </p>
               <div className="flex items-center gap-2 rounded-md border border-green-300 bg-white p-3">
@@ -1046,7 +1004,7 @@ export function MitgliedFormular({
               <Button type="button" variant="outline" onClick={onSchliessen}>
                 Abbrechen
               </Button>
-              <Button type="submit" disabled={ladend || (erstelleLogin && istMinderjaehrig && !email)}>
+              <Button type="submit" disabled={ladend}>
                 {ladend ? 'Speichern...' : istBearbeitung ? 'Aktualisieren' : 'Anlegen'}
               </Button>
             </div>
