@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   ClipboardList,
   Sparkles,
@@ -66,8 +67,10 @@ interface TrainingsplanData {
 
 // ==================== Hauptkomponente ====================
 
-export default function TrainingsplaeneSeite() {
+function TrainingsplaeneInhalt() {
   const benutzer = useBenutzer();
+  const searchParams = useSearchParams();
+  const teamIdAusUrl = searchParams.get('teamId');
 
   // Teams
   const [teams, setTeams] = useState<TeamData[]>([]);
@@ -99,7 +102,12 @@ export default function TrainingsplaeneSeite() {
         const daten = await apiClient.get<TeamData[]>('/teams');
         setTeams(daten);
         if (daten.length > 0 && !gewaehlterTeamId) {
-          setGewaehlterTeamId(daten[0].id);
+          // Wenn teamId aus URL, dieses Team vorwaehlen
+          if (teamIdAusUrl && daten.some((t) => t.id === teamIdAusUrl)) {
+            setGewaehlterTeamId(teamIdAusUrl);
+          } else {
+            setGewaehlterTeamId(daten[0].id);
+          }
         }
       } catch (error) {
         console.error('Fehler beim Laden der Teams:', error);
@@ -559,5 +567,13 @@ export default function TrainingsplaeneSeite() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function TrainingsplaeneSeite() {
+  return (
+    <Suspense>
+      <TrainingsplaeneInhalt />
+    </Suspense>
   );
 }

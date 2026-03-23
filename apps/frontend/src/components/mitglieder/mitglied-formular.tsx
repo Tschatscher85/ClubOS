@@ -593,7 +593,12 @@ export function MitgliedFormular({
                               if (istGewaehlt) {
                                 delete neu[team.id];
                               } else {
-                                neu[team.id] = 'SPIELER';
+                                // Rolle aus vereinsRollen ableiten
+                                let rolle = 'SPIELER';
+                                if (gewaehlteRollen.includes('Trainer')) rolle = 'TRAINER';
+                                else if (gewaehlteRollen.includes('Eltern')) rolle = 'ELTERN';
+                                else if (gewaehlteRollen.includes('Vorstand')) rolle = 'VORSTAND';
+                                neu[team.id] = rolle;
                               }
                               return neu;
                             });

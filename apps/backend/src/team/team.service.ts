@@ -199,6 +199,18 @@ export class TeamService {
     return { gesamt };
   }
 
+  /**
+   * Mappt vereinsRollen auf Team-Rolle.
+   * Prioritaet: Trainer > Vorstand > Eltern > Spieler
+   */
+  private vereinsRolleZuTeamRolle(vereinsRollen: string[]): string {
+    if (vereinsRollen.includes('Trainer')) return 'TRAINER';
+    if (vereinsRollen.includes('Vorstand')) return 'VORSTAND';
+    if (vereinsRollen.includes('Eltern')) return 'ELTERN';
+    // Spieler, Jugendspieler, oder alles andere
+    return 'SPIELER';
+  }
+
   // ==================== Eltern-Automatik ====================
 
   /**
@@ -402,11 +414,31 @@ export class TeamService {
       throw new ConflictException('Mitglied ist bereits im Team.');
     }
 
+    // Rolle automatisch aus vereinsRollen ableiten, falls nicht explizit gesetzt
+    let rolle = dto.rolle;
+    if (!rolle) {
+      // vereinsRollen vom User oder Member laden
+      let vereinsRollen: string[] = [];
+      if (mitglied.userId) {
+        const user = await this.prisma.user.findUnique({
+          where: { id: mitglied.userId },
+          select: { vereinsRollen: true },
+        });
+        if (user?.vereinsRollen?.length) {
+          vereinsRollen = user.vereinsRollen;
+        }
+      }
+      if (vereinsRollen.length === 0 && mitglied.vereinsRollen?.length) {
+        vereinsRollen = mitglied.vereinsRollen;
+      }
+      rolle = this.vereinsRolleZuTeamRolle(vereinsRollen);
+    }
+
     const neuesTeamMitglied = await this.prisma.teamMember.create({
       data: {
         teamId,
         memberId: dto.memberId,
-        rolle: dto.rolle || 'SPIELER',
+        rolle,
       },
       include: { member: true },
     });

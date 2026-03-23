@@ -24,6 +24,7 @@ import {
   Check,
   X,
   Timer,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -106,6 +107,7 @@ interface VerfuegbaresMitglied {
   firstName: string;
   lastName: string;
   memberNumber: string;
+  vereinsRollen?: string[];
 }
 
 interface VerletzungDaten {
@@ -255,8 +257,17 @@ export default function TeamDetailPage() {
     if (!gewaehltesMitglied) return;
     setHinzufuegenLadend(true);
     try {
+      // Rolle aus vereinsRollen des Mitglieds ableiten
+      const mitglied = alleMitglieder.find((m) => m.id === gewaehltesMitglied);
+      const rollen = mitglied?.vereinsRollen || [];
+      let rolle: string | undefined;
+      if (rollen.includes('Trainer')) rolle = 'TRAINER';
+      else if (rollen.includes('Vorstand')) rolle = 'VORSTAND';
+      else if (rollen.includes('Eltern')) rolle = 'ELTERN';
+
       await apiClient.post(`/teams/${teamId}/mitglieder`, {
         memberId: gewaehltesMitglied,
+        ...(rolle && { rolle }),
       });
       setGewaehltesMitglied('');
       datenLaden();
@@ -491,6 +502,13 @@ export default function TeamDetailPage() {
           >
             <Users className="h-4 w-4 mr-2" />
             Aufstellung
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/trainingsplaene?teamId=${teamId}`)}
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            KI Trainingsplan
           </Button>
         </div>
       </div>
