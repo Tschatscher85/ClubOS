@@ -42,6 +42,7 @@ interface Mitglied {
   status: string;
   joinDate: string;
   userId?: string | null;
+  vereinsRollen?: string[];
   teamMembers?: Array<{ team: TeamInfo }>;
 }
 
@@ -162,7 +163,7 @@ export default function MitgliederInhalt() {
         })),
       ]);
 
-      // Rollen-Map aufbauen: userId → { vereinsRollen, farben }
+      // Rollen-Map aufbauen: userId/memberId → { vereinsRollen, farben }
       const farbenMap: Record<string, string> = {};
       for (const v of vorlagenDaten) {
         farbenMap[v.name] = v.farbe || '#64748b';
@@ -172,6 +173,13 @@ export default function MitgliederInhalt() {
       for (const b of benutzerDaten) {
         map[b.id] = { vereinsRollen: b.vereinsRollen || [], farben: farbenMap };
         for (const r of b.vereinsRollen || []) alleRollen.add(r);
+      }
+      // Auch Member-Level vereinsRollen erfassen (fuer Mitglieder ohne User-Account)
+      for (const m of mitgliederDaten) {
+        if (!m.userId && m.vereinsRollen && m.vereinsRollen.length > 0) {
+          map[`member:${m.id}`] = { vereinsRollen: m.vereinsRollen, farben: farbenMap };
+          for (const r of m.vereinsRollen) alleRollen.add(r);
+        }
       }
       setRollenMap(map);
       setVerfuegbareRollen(Array.from(alleRollen).sort());
@@ -207,11 +215,11 @@ export default function MitgliederInhalt() {
         return false;
       }
 
-      if (rollenFilter && m.userId) {
-        const rollen = rollenMap[m.userId]?.vereinsRollen || [];
+      if (rollenFilter) {
+        const rollen = m.userId
+          ? (rollenMap[m.userId]?.vereinsRollen || [])
+          : (rollenMap[`member:${m.id}`]?.vereinsRollen || []);
         if (!rollen.includes(rollenFilter)) return false;
-      } else if (rollenFilter && !m.userId) {
-        return false;
       }
 
       // Geburtstags-Monat Filter

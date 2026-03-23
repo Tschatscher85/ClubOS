@@ -68,6 +68,7 @@ interface MitgliedInfo {
   firstName: string;
   lastName: string;
   parentEmail: string | null;
+  vereinsRollen?: string[];
   teamMembers: TeamInfo[];
   user: { id: string; email: string; role: string; vereinsRollen?: string[] } | null;
 }
@@ -362,6 +363,7 @@ export default function EntwicklungPage() {
   // Entwicklung nur fuer Spieler/Jugendspieler oder Kinder ohne User-Account
   const istSpieler = mitglied && (
     mitglied.user?.vereinsRollen?.some(r => r === 'Spieler' || r === 'Jugendspieler') ||
+    mitglied.vereinsRollen?.some(r => r === 'Spieler' || r === 'Jugendspieler') ||
     (!mitglied.user && mitglied.parentEmail)
   );
 

@@ -36,6 +36,7 @@ interface Mitglied {
   userId?: string | null;
   fotoErlaubnis?: boolean;
   fahrgemeinschaftErlaubnis?: boolean;
+  vereinsRollen?: string[];
 }
 
 interface RollenVorlage {
@@ -248,7 +249,7 @@ export function MitgliedFormular({
         setIndividuellerBetrag('');
         setIndividuellerIntervall('MONATLICH');
       }
-      // Rollen laden wenn Mitglied einen User hat
+      // Rollen laden: aus User (wenn vorhanden) oder aus Member.vereinsRollen
       if (mitglied.userId) {
         apiClient.get<{ id: string; vereinsRollen: string[] }[]>('/benutzer/verwaltung/liste')
           .then((benutzerListe) => {
@@ -256,6 +257,8 @@ export function MitgliedFormular({
             setGewaehlteRollen(user?.vereinsRollen?.length ? user.vereinsRollen : ['Spieler']);
           })
           .catch(() => setGewaehlteRollen(['Spieler']));
+      } else if (mitglied.vereinsRollen?.length) {
+        setGewaehlteRollen(mitglied.vereinsRollen);
       } else {
         setGewaehlteRollen(['Spieler']);
       }
@@ -345,6 +348,8 @@ export function MitgliedFormular({
     }
 
     try {
+      // Pruefen ob Mitglied einen User-Account hat (oder bekommt)
+      const hatUser = mitglied?.userId || (istMinderjaehrig && erstelleLogin);
       const daten = {
         vorname,
         nachname,
@@ -359,6 +364,8 @@ export function MitgliedFormular({
         ...(istMinderjaehrig && { fotoErlaubnis }),
         ...(istMinderjaehrig && { fahrgemeinschaftErlaubnis }),
         ...(istMinderjaehrig && erstelleLogin && { erstelleBenutzerKonto: true }),
+        // Vereinsrollen auf Member speichern wenn kein User-Account vorhanden
+        ...(!hatUser && gewaehlteRollen.length > 0 && { vereinsRollen: gewaehlteRollen }),
         status,
         beitragsklasseId: individuellerBeitrag ? null : (beitragsklasseId || null),
         ...(individuellerBeitrag && individuellerBetrag && {
@@ -374,13 +381,14 @@ export function MitgliedFormular({
         if (ergebnis?.temporaeresPasswort) {
           erhaltenesPasswort = ergebnis.temporaeresPasswort;
         }
-        // Vereinsrollen zuweisen wenn Mitglied einen User-Account hat
+        // Vereinsrollen auf User zuweisen (wenn User-Account vorhanden)
         const aktuelleUserId = ergebnis?.userId || mitglied.userId;
         if (aktuelleUserId && gewaehlteRollen.length > 0) {
           await apiClient.put(`/benutzer/verwaltung/${aktuelleUserId}/vereinsrollen`, {
             vereinsRollen: gewaehlteRollen,
           }).catch(() => {/* User hat ggf. noch keinen Account */});
         }
+        // Ohne User-Account werden Rollen bereits im Member-Update (daten) mitgespeichert
         // Team-Zuordnungen aktualisieren (mit Rollen)
         const teamZuordnungen = Object.entries(gewaehlteTeams).map(([teamId, rolle]) => ({ teamId, rolle }));
         if (teamZuordnungen.length > 0) {
@@ -393,12 +401,13 @@ export function MitgliedFormular({
         if (neuesMitglied?.temporaeresPasswort) {
           erhaltenesPasswort = neuesMitglied.temporaeresPasswort;
         }
-        // Vereinsrollen zuweisen wenn User-Account erstellt wurde
+        // Vereinsrollen auf User zuweisen (wenn User-Account erstellt wurde)
         if (neuesMitglied.userId && gewaehlteRollen.length > 0) {
           await apiClient.put(`/benutzer/verwaltung/${neuesMitglied.userId}/vereinsrollen`, {
             vereinsRollen: gewaehlteRollen,
           }).catch(() => {});
         }
+        // Ohne User-Account werden Rollen bereits im Member-Create (daten) mitgespeichert
         // Team-Zuordnungen setzen (mit Rollen)
         const teamZuordnungen = Object.entries(gewaehlteTeams).map(([teamId, rolle]) => ({ teamId, rolle }));
         if (teamZuordnungen.length > 0) {

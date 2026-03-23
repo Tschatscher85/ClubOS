@@ -81,6 +81,12 @@ export class ErstelleMitgliedDto {
   @ApiPropertyOptional({ description: 'Benutzerkonto fuer Kind erstellen (Eltern muessen zustimmen)' })
   @IsOptional()
   erstelleBenutzerKonto?: boolean;
+
+  @ApiPropertyOptional({ description: 'Vereinsrollen (fuer Mitglieder ohne User-Account)', example: ['Jugendspieler'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  vereinsRollen?: string[];
 }
 
 export class VerknuepfeMitgliedDto {
@@ -236,4 +242,10 @@ export class AktualisiereMitgliedDto {
   @ApiPropertyOptional({ description: 'Benutzerkonto fuer Kind erstellen (Eltern muessen zustimmen)' })
   @IsOptional()
   erstelleBenutzerKonto?: boolean;
+
+  @ApiPropertyOptional({ description: 'Vereinsrollen (fuer Mitglieder ohne User-Account)', example: ['Jugendspieler'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  vereinsRollen?: string[];
 }

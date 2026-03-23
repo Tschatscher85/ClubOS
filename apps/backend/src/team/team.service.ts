@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { AttendanceStatus } from '@prisma/client';
+import { AttendanceStatus, FamilienRolle } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ErstelleTeamDto, AktualisiereTeamDto } from './dto/erstelle-team.dto';
 import { MitgliedHinzufuegenDto } from './dto/team-mitglied.dto';
@@ -199,6 +199,130 @@ export class TeamService {
     return { gesamt };
   }
 
+  // ==================== Eltern-Automatik ====================
+
+  /**
+   * Wenn ein Kind zum Team hinzugefuegt wird, werden Eltern (MUTTER/VATER/ERZIEHUNGSBERECHTIGTER)
+   * automatisch mit Rolle ELTERN hinzugefuegt.
+   */
+  private async elternAutomatischHinzufuegen(teamId: string, memberId: string) {
+    // Pruefen ob dieses Mitglied ein KIND in einer Familie ist
+    const kindEintraege = await this.prisma.familieMitglied.findMany({
+      where: {
+        memberId,
+        rolle: FamilienRolle.KIND,
+      },
+      select: { familieId: true },
+    });
+
+    if (kindEintraege.length === 0) return;
+
+    const familieIds = kindEintraege.map((k) => k.familieId);
+
+    // Alle Elternteile in diesen Familien finden
+    const elternEintraege = await this.prisma.familieMitglied.findMany({
+      where: {
+        familieId: { in: familieIds },
+        rolle: { in: [FamilienRolle.MUTTER, FamilienRolle.VATER, FamilienRolle.ERZIEHUNGSBERECHTIGTER] },
+      },
+      select: { memberId: true, userId: true },
+    });
+
+    for (const eltern of elternEintraege) {
+      // Eltern-MemberId ermitteln: direkt oder ueber userId
+      let elternMemberId = eltern.memberId;
+      if (!elternMemberId && eltern.userId) {
+        const member = await this.prisma.member.findFirst({
+          where: { userId: eltern.userId },
+          select: { id: true },
+        });
+        if (member) elternMemberId = member.id;
+      }
+      if (!elternMemberId) continue;
+
+      // Nur hinzufuegen wenn noch nicht im Team
+      const vorhanden = await this.prisma.teamMember.findUnique({
+        where: { teamId_memberId: { teamId, memberId: elternMemberId } },
+      });
+      if (!vorhanden) {
+        await this.prisma.teamMember.create({
+          data: { teamId, memberId: elternMemberId, rolle: 'ELTERN' },
+        });
+      }
+    }
+  }
+
+  /**
+   * Wenn ein Kind aus dem Team entfernt wird, pruefen ob Eltern noch andere Kinder
+   * im selben Team haben. Falls nicht, werden sie ebenfalls entfernt.
+   */
+  private async elternAutomatischEntfernen(teamId: string, memberId: string) {
+    // Pruefen ob dieses Mitglied ein KIND in einer Familie ist
+    const kindEintraege = await this.prisma.familieMitglied.findMany({
+      where: {
+        memberId,
+        rolle: FamilienRolle.KIND,
+      },
+      select: { familieId: true },
+    });
+
+    if (kindEintraege.length === 0) return;
+
+    const familieIds = kindEintraege.map((k) => k.familieId);
+
+    // Alle Elternteile in diesen Familien finden
+    const elternEintraege = await this.prisma.familieMitglied.findMany({
+      where: {
+        familieId: { in: familieIds },
+        rolle: { in: [FamilienRolle.MUTTER, FamilienRolle.VATER, FamilienRolle.ERZIEHUNGSBERECHTIGTER] },
+      },
+      select: { memberId: true, userId: true },
+    });
+
+    // Alle anderen Kinder aus diesen Familien (ausser dem gerade entfernten)
+    const andereKinder = await this.prisma.familieMitglied.findMany({
+      where: {
+        familieId: { in: familieIds },
+        rolle: FamilienRolle.KIND,
+        memberId: { not: memberId },
+      },
+      select: { memberId: true },
+    });
+
+    // Pruefen welche dieser Kinder noch im selben Team sind
+    const andereKinderIds = andereKinder
+      .map((k) => k.memberId)
+      .filter((id): id is string => !!id);
+
+    const kinderNochImTeam = andereKinderIds.length > 0
+      ? await this.prisma.teamMember.findMany({
+          where: { teamId, memberId: { in: andereKinderIds } },
+          select: { memberId: true },
+        })
+      : [];
+
+    // Falls noch Kinder im Team sind, Eltern nicht entfernen
+    if (kinderNochImTeam.length > 0) return;
+
+    // Keine Kinder mehr im Team → Eltern mit Rolle ELTERN entfernen
+    for (const eltern of elternEintraege) {
+      let elternMemberId = eltern.memberId;
+      if (!elternMemberId && eltern.userId) {
+        const member = await this.prisma.member.findFirst({
+          where: { userId: eltern.userId },
+          select: { id: true },
+        });
+        if (member) elternMemberId = member.id;
+      }
+      if (!elternMemberId) continue;
+
+      // Nur entfernen wenn die Rolle ELTERN ist (nicht wenn manuell als SPIELER o.ae. hinzugefuegt)
+      await this.prisma.teamMember.deleteMany({
+        where: { teamId, memberId: elternMemberId, rolle: 'ELTERN' },
+      });
+    }
+  }
+
   // ==================== Kader-Verwaltung ====================
 
   async mitgliederAbrufen(tenantId: string, teamId: string) {
@@ -246,7 +370,7 @@ export class TeamService {
       throw new ConflictException('Mitglied ist bereits im Team.');
     }
 
-    return this.prisma.teamMember.create({
+    const neuesTeamMitglied = await this.prisma.teamMember.create({
       data: {
         teamId,
         memberId: dto.memberId,
@@ -254,6 +378,11 @@ export class TeamService {
       },
       include: { member: true },
     });
+
+    // Eltern automatisch hinzufuegen wenn Kind zum Team hinzugefuegt wird
+    await this.elternAutomatischHinzufuegen(teamId, dto.memberId);
+
+    return neuesTeamMitglied;
   }
 
   async mitgliedEntfernen(tenantId: string, teamId: string, memberId: string) {
@@ -265,6 +394,9 @@ export class TeamService {
     if (!eintrag) {
       throw new NotFoundException('Mitglied ist nicht in diesem Team.');
     }
+
+    // Zuerst Eltern-Automatik pruefen (vor dem Loeschen, damit die Familien-Verknuepfung noch da ist)
+    await this.elternAutomatischEntfernen(teamId, memberId);
 
     return this.prisma.teamMember.delete({
       where: { id: eintrag.id },

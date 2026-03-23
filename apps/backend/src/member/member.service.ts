@@ -39,6 +39,7 @@ export class MemberService {
         fotoErlaubnisAm: dto.fotoErlaubnis ? new Date() : null,
         fahrgemeinschaftErlaubnis: dto.fahrgemeinschaftErlaubnis ?? false,
         fahrgemeinschaftErlaubnisAm: dto.fahrgemeinschaftErlaubnis ? new Date() : null,
+        ...(dto.vereinsRollen && { vereinsRollen: dto.vereinsRollen }),
       },
     });
 
@@ -138,6 +139,7 @@ export class MemberService {
           fahrgemeinschaftErlaubnis: dto.fahrgemeinschaftErlaubnis,
           fahrgemeinschaftErlaubnisAm: dto.fahrgemeinschaftErlaubnis ? new Date() : null,
         }),
+        ...(dto.vereinsRollen !== undefined && { vereinsRollen: dto.vereinsRollen }),
       },
     });
 

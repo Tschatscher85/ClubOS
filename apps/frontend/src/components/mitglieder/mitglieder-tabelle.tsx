@@ -90,7 +90,9 @@ export function MitgliederTabelle({
               text: m.status,
               variant: 'outline' as const,
             };
-            const rollen = m.userId && rollenMap ? rollenMap[m.userId] : null;
+            const rollen = rollenMap
+              ? (m.userId ? rollenMap[m.userId] : rollenMap[`member:${m.id}`]) || null
+              : null;
 
             return (
               <tr

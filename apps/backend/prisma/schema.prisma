@@ -277,6 +277,9 @@ model Member {
   fahrgemeinschaftErlaubnis    Boolean   @default(false) // Eltern erlauben Mitfahrt (§832 BGB Aufsichtspflicht)
   fahrgemeinschaftErlaubnisAm  DateTime? // Datum der Einwilligung
 
+  // Vereinsrollen (fuer Mitglieder OHNE User-Account, z.B. Kinder)
+  vereinsRollen      String[]
+
   // Selbstverwaltung
   notfallKontakt     String?
   notfallTelefon     String?
