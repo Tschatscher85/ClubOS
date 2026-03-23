@@ -163,7 +163,7 @@ export function MitgliedFormular({
   // Team- und Abteilungs-Zuordnung
   const [alleTeams, setAlleTeams] = useState<TeamKurz[]>([]);
   const [alleAbteilungen, setAlleAbteilungen] = useState<AbteilungKurz[]>([]);
-  const [gewaehlteTeams, setGewaehlteTeams] = useState<Record<string, string>>({}); // teamId → rolle
+  const [gewaehlteTeams, setGewaehlteTeams] = useState<string[]>([]); // teamId-Array
 
   // Beitragsklassen + Rollen + Sportarten + Teams laden
   useEffect(() => {
@@ -198,17 +198,15 @@ export function MitgliedFormular({
         })));
       }).catch(() => {});
 
-      // Bestehende Team-Zuordnungen laden (mit Rolle)
+      // Bestehende Team-Zuordnungen laden
       if (mitglied) {
         apiClient.get<Array<{ teamId: string; rolle: string }>>(`/mitglieder/${mitglied.id}/teams`)
           .then((daten) => {
-            const map: Record<string, string> = {};
-            for (const t of daten) map[t.teamId] = t.rolle || 'SPIELER';
-            setGewaehlteTeams(map);
+            setGewaehlteTeams(daten.map((t) => t.teamId));
           })
-          .catch(() => setGewaehlteTeams({}));
+          .catch(() => setGewaehlteTeams([]));
       } else {
-        setGewaehlteTeams({});
+        setGewaehlteTeams([]);
       }
     }
   }, [offen, mitglied]);
@@ -386,8 +384,8 @@ export function MitgliedFormular({
           }).catch(() => {/* User hat ggf. noch keinen Account */});
         }
         // Ohne User-Account werden Rollen bereits im Member-Update (daten) mitgespeichert
-        // Team-Zuordnungen aktualisieren (mit Rollen)
-        const teamZuordnungen = Object.entries(gewaehlteTeams).map(([teamId, rolle]) => ({ teamId, rolle }));
+        // Team-Zuordnungen aktualisieren (Rolle wird vom Backend abgeleitet)
+        const teamZuordnungen = gewaehlteTeams.map((teamId) => ({ teamId }));
         if (teamZuordnungen.length > 0) {
           await apiClient.put(`/mitglieder/${mitglied.id}/teams`, {
             teamIds: teamZuordnungen,
@@ -405,8 +403,8 @@ export function MitgliedFormular({
           }).catch(() => {});
         }
         // Ohne User-Account werden Rollen bereits im Member-Create (daten) mitgespeichert
-        // Team-Zuordnungen setzen (mit Rollen)
-        const teamZuordnungen = Object.entries(gewaehlteTeams).map(([teamId, rolle]) => ({ teamId, rolle }));
+        // Team-Zuordnungen setzen (Rolle wird vom Backend abgeleitet)
+        const teamZuordnungen = gewaehlteTeams.map((teamId) => ({ teamId }));
         if (teamZuordnungen.length > 0) {
           await apiClient.put(`/mitglieder/${neuesMitglied.id}/teams`, {
             teamIds: teamZuordnungen,
@@ -581,7 +579,7 @@ export function MitgliedFormular({
               <div className="space-y-1 mt-2 max-h-60 overflow-y-auto">
                 {(() => {
                   const renderTeamZeile = (team: TeamKurz) => {
-                    const istGewaehlt = team.id in gewaehlteTeams;
+                    const istGewaehlt = gewaehlteTeams.includes(team.id);
                     return (
                       <div
                         key={team.id}
@@ -593,45 +591,16 @@ export function MitgliedFormular({
                           type="checkbox"
                           checked={istGewaehlt}
                           onChange={() => {
-                            setGewaehlteTeams((prev) => {
-                              const neu = { ...prev };
-                              if (istGewaehlt) {
-                                delete neu[team.id];
-                              } else {
-                                // Rolle aus vereinsRollen ableiten
-                                let rolle = 'SPIELER';
-                                if (gewaehlteRollen.includes('Trainer')) rolle = 'TRAINER';
-                                else if (gewaehlteRollen.includes('Eltern')) rolle = 'ELTERN';
-                                else if (gewaehlteRollen.includes('Vorstand')) rolle = 'VORSTAND';
-                                neu[team.id] = rolle;
-                              }
-                              return neu;
-                            });
+                            setGewaehlteTeams((prev) =>
+                              istGewaehlt
+                                ? prev.filter((id) => id !== team.id)
+                                : [...prev, team.id]
+                            );
                           }}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm flex-1">{team.name}</span>
                         <span className="text-xs text-muted-foreground">({team.ageGroup})</span>
-                        {istGewaehlt && (
-                          <select
-                            value={gewaehlteTeams[team.id] || 'SPIELER'}
-                            onChange={(e) => {
-                              setGewaehlteTeams((prev) => ({
-                                ...prev,
-                                [team.id]: e.target.value,
-                              }));
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-xs rounded border border-input bg-background px-2 py-0.5 ml-1"
-                          >
-                            <option value="SPIELER">Spieler</option>
-                            <option value="TRAINER">Trainer</option>
-                            <option value="CO_TRAINER">Co-Trainer</option>
-                            <option value="TORWART_TRAINER">TW-Trainer</option>
-                            <option value="BETREUER">Betreuer</option>
-                            <option value="KAPITAEN">Kapitaen</option>
-                          </select>
-                        )}
                       </div>
                     );
                   };
@@ -666,7 +635,7 @@ export function MitgliedFormular({
           )}
 
           {/* Trainer-Lizenz Hinweis */}
-          {Object.values(gewaehlteTeams).some((r) => ['TRAINER', 'CO_TRAINER', 'TORWART_TRAINER'].includes(r)) && (
+          {gewaehlteRollen.includes('Trainer') && gewaehlteTeams.length > 0 && (
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
               <p className="text-sm font-medium text-blue-800">
                 Dieses Mitglied ist als Trainer eingetragen

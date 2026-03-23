@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send, Building2, Trophy, CreditCard, Shield, Users, Gift, Layout, Calendar, MapPin, Plus, ChevronDown, ChevronRight, Pencil, X, Zap } from 'lucide-react';
+import { Settings, Palette, Save, Upload, ImageIcon, Lock, Brain, Eye, EyeOff, Mail, Trash2, Send, Building2, Trophy, CreditCard, Shield, Users, Gift, Layout, Calendar, MapPin, Plus, ChevronDown, ChevronRight, Pencil, X } from 'lucide-react';
 import Link from 'next/link';
 import { AdressSuche } from '@/components/kalender/adress-suche';
 import { altersklassenLaden, altersklassenSpeichern, altersklassenFallback } from '@/lib/altersklassen';
 import { veranstaltungstypenLaden, veranstaltungstypenSpeichern, veranstaltungstypenFallback } from '@/lib/veranstaltungstypen';
-import { sportartenCacheLeeren, sportartenLaden, sportartLabel } from '@/lib/sportarten';
+import { sportartenLaden, sportartLabel, type Sportart } from '@/lib/sportarten';
 import type { VeranstaltungsTyp } from '@/lib/veranstaltungstypen';
 import {
   Dialog,
@@ -677,7 +677,6 @@ export default function EinstellungenPage() {
             Vereinsstruktur
           </p>
           <AbteilungenCard />
-          <SportartenCard />
 
           {/* Mannschaften */}
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 pt-4">
@@ -2296,189 +2295,3 @@ function VeranstaltungstypenCard() {
   );
 }
 
-// ==================== Sportarten-Verwaltung ====================
-
-interface Sportart {
-  id: string;
-  name: string;
-  beschreibung: string;
-  icon: string;
-  istVordefiniert: boolean;
-}
-
-const VORAUSWAHL_SPORTARTEN = [
-  { name: 'Badminton', icon: '🏸' }, { name: 'Volleyball', icon: '🏐' },
-  { name: 'Tischtennis', icon: '🏓' }, { name: 'Eishockey', icon: '🏒' },
-  { name: 'Rugby', icon: '🏉' }, { name: 'Baseball', icon: '⚾' },
-  { name: 'Golf', icon: '⛳' }, { name: 'Boxen', icon: '🥊' },
-  { name: 'Judo', icon: '🥋' }, { name: 'Reiten', icon: '🏇' },
-  { name: 'Rudern', icon: '🚣' }, { name: 'Klettern', icon: '🧗' },
-  { name: 'Tanzen', icon: '💃' }, { name: 'Yoga', icon: '🧘' },
-  { name: 'Fechten', icon: '🤺' }, { name: 'Segeln', icon: '⛵' },
-];
-
-function SportartenCard() {
-  const [sportarten, setSportarten] = useState<Sportart[]>([]);
-  const [ladend, setLadend] = useState(true);
-  const [vordefinierteAlle, setVordefinierteAlle] = useState<{ id: string; name: string; istAktiv: boolean }[]>([]);
-  const [neuerName, setNeuerName] = useState('');
-  const [neuesIcon, setNeuesIcon] = useState('');
-  const [fehler, setFehler] = useState('');
-  const [erfolg, setErfolg] = useState('');
-  const [vorauswahlOffen, setVorauswahlOffen] = useState(false);
-
-  const laden = async () => {
-    try {
-      const [result, vordefResult] = await Promise.all([
-        apiClient.get<Sportart[]>('/sportarten'),
-        apiClient.get<{ id: string; name: string; istAktiv: boolean }[]>('/sportarten/alle-vordefinierten').catch(() => []),
-      ]);
-      setSportarten(result);
-      setVordefinierteAlle(vordefResult);
-    } catch {
-      setFehler('Fehler beim Laden.');
-    } finally {
-      setLadend(false);
-    }
-  };
-
-  useEffect(() => { laden(); }, []);
-
-  const handleVordefinierteToggle = async (sportId: string) => {
-    const neueAktive = vordefinierteAlle
-      .map((s) => s.id === sportId ? { ...s, istAktiv: !s.istAktiv } : s)
-      .filter((s) => s.istAktiv)
-      .map((s) => s.id);
-    try {
-      await apiClient.put('/sportarten/aktive', { sportarten: neueAktive });
-      sportartenCacheLeeren();
-      await laden();
-    } catch (error) {
-      setFehler(error instanceof Error ? error.message : 'Fehler.');
-    }
-  };
-
-  const handleSportartHinzufügen = async (name: string, icon: string) => {
-    if (!name.trim()) return;
-    setFehler('');
-    try {
-      await apiClient.post('/sportarten/custom', { name, icon, beschreibung: '' });
-      sportartenCacheLeeren();
-      setNeuerName('');
-      setNeuesIcon('');
-      setErfolg(`"${name}" hinzugefügt.`);
-      setTimeout(() => setErfolg(''), 3000);
-      await laden();
-    } catch (error) {
-      setFehler(error instanceof Error ? error.message : 'Fehler.');
-    }
-  };
-
-  const handleSportartLoeschen = async (id: string) => {
-    if (!confirm('Sportart wirklich löschen?')) return;
-    try {
-      await apiClient.delete(`/sportarten/custom/${id}`);
-      sportartenCacheLeeren();
-      await laden();
-    } catch (error) {
-      setFehler(error instanceof Error ? error.message : 'Fehler.');
-    }
-  };
-
-  const eigene = sportarten.filter((s) => !s.istVordefiniert && s.name.trim());
-  const vorhandeneNamen = new Set(sportarten.map((s) => s.name.toLowerCase()));
-  const verfuegbareVorauswahl = VORAUSWAHL_SPORTARTEN.filter((v) => !vorhandeneNamen.has(v.name.toLowerCase()));
-
-  return (
-    <KlappCard
-      id="sportarten"
-      titel="Sportarten"
-      icon={Trophy}
-      beschreibung="Welche Sportarten bietet Ihr Verein an? Klicken Sie zum Ein-/Ausschalten."
-      kinder={
-        ladend ? <p className="text-sm text-muted-foreground">Laden...</p> : (
-          <>
-            {fehler && <p className="text-sm text-destructive">{fehler}</p>}
-            {erfolg && <p className="text-sm text-green-600">{erfolg}</p>}
-
-            <div>
-              <Label className="text-sm font-medium mb-2 block">Standard-Sportarten</Label>
-              <p className="text-xs text-muted-foreground mb-3">
-                Klicken Sie auf eine Sportart, um sie für Ihren Verein ein- oder auszuschalten.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {vordefinierteAlle.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => handleVordefinierteToggle(s.id)}
-                    className={`text-sm py-1.5 px-3 rounded-full border transition-colors ${
-                      s.istAktiv
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-background text-muted-foreground border-border hover:bg-muted'
-                    }`}
-                  >
-                    {s.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium mb-2 block">Eigene Sportarten</Label>
-              {eigene.length > 0 && (
-                <div className="space-y-2 mb-4">
-                  {eigene.map((s) => (
-                    <div key={s.id} className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
-                      {s.icon && <span>{s.icon}</span>}
-                      <span className="flex-1 text-sm">{s.name}</span>
-                      <button type="button" onClick={() => handleSportartLoeschen(s.id)} className="text-xs text-destructive hover:text-destructive/80">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="flex gap-2">
-                <Input value={neuesIcon} onChange={(e) => setNeuesIcon(e.target.value)} placeholder="🏸" className="w-16" />
-                <Input
-                  value={neuerName}
-                  onChange={(e) => setNeuerName(e.target.value)}
-                  placeholder="z.B. Badminton"
-                  className="flex-1"
-                  onKeyDown={(e) => e.key === 'Enter' && handleSportartHinzufügen(neuerName, neuesIcon)}
-                />
-                <Button variant="outline" size="sm" onClick={() => handleSportartHinzufügen(neuerName, neuesIcon)} disabled={!neuerName.trim()}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Hinzufügen
-                </Button>
-              </div>
-            </div>
-
-            {verfuegbareVorauswahl.length > 0 && (
-              <div>
-                <button onClick={() => setVorauswahlOffen(!vorauswahlOffen)} className="flex items-center gap-2 text-sm text-primary hover:underline">
-                  <Zap className="h-4 w-4" />
-                  {vorauswahlOffen ? 'Vorauswahl verbergen' : 'Weitere Sportarten schnell hinzufügen'}
-                </button>
-                {vorauswahlOffen && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {verfuegbareVorauswahl.map((v) => (
-                      <button
-                        key={v.name}
-                        onClick={() => handleSportartHinzufügen(v.name, v.icon)}
-                        className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm hover:bg-primary/10 hover:border-primary transition-colors"
-                      >
-                        <span>{v.icon}</span> <span>{v.name}</span> <Plus className="h-3 w-3 text-muted-foreground" />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </>
-        )
-      }
-    />
-  );
-}

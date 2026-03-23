@@ -154,10 +154,10 @@ export default function MitarbeiterPage() {
             </p>
           </div>
         </div>
-        <Link href="/einstellungen/benutzer">
+        <Link href="/einstellungen/rollen">
           <Button variant="outline">
             <Shield className="h-4 w-4 mr-2" />
-            Benutzer verwalten
+            Rollen verwalten
           </Button>
         </Link>
       </div>
@@ -316,10 +316,10 @@ export default function MitarbeiterPage() {
             Vorstand, Trainer, Innendienst oder Kassenpruefer zugewiesen werden.
             Die Verwaltung der Rollen und Berechtigungen erfolgt unter{' '}
             <Link
-              href="/einstellungen/benutzer"
+              href="/einstellungen/rollen"
               className="text-primary underline hover:no-underline"
             >
-              Einstellungen &gt; Benutzer
+              Einstellungen &gt; Rollen
             </Link>
             .
           </CardDescription>
