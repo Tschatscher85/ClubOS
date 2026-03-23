@@ -750,31 +750,16 @@ export function MitgliedFormular({
                   )}
                   {elternDropdownOffen && elternSuche.length >= 2 && gefilterteElternKandidaten.length === 0 && (
                     <div className="absolute z-50 mt-1 w-full rounded-md border border-orange-200 bg-white shadow-lg px-3 py-2">
-                      <p className="text-xs text-muted-foreground">Kein Mitglied gefunden. E-Mail unten manuell eingeben.</p>
+                      <p className="text-xs text-muted-foreground">Kein Mitglied gefunden. Bitte zuerst das Eltern-Mitglied anlegen.</p>
                     </div>
                   )}
-                </div>
-              )}
-
-              {!elternMemberId && (
-                <div className="space-y-1">
-                  <Label htmlFor="elternEmail" className="text-orange-800 text-sm">
-                    Oder E-Mail-Adresse eingeben
-                  </Label>
-                  <Input
-                    id="elternEmail"
-                    type="email"
-                    value={elternEmail}
-                    onChange={(e) => setElternEmail(e.target.value)}
-                    placeholder="eltern@beispiel.de"
-                  />
                 </div>
               )}
 
               <p className="text-xs text-orange-700">
                 {elternMemberId
                   ? 'Das Kind wird automatisch mit dem Elternteil in einer Familie verknuepft.'
-                  : 'Eltern erhalten Zugang zum Eltern-Portal und sehen Teams, Kalender und Nachrichten ihres Kindes.'}
+                  : 'Elternteil muss als Mitglied im Verein angelegt sein. Bitte zuerst das Eltern-Mitglied erstellen.'}
               </p>
             </div>
           )}
