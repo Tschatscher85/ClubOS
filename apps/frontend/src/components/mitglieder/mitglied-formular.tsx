@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -70,6 +70,14 @@ interface AbteilungKurz {
   sport: string;
 }
 
+interface ElternKandidat {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  memberNumber: string;
+}
+
 interface MitgliedFormularProps {
   offen: boolean;
   onSchliessen: () => void;
@@ -125,8 +133,17 @@ export function MitgliedFormular({
   const [status, setStatus] = useState('PENDING');
   const [fotoErlaubnis, setFotoErlaubnis] = useState(false);
   const [fahrgemeinschaftErlaubnis, setFahrgemeinschaftErlaubnis] = useState(false);
+  const [erstelleLogin, setErstelleLogin] = useState(false);
+  const [tempPasswort, setTempPasswort] = useState<string | null>(null);
   const [ladend, setLadend] = useState(false);
   const [fehler, setFehler] = useState('');
+
+  // Eltern-Verknuepfung
+  const [elternMemberId, setElternMemberId] = useState<string | null>(null);
+  const [elternKandidaten, setElternKandidaten] = useState<ElternKandidat[]>([]);
+  const [elternSuche, setElternSuche] = useState('');
+  const [elternDropdownOffen, setElternDropdownOffen] = useState(false);
+  const elternSucheRef = useRef<HTMLDivElement>(null);
 
   // Beitragsklasse
   const [beitragsklassen, setBeitragsklassen] = useState<Beitragsklasse[]>([]);
@@ -161,6 +178,15 @@ export function MitgliedFormular({
         .catch(() => {});
       apiClient.get<AbteilungKurz[]>('/abteilungen')
         .then(setAlleAbteilungen)
+        .catch(() => {});
+      apiClient.get<ElternKandidat[]>('/mitglieder')
+        .then((result) => setElternKandidaten(result.map((m) => ({
+          id: m.id,
+          firstName: m.firstName,
+          lastName: m.lastName,
+          email: m.email,
+          memberNumber: m.memberNumber,
+        }))))
         .catch(() => {});
       sportartenLaden().then((daten) => {
         setSportartenOptionen(daten.map((s) => ({
@@ -204,8 +230,13 @@ export function MitgliedFormular({
       setAdresse(mitglied.address || '');
       setGewaehlteSportarten(mitglied.sport || []);
       setElternEmail(mitglied.parentEmail || '');
+      setElternMemberId(null);
+      setElternSuche('');
+      setElternDropdownOffen(false);
       setFotoErlaubnis(mitglied.fotoErlaubnis ?? false);
       setFahrgemeinschaftErlaubnis(mitglied.fahrgemeinschaftErlaubnis ?? false);
+      setErstelleLogin(false);
+      setTempPasswort(null);
       setStatus(mitglied.status || 'PENDING');
       setBeitragsklasseId(mitglied.beitragsklasseId || '');
       if (mitglied.beitragBetrag && mitglied.beitragBetrag > 0 && !mitglied.beitragsklasseId) {
@@ -240,8 +271,13 @@ export function MitgliedFormular({
       setAdresse('');
       setGewaehlteSportarten([]);
       setElternEmail('');
+      setElternMemberId(null);
+      setElternSuche('');
+      setElternDropdownOffen(false);
       setFotoErlaubnis(false);
       setFahrgemeinschaftErlaubnis(false);
+      setErstelleLogin(false);
+      setTempPasswort(null);
       setStatus('PENDING');
       setBeitragsklasseId('');
       setIndividuellerBeitrag(false);
@@ -255,6 +291,39 @@ export function MitgliedFormular({
   // Alter berechnen fuer Eltern-E-Mail Sichtbarkeit
   const alter = useMemo(() => berechneAlter(geburtsdatum), [geburtsdatum]);
   const istMinderjaehrig = alter !== null && alter < 18;
+
+  // Eltern-Kandidaten filtern (nach Suchbegriff, ohne das aktuelle Mitglied)
+  const gefilterteElternKandidaten = useMemo(() => {
+    if (!elternSuche || elternSuche.length < 2) return [];
+    const suche = elternSuche.toLowerCase();
+    return elternKandidaten
+      .filter((m) => {
+        // Aktuelles Mitglied nicht als Elternteil anzeigen
+        if (mitglied && m.id === mitglied.id) return false;
+        const vollerName = `${m.firstName} ${m.lastName}`.toLowerCase();
+        const emailLower = (m.email || '').toLowerCase();
+        return vollerName.includes(suche) || emailLower.includes(suche) || m.memberNumber.toLowerCase().includes(suche);
+      })
+      .slice(0, 8);
+  }, [elternSuche, elternKandidaten, mitglied]);
+
+  // Dropdown schliessen bei Klick ausserhalb
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (elternSucheRef.current && !elternSucheRef.current.contains(e.target as Node)) {
+        setElternDropdownOffen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Sportarten auf aktive Abteilungen filtern (Fallback: alle, wenn keine Abteilungen existieren)
+  const gefilterteSportarten = useMemo(() => {
+    if (alleAbteilungen.length === 0) return sportartenOptionen;
+    const abteilungsSportarten = new Set(alleAbteilungen.map((a) => a.sport));
+    return sportartenOptionen.filter((s) => abteilungsSportarten.has(s.wert));
+  }, [sportartenOptionen, alleAbteilungen]);
 
   const handleSportartToggle = (sportart: string) => {
     setGewaehlteSportarten((prev) =>
@@ -286,8 +355,10 @@ export function MitgliedFormular({
         ...(adresse && { adresse }),
         sportarten: gewaehlteSportarten,
         ...(istMinderjaehrig && elternEmail && { elternEmail }),
+        ...(istMinderjaehrig && elternMemberId && { elternMemberId }),
         ...(istMinderjaehrig && { fotoErlaubnis }),
         ...(istMinderjaehrig && { fahrgemeinschaftErlaubnis }),
+        ...(istMinderjaehrig && erstelleLogin && { erstelleBenutzerKonto: true }),
         status,
         beitragsklasseId: individuellerBeitrag ? null : (beitragsklasseId || null),
         ...(individuellerBeitrag && individuellerBetrag && {
@@ -296,11 +367,17 @@ export function MitgliedFormular({
         }),
       };
 
+      let erhaltenesPasswort: string | null = null;
+
       if (istBearbeitung && mitglied) {
-        await apiClient.put(`/mitglieder/${mitglied.id}`, daten);
+        const ergebnis = await apiClient.put<{ id: string; userId?: string; temporaeresPasswort?: string }>(`/mitglieder/${mitglied.id}`, daten);
+        if (ergebnis?.temporaeresPasswort) {
+          erhaltenesPasswort = ergebnis.temporaeresPasswort;
+        }
         // Vereinsrollen zuweisen wenn Mitglied einen User-Account hat
-        if (mitglied.userId && gewaehlteRollen.length > 0) {
-          await apiClient.put(`/benutzer/verwaltung/${mitglied.userId}/vereinsrollen`, {
+        const aktuelleUserId = ergebnis?.userId || mitglied.userId;
+        if (aktuelleUserId && gewaehlteRollen.length > 0) {
+          await apiClient.put(`/benutzer/verwaltung/${aktuelleUserId}/vereinsrollen`, {
             vereinsRollen: gewaehlteRollen,
           }).catch(() => {/* User hat ggf. noch keinen Account */});
         }
@@ -312,7 +389,10 @@ export function MitgliedFormular({
           }).catch(() => {});
         }
       } else {
-        const neuesMitglied = await apiClient.post<{ id: string; userId?: string }>('/mitglieder', daten);
+        const neuesMitglied = await apiClient.post<{ id: string; userId?: string; temporaeresPasswort?: string }>('/mitglieder', daten);
+        if (neuesMitglied?.temporaeresPasswort) {
+          erhaltenesPasswort = neuesMitglied.temporaeresPasswort;
+        }
         // Vereinsrollen zuweisen wenn User-Account erstellt wurde
         if (neuesMitglied.userId && gewaehlteRollen.length > 0) {
           await apiClient.put(`/benutzer/verwaltung/${neuesMitglied.userId}/vereinsrollen`, {
@@ -329,7 +409,11 @@ export function MitgliedFormular({
       }
 
       onGespeichert();
-      onSchliessen();
+      if (erhaltenesPasswort) {
+        setTempPasswort(erhaltenesPasswort);
+      } else {
+        onSchliessen();
+      }
     } catch (error) {
       setFehler(
         error instanceof Error ? error.message : 'Fehler beim Speichern.',
@@ -450,7 +534,7 @@ export function MitgliedFormular({
           <div className="space-y-2">
             <Label>Sportarten *</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {sportartenOptionen.map((s) => (
+              {gefilterteSportarten.map((s) => (
                 <label
                   key={s.wert}
                   className={`flex items-center gap-2 rounded-lg border px-3 py-2 cursor-pointer transition-colors ${
@@ -576,22 +660,157 @@ export function MitgliedFormular({
             </div>
           )}
 
-          {/* Eltern-E-Mail - nur bei Minderjährigen */}
+          {/* Eltern-Verknuepfung - nur bei Minderjährigen */}
           {istMinderjaehrig && (
-            <div className="space-y-2 rounded-lg border border-orange-200 bg-orange-50 p-4">
-              <Label htmlFor="elternEmail" className="text-orange-800">
-                Eltern-E-Mail (Pflicht bei Minderjährigen)
+            <div className="space-y-3 rounded-lg border border-orange-200 bg-orange-50 p-4">
+              <Label className="text-orange-800 text-base font-medium">
+                Elternteil / Erziehungsberechtigter
               </Label>
-              <Input
-                id="elternEmail"
-                type="email"
-                value={elternEmail}
-                onChange={(e) => setElternEmail(e.target.value)}
-                placeholder="eltern@beispiel.de"
-              />
+
+              {/* Gewaehltes Eltern-Mitglied anzeigen */}
+              {elternMemberId && (
+                <div className="flex items-center gap-2 rounded-md border border-orange-300 bg-white px-3 py-2">
+                  <span className="text-sm flex-1">
+                    {(() => {
+                      const em = elternKandidaten.find((m) => m.id === elternMemberId);
+                      return em ? `${em.firstName} ${em.lastName}${em.email ? ` (${em.email})` : ""}` : "Verknuepftes Mitglied";
+                    })()}
+                  </span>
+                  <Badge variant="secondary" className="text-xs">Mitglied</Badge>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setElternMemberId(null);
+                      setElternEmail('');
+                      setElternSuche('');
+                    }}
+                    className="text-xs text-orange-700 hover:text-orange-900 underline"
+                  >
+                    Entfernen
+                  </button>
+                </div>
+              )}
+
+              {/* Suche nach bestehendem Mitglied */}
+              {!elternMemberId && (
+                <div ref={elternSucheRef} className="relative">
+                  <Label htmlFor="elternSuche" className="text-orange-800 text-sm">
+                    Bestehendes Mitglied suchen
+                  </Label>
+                  <Input
+                    id="elternSuche"
+                    value={elternSuche}
+                    onChange={(e) => {
+                      setElternSuche(e.target.value);
+                      setElternDropdownOffen(e.target.value.length >= 2);
+                    }}
+                    onFocus={() => {
+                      if (elternSuche.length >= 2) setElternDropdownOffen(true);
+                    }}
+                    placeholder="Name oder E-Mail eingeben..."
+                    autoComplete="off"
+                  />
+                  {elternDropdownOffen && gefilterteElternKandidaten.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full rounded-md border border-orange-200 bg-white shadow-lg max-h-48 overflow-y-auto">
+                      {gefilterteElternKandidaten.map((kandidat) => (
+                        <button
+                          key={kandidat.id}
+                          type="button"
+                          onClick={() => {
+                            setElternMemberId(kandidat.id);
+                            setElternEmail(kandidat.email || '');
+                            setElternSuche('');
+                            setElternDropdownOffen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-orange-50 transition-colors border-b border-gray-100 last:border-0"
+                        >
+                          <span className="text-sm font-medium">
+                            {kandidat.firstName} {kandidat.lastName}
+                          </span>
+                          {kandidat.email && (
+                            <span className="text-xs text-muted-foreground ml-2">
+                              {kandidat.email}
+                            </span>
+                          )}
+                          <span className="text-xs text-muted-foreground ml-2">
+                            ({kandidat.memberNumber})
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {elternDropdownOffen && elternSuche.length >= 2 && gefilterteElternKandidaten.length === 0 && (
+                    <div className="absolute z-50 mt-1 w-full rounded-md border border-orange-200 bg-white shadow-lg px-3 py-2">
+                      <p className="text-xs text-muted-foreground">Kein Mitglied gefunden. E-Mail unten manuell eingeben.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!elternMemberId && (
+                <div className="space-y-1">
+                  <Label htmlFor="elternEmail" className="text-orange-800 text-sm">
+                    Oder E-Mail-Adresse eingeben
+                  </Label>
+                  <Input
+                    id="elternEmail"
+                    type="email"
+                    value={elternEmail}
+                    onChange={(e) => setElternEmail(e.target.value)}
+                    placeholder="eltern@beispiel.de"
+                  />
+                </div>
+              )}
+
               <p className="text-xs text-orange-700">
-                Eltern erhalten Zugang zum Eltern-Portal und sehen Teams, Kalender und Nachrichten ihres Kindes.
+                {elternMemberId
+                  ? 'Das Kind wird automatisch mit dem Elternteil in einer Familie verknuepft.'
+                  : 'Eltern erhalten Zugang zum Eltern-Portal und sehen Teams, Kalender und Nachrichten ihres Kindes.'}
               </p>
+            </div>
+          )}
+
+          {/* Kind-Login erstellen - nur bei Minderjährigen ohne bestehenden User */}
+          {istMinderjaehrig && !(istBearbeitung && mitglied?.userId) && (
+            <div className="space-y-2 rounded-lg border border-purple-200 bg-purple-50 p-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={erstelleLogin}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setErstelleLogin(checked);
+                    // Automatisch Jugendspieler-Rolle setzen / zuruecksetzen
+                    if (checked) {
+                      setGewaehlteRollen((prev) => {
+                        const ohneSpiel = prev.filter((r) => r !== 'Spieler');
+                        return ohneSpiel.includes('Jugendspieler') ? ohneSpiel : [...ohneSpiel, 'Jugendspieler'];
+                      });
+                    } else {
+                      setGewaehlteRollen((prev) => {
+                        const ohneJugend = prev.filter((r) => r !== 'Jugendspieler');
+                        return ohneJugend.includes('Spieler') ? ohneJugend : [...ohneJugend, 'Spieler'];
+                      });
+                    }
+                  }}
+                  className="rounded border-gray-300 mt-0.5"
+                />
+                <div>
+                  <span className="text-sm font-medium text-purple-800">
+                    Eigenen Login fuer Kind erstellen
+                  </span>
+                  <p className="text-xs text-purple-700 mt-0.5">
+                    Das Kind erhaelt einen eigenen Zugang zum Vereinsportal.
+                    Die Eltern muessen der Erstellung zustimmen.
+                    Ein temporaeres Passwort wird generiert.
+                  </p>
+                </div>
+              </label>
+              {erstelleLogin && !email && (
+                <p className="text-xs text-red-600 font-medium">
+                  Bitte eine E-Mail-Adresse fuer das Kind angeben, um einen Login zu erstellen.
+                </p>
+              )}
             </div>
           )}
 
@@ -780,20 +999,64 @@ export function MitgliedFormular({
             </Select>
           </div>
 
+          {/* Temporaeres Passwort anzeigen */}
+          {tempPasswort && (
+            <div className="space-y-3 rounded-lg border border-green-300 bg-green-50 p-4">
+              <p className="text-sm font-medium text-green-800">
+                Kind-Login wurde erstellt!
+              </p>
+              <p className="text-xs text-green-700">
+                Bitte notieren Sie das temporaere Passwort und geben Sie es an die Eltern weiter.
+                Es wird nur einmal angezeigt.
+              </p>
+              <div className="flex items-center gap-2 rounded-md border border-green-300 bg-white p-3">
+                <code className="text-lg font-mono font-bold text-green-900 select-all flex-1">
+                  {tempPasswort}
+                </code>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(tempPasswort);
+                  }}
+                >
+                  Kopieren
+                </Button>
+              </div>
+              <p className="text-xs text-green-700">
+                Login-E-Mail: <strong>{email || elternEmail}</strong>
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setTempPasswort(null);
+                  onSchliessen();
+                }}
+              >
+                Verstanden, Dialog schliessen
+              </Button>
+            </div>
+          )}
+
           {fehler && (
             <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
               {fehler}
             </div>
           )}
 
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={onSchliessen}>
-              Abbrechen
-            </Button>
-            <Button type="submit" disabled={ladend}>
-              {ladend ? 'Speichern...' : istBearbeitung ? 'Aktualisieren' : 'Anlegen'}
-            </Button>
-          </div>
+          {!tempPasswort && (
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="outline" onClick={onSchliessen}>
+                Abbrechen
+              </Button>
+              <Button type="submit" disabled={ladend || (erstelleLogin && istMinderjaehrig && !email)}>
+                {ladend ? 'Speichern...' : istBearbeitung ? 'Aktualisieren' : 'Anlegen'}
+              </Button>
+            </div>
+          )}
         </form>
       </DialogContent>
     </Dialog>

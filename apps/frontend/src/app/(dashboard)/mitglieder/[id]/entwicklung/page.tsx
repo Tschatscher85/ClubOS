@@ -67,7 +67,9 @@ interface MitgliedInfo {
   id: string;
   firstName: string;
   lastName: string;
+  parentEmail: string | null;
   teamMembers: TeamInfo[];
+  user: { id: string; email: string; role: string; vereinsRollen?: string[] } | null;
 }
 
 // ==================== Bewertungskategorien ====================
@@ -357,6 +359,12 @@ export default function EntwicklungPage() {
     );
   }
 
+  // Entwicklung nur fuer Spieler/Jugendspieler oder Kinder ohne User-Account
+  const istSpieler = mitglied && (
+    mitglied.user?.vereinsRollen?.some(r => r === 'Spieler' || r === 'Jugendspieler') ||
+    (!mitglied.user && mitglied.parentEmail)
+  );
+
   if (!mitglied) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -365,6 +373,22 @@ export default function EntwicklungPage() {
           <Button variant="outline" onClick={() => router.push('/mitglieder')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Zurueck
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!istSpieler) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="text-center space-y-4">
+          <p className="text-muted-foreground">
+            Entwicklungsboegen sind nur fuer Mitglieder mit der Rolle Spieler oder Jugendspieler verfuegbar.
+          </p>
+          <Button variant="outline" onClick={() => router.push(`/mitglieder/${mitgliedId}`)}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Zurueck zum Mitglied
           </Button>
         </div>
       </div>

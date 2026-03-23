@@ -8,6 +8,54 @@ import { MitgliedHinzufuegenDto } from './dto/team-mitglied.dto';
 export class TeamService {
   constructor(private prisma: PrismaService) {}
 
+  /**
+   * Synchronisiert den Trainer als TeamMember mit Rolle TRAINER.
+   * trainerId ist eine User-ID, daher wird das zugehoerige Member gesucht.
+   */
+  private async trainerAlsTeamMemberSynchronisieren(
+    teamId: string,
+    tenantId: string,
+    neueTrainerUserId: string | null,
+    alteTrainerUserId?: string | null,
+  ) {
+    // Alten Trainer-TeamMember entfernen (falls Trainer gewechselt)
+    if (alteTrainerUserId && alteTrainerUserId !== neueTrainerUserId) {
+      const altesMitglied = await this.prisma.member.findFirst({
+        where: { userId: alteTrainerUserId, tenantId },
+        select: { id: true },
+      });
+      if (altesMitglied) {
+        await this.prisma.teamMember.deleteMany({
+          where: { teamId, memberId: altesMitglied.id, rolle: 'TRAINER' },
+        });
+      }
+    }
+
+    // Neuen Trainer als TeamMember anlegen
+    if (neueTrainerUserId) {
+      const mitglied = await this.prisma.member.findFirst({
+        where: { userId: neueTrainerUserId, tenantId },
+        select: { id: true },
+      });
+      if (mitglied) {
+        const vorhanden = await this.prisma.teamMember.findUnique({
+          where: { teamId_memberId: { teamId, memberId: mitglied.id } },
+        });
+        if (!vorhanden) {
+          await this.prisma.teamMember.create({
+            data: { teamId, memberId: mitglied.id, rolle: 'TRAINER' },
+          });
+        } else if (vorhanden.rolle !== 'TRAINER') {
+          // Mitglied ist schon im Team, aber nicht als Trainer — Rolle aktualisieren
+          await this.prisma.teamMember.update({
+            where: { id: vorhanden.id },
+            data: { rolle: 'TRAINER' },
+          });
+        }
+      }
+    }
+  }
+
   async erstellen(tenantId: string, dto: ErstelleTeamDto) {
     // Sportart von Abteilung uebernehmen, falls vorhanden
     let sportart = dto.sportart as any;
@@ -21,7 +69,7 @@ export class TeamService {
       }
     }
 
-    return this.prisma.team.create({
+    const team = await this.prisma.team.create({
       data: {
         name: dto.name,
         sport: sportart,
@@ -31,6 +79,13 @@ export class TeamService {
         tenantId,
       },
     });
+
+    // Trainer automatisch als TeamMember mit Rolle TRAINER anlegen
+    if (dto.trainerId) {
+      await this.trainerAlsTeamMemberSynchronisieren(team.id, tenantId, dto.trainerId);
+    }
+
+    return team;
   }
 
   async alleAbrufen(tenantId: string) {
@@ -93,7 +148,7 @@ export class TeamService {
   }
 
   async aktualisieren(tenantId: string, id: string, dto: AktualisiereTeamDto) {
-    await this.nachIdAbrufen(tenantId, id);
+    const altesTeam = await this.nachIdAbrufen(tenantId, id);
 
     const altersklasseWert = dto.altersklasse || dto.ageGroup;
 
@@ -110,7 +165,7 @@ export class TeamService {
       }
     }
 
-    return this.prisma.team.update({
+    const aktualisiert = await this.prisma.team.update({
       where: { id },
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
@@ -120,6 +175,18 @@ export class TeamService {
         ...(abteilungId !== undefined && { abteilungId }),
       },
     });
+
+    // Trainer-TeamMember synchronisieren wenn trainerId geaendert wurde
+    if (dto.trainerId !== undefined) {
+      await this.trainerAlsTeamMemberSynchronisieren(
+        id,
+        tenantId,
+        dto.trainerId || null,
+        altesTeam.trainerId,
+      );
+    }
+
+    return aktualisiert;
   }
 
   async loeschen(tenantId: string, id: string) {

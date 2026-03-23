@@ -63,6 +63,13 @@ export class ErstelleMitgliedDto {
   @IsEmail({}, { message: 'Bitte eine gueltige E-Mail-Adresse angeben.' })
   elternEmail?: string;
 
+  @ApiPropertyOptional({
+    description: 'Member-ID des Elternteils (fuer automatische Familie-Verknuepfung)',
+  })
+  @IsOptional()
+  @IsString()
+  elternMemberId?: string;
+
   @ApiPropertyOptional({ description: 'Eltern erlauben Fotos (Minderjährige, KUG §22)' })
   @IsOptional()
   fotoErlaubnis?: boolean;
@@ -70,6 +77,10 @@ export class ErstelleMitgliedDto {
   @ApiPropertyOptional({ description: 'Eltern erlauben Mitfahrt in Fahrgemeinschaften (Minderjährige, §832 BGB)' })
   @IsOptional()
   fahrgemeinschaftErlaubnis?: boolean;
+
+  @ApiPropertyOptional({ description: 'Benutzerkonto fuer Kind erstellen (Eltern muessen zustimmen)' })
+  @IsOptional()
+  erstelleBenutzerKonto?: boolean;
 }
 
 export class VerknuepfeMitgliedDto {
@@ -187,6 +198,13 @@ export class AktualisiereMitgliedDto {
   @IsEmail()
   elternEmail?: string;
 
+  @ApiPropertyOptional({
+    description: 'Member-ID des Elternteils (fuer automatische Familie-Verknuepfung)',
+  })
+  @IsOptional()
+  @IsString()
+  elternMemberId?: string;
+
   @ApiPropertyOptional({ enum: MemberStatus })
   @IsOptional()
   @IsEnum(MemberStatus, { message: 'Ungueltiger Mitgliedsstatus.' })
@@ -214,4 +232,8 @@ export class AktualisiereMitgliedDto {
   @ApiPropertyOptional({ description: 'Eltern erlauben Mitfahrt in Fahrgemeinschaften (Minderjährige, §832 BGB)' })
   @IsOptional()
   fahrgemeinschaftErlaubnis?: boolean;
+
+  @ApiPropertyOptional({ description: 'Benutzerkonto fuer Kind erstellen (Eltern muessen zustimmen)' })
+  @IsOptional()
+  erstelleBenutzerKonto?: boolean;
 }

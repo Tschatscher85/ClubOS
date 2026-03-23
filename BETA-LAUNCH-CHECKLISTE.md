@@ -10,8 +10,8 @@
 # Server startet nach Reboot automatisch:
 sudo bash scripts/setup-pm2-systemd.sh
 
-# Datenbank umbenennen (clubos_dev → vereinbase_dev):
-sudo bash scripts/db-umbenennen.sh
+# Datenbank umbenennen (bereits erledigt):
+# sudo bash scripts/db-umbenennen.sh (Script entfernt, Migration abgeschlossen)
 ```
 
 ---
@@ -30,7 +30,7 @@ Ein SMTP-Konto. Optionen:
 - **Hetzner Mail** (günstig, deutsch)
 
 ### So konfigurierst du es:
-In `/home/tschatscher/clubos/apps/backend/.env` ergänzen:
+In `/home/tschatscher/vereinbase/apps/backend/.env` ergänzen:
 
 ```env
 # SMTP Konfiguration (Ausgehende Mails)

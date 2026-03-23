@@ -4,7 +4,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { MemberStatus, Role, Ermaessigung, NachweisStatus } from '@prisma/client';
+import { MemberStatus, Role, Ermaessigung, NachweisStatus, FamilienRolle } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -22,7 +22,7 @@ export class MemberService {
     const anzahl = await this.prisma.member.count({ where: { tenantId } });
     const mitgliedsnummer = `M-${String(anzahl + 1).padStart(4, '0')}`;
 
-    return this.prisma.member.create({
+    const neuesMitglied = await this.prisma.member.create({
       data: {
         tenantId,
         memberNumber: mitgliedsnummer,
@@ -41,6 +41,28 @@ export class MemberService {
         fahrgemeinschaftErlaubnisAm: dto.fahrgemeinschaftErlaubnis ? new Date() : null,
       },
     });
+
+    // Familie-Verknuepfung erstellen wenn Eltern-Mitglied angegeben
+    if (dto.elternMemberId) {
+      try {
+        await this.familieVerknuepfen(tenantId, neuesMitglied.id, dto.elternMemberId);
+      } catch {
+        // Familie-Verknuepfung ist optional, Fehler nicht weiterwerfen
+      }
+    }
+
+    // Kind-Login erstellen wenn angefordert
+    if (dto.erstelleBenutzerKonto && (neuesMitglied.email || neuesMitglied.parentEmail)) {
+      try {
+        const ergebnis = await this.loginErstellen(tenantId, neuesMitglied.id, Role.MEMBER, true);
+        return { ...neuesMitglied, userId: ergebnis.user.id, temporaeresPasswort: ergebnis.temporaeresPasswort };
+      } catch {
+        // Login-Erstellung fehlgeschlagen, Mitglied trotzdem zurueckgeben
+        return neuesMitglied;
+      }
+    }
+
+    return neuesMitglied;
   }
 
   async alleAbrufen(tenantId: string) {
@@ -70,7 +92,7 @@ export class MemberService {
             },
           },
         },
-        user: { select: { id: true, email: true, role: true } },
+        user: { select: { id: true, email: true, role: true, vereinsRollen: true } },
       },
     });
 
@@ -88,7 +110,7 @@ export class MemberService {
   ) {
     await this.nachIdAbrufen(tenantId, id);
 
-    return this.prisma.member.update({
+    const aktualisiert = await this.prisma.member.update({
       where: { id },
       data: {
         ...(dto.vorname !== undefined && { firstName: dto.vorname }),
@@ -118,6 +140,27 @@ export class MemberService {
         }),
       },
     });
+
+    // Familie-Verknuepfung erstellen wenn Eltern-Mitglied angegeben
+    if (dto.elternMemberId) {
+      try {
+        await this.familieVerknuepfen(tenantId, id, dto.elternMemberId);
+      } catch {
+        // Familie-Verknuepfung ist optional, Fehler nicht weiterwerfen
+      }
+    }
+
+    // Kind-Login erstellen wenn angefordert und noch kein User existiert
+    if (dto.erstelleBenutzerKonto && !aktualisiert.userId && (aktualisiert.email || aktualisiert.parentEmail)) {
+      try {
+        const ergebnis = await this.loginErstellen(tenantId, id, Role.MEMBER, true);
+        return { ...aktualisiert, userId: ergebnis.user.id, temporaeresPasswort: ergebnis.temporaeresPasswort };
+      } catch {
+        return aktualisiert;
+      }
+    }
+
+    return aktualisiert;
   }
 
   async loeschen(tenantId: string, id: string) {
@@ -126,6 +169,106 @@ export class MemberService {
     return this.prisma.member.delete({
       where: { id },
     });
+  }
+
+  // ==================== Familie-Verknuepfung (Eltern-Kind) ====================
+
+  /**
+   * Verknuepft ein Kind-Mitglied mit einem Eltern-Mitglied ueber eine Familie.
+   * Erstellt automatisch eine Familie, falls beide noch nicht in einer gemeinsamen sind.
+   */
+  private async familieVerknuepfen(tenantId: string, kindMemberId: string, elternMemberId: string) {
+    // Eltern-Mitglied pruefen
+    const elternMitglied = await this.prisma.member.findFirst({
+      where: { id: elternMemberId, tenantId },
+    });
+    if (!elternMitglied) return;
+
+    // Pruefen ob beide schon in einer gemeinsamen Familie sind
+    const kindFamilien = await this.prisma.familieMitglied.findMany({
+      where: { memberId: kindMemberId },
+      select: { familieId: true },
+    });
+    const elternFamilien = await this.prisma.familieMitglied.findMany({
+      where: { memberId: elternMemberId },
+      select: { familieId: true },
+    });
+
+    const kindFamilieIds = new Set(kindFamilien.map((f) => f.familieId));
+    const gemeinsam = elternFamilien.find((f) => kindFamilieIds.has(f.familieId));
+    if (gemeinsam) return; // Bereits in gemeinsamer Familie
+
+    // Gibt es eine bestehende Familie des Elternteils? Dann Kind dort hinzufuegen
+    let familieId: string | null = null;
+    if (elternFamilien.length > 0) {
+      // Erste Familie des Elternteils verwenden
+      const elternFamilie = await this.prisma.familie.findFirst({
+        where: { id: elternFamilien[0].familieId, tenantId },
+      });
+      if (elternFamilie) {
+        familieId = elternFamilie.id;
+      }
+    }
+
+    // Oder gibt es eine bestehende Familie des Kindes? Dann Elternteil dort hinzufuegen
+    if (!familieId && kindFamilien.length > 0) {
+      const kindFamilie = await this.prisma.familie.findFirst({
+        where: { id: kindFamilien[0].familieId, tenantId },
+      });
+      if (kindFamilie) {
+        familieId = kindFamilie.id;
+      }
+    }
+
+    // Neue Familie erstellen wenn keine gefunden
+    if (!familieId) {
+      const neueFamilie = await this.prisma.familie.create({
+        data: {
+          tenantId,
+          name: `Familie ${elternMitglied.lastName}`,
+        },
+      });
+      familieId = neueFamilie.id;
+
+      // Elternteil zur Familie hinzufuegen (als MUTTER oder VATER - Default ERZIEHUNGSBERECHTIGTER)
+      await this.prisma.familieMitglied.create({
+        data: {
+          familieId,
+          memberId: elternMemberId,
+          userId: elternMitglied.userId || null,
+          rolle: FamilienRolle.ERZIEHUNGSBERECHTIGTER,
+        },
+      });
+    }
+
+    // Kind zur Familie hinzufuegen (pruefen ob schon drin)
+    const kindBereitsInFamilie = await this.prisma.familieMitglied.findFirst({
+      where: { familieId, memberId: kindMemberId },
+    });
+    if (!kindBereitsInFamilie) {
+      await this.prisma.familieMitglied.create({
+        data: {
+          familieId,
+          memberId: kindMemberId,
+          rolle: FamilienRolle.KIND,
+        },
+      });
+    }
+
+    // Elternteil zur Familie hinzufuegen wenn noch nicht drin (bei bestehender Kind-Familie)
+    const elternBereitsInFamilie = await this.prisma.familieMitglied.findFirst({
+      where: { familieId, memberId: elternMemberId },
+    });
+    if (!elternBereitsInFamilie) {
+      await this.prisma.familieMitglied.create({
+        data: {
+          familieId,
+          memberId: elternMemberId,
+          userId: elternMitglied.userId || null,
+          rolle: FamilienRolle.ERZIEHUNGSBERECHTIGTER,
+        },
+      });
+    }
   }
 
   // ==================== Mitglied-User-Verknuepfung ====================
@@ -187,7 +330,7 @@ export class MemberService {
    * wenn es aktiviert wird und eine E-Mail hat.
    * Gibt das temporaere Passwort zurueck (fuer Einladungs-E-Mail).
    */
-  async loginErstellen(tenantId: string, memberId: string, rolle: Role = Role.MEMBER) {
+  async loginErstellen(tenantId: string, memberId: string, rolle: Role = Role.MEMBER, istJugendspieler = false) {
     const mitglied = await this.prisma.member.findFirst({
       where: { id: memberId, tenantId },
     });
@@ -224,6 +367,19 @@ export class MemberService {
       throw new ConflictException('Diese E-Mail-Adresse wird bereits in einem anderen Verein verwendet.');
     }
 
+    // Jugendspieler-Rolle und Berechtigungen aus RollenVorlage laden
+    let vereinsRollen: string[] = [];
+    let berechtigungen: string[] = [];
+    if (istJugendspieler) {
+      const jugendspielerVorlage = await this.prisma.rollenVorlage.findFirst({
+        where: { tenantId, name: 'Jugendspieler' },
+      });
+      if (jugendspielerVorlage) {
+        vereinsRollen = ['Jugendspieler'];
+        berechtigungen = jugendspielerVorlage.berechtigungen;
+      }
+    }
+
     // Temporaeres Passwort generieren
     const temporaeresPasswort = randomBytes(6).toString('hex');
     const passwortHash = await bcrypt.hash(temporaeresPasswort, 12);
@@ -234,6 +390,8 @@ export class MemberService {
         passwordHash: passwortHash,
         role: rolle,
         tenantId,
+        ...(vereinsRollen.length > 0 && { vereinsRollen }),
+        ...(berechtigungen.length > 0 && { berechtigungen }),
       },
     });
 

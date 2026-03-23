@@ -17,6 +17,7 @@ import {
   Dumbbell,
   Link2,
   PenTool,
+  Pencil,
   Shield,
   User,
   QrCode,
@@ -30,11 +31,15 @@ import {
   UsersRound,
   Plus,
   Baby,
+  Trash2,
+  Search,
+  Heart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
@@ -48,6 +53,7 @@ import { API_BASE_URL } from '@/lib/constants';
 import { sportartLabel } from '@/lib/sportarten';
 import { useBenutzer } from '@/hooks/use-auth';
 import { UnterschriftPad } from '@/components/unterschrift/unterschrift-pad';
+import { MitgliedFormular } from '@/components/mitglieder/mitglied-formular';
 
 interface TeamMitgliedschaft {
   id: string;
@@ -64,6 +70,7 @@ interface BenutzerInfo {
   id: string;
   email: string;
   role: string;
+  vereinsRollen?: string[];
 }
 
 interface Mitglied {
@@ -83,6 +90,11 @@ interface Mitglied {
   qrCode: string | null;
   profilBildUrl: string | null;
   fotoErlaubnis: boolean;
+  fahrgemeinschaftErlaubnis?: boolean;
+  beitragsklasseId?: string | null;
+  beitragBetrag?: number | null;
+  beitragIntervall?: string | null;
+  userId?: string | null;
   teamMembers: TeamMitgliedschaft[];
   user: BenutzerInfo | null;
 }
@@ -223,6 +235,9 @@ export default function MitgliedDetailPage() {
   // Login erstellen
   const [loginErstellend, setLoginErstellend] = useState(false);
 
+  // Bearbeiten-Dialog
+  const [bearbeitenOffen, setBearbeitenOffen] = useState(false);
+
   // Unterschrift
   const [unterschriftPadOffen, setUnterschriftPadOffen] = useState(false);
   const [unterschriftSpeichernd, setUnterschriftSpeichernd] = useState(false);
@@ -240,6 +255,14 @@ export default function MitgliedDetailPage() {
   const [ausgewaehlteFamilieId, setAusgewaehlteFamilieId] = useState('');
   const [familieRolle, setFamilieRolle] = useState('KIND');
   const [familieHinzufuegend, setFamilieHinzufuegend] = useState(false);
+  // Familie: Mitglied hinzufuegen (Suche)
+  const [familieMitgliedDialogOffen, setFamilieMitgliedDialogOffen] = useState(false);
+  const [familieMitgliedSuche, setFamilieMitgliedSuche] = useState('');
+  const [alleMitglieder, setAlleMitglieder] = useState<Array<{ id: string; firstName: string; lastName: string; memberNumber: string; userId?: string | null }>>([]);
+  const [ausgewaehltesMitgliedFamilie, setAusgewaehltesMitgliedFamilie] = useState<string>('');
+  const [neueMitgliedRolle, setNeueMitgliedRolle] = useState('KIND');
+  const [zielfamilieId, setZielfamilieId] = useState('');
+  const [familieMitgliedHinzufuegend, setFamilieMitgliedHinzufuegend] = useState(false);
 
   const datenLaden = useCallback(async () => {
     try {
@@ -270,6 +293,11 @@ export default function MitgliedDetailPage() {
           setFamilien([]);
           setVerfuegbareFamilien([]);
         });
+
+      // Alle Mitglieder laden (fuer Familie-Mitglied-Suche)
+      apiClient.get<Array<{ id: string; firstName: string; lastName: string; memberNumber: string; userId?: string | null }>>('/mitglieder')
+        .then(setAlleMitglieder)
+        .catch(() => setAlleMitglieder([]));
 
       // Wenn kein Benutzer verknuepft, lade verfuegbare Benutzer
       if (!mitgliedDaten.user) {
@@ -374,16 +402,58 @@ export default function MitgliedDetailPage() {
       // Mitglied gleich hinzufuegen
       await apiClient.post(`/familien/${neueFamilie.id}/mitglied`, {
         memberId: mitgliedId,
-        rolle: 'KIND',
+        rolle: familieRolle,
       });
       setFamilieDialogOffen(false);
+      setFamilieRolle('KIND');
       datenLaden();
     } catch (error) {
       console.error('Fehler beim Erstellen:', error);
     } finally {
       setFamilieHinzufuegend(false);
     }
-  }, [mitgliedId, datenLaden]);
+  }, [mitgliedId, familieRolle, datenLaden]);
+
+  // Mitglied zu bestehender Familie hinzufuegen (Suche-Dialog)
+  const handleFamilieMitgliedHinzufuegen = useCallback(async () => {
+    if (!ausgewaehltesMitgliedFamilie || !zielfamilieId) return;
+    setFamilieMitgliedHinzufuegend(true);
+    try {
+      await apiClient.post(`/familien/${zielfamilieId}/mitglied`, {
+        memberId: ausgewaehltesMitgliedFamilie,
+        rolle: neueMitgliedRolle,
+      });
+      setFamilieMitgliedDialogOffen(false);
+      setAusgewaehltesMitgliedFamilie('');
+      setFamilieMitgliedSuche('');
+      setNeueMitgliedRolle('KIND');
+      setZielfamilieId('');
+      datenLaden();
+    } catch (error) {
+      console.error('Fehler beim Hinzufuegen:', error);
+    } finally {
+      setFamilieMitgliedHinzufuegend(false);
+    }
+  }, [ausgewaehltesMitgliedFamilie, zielfamilieId, neueMitgliedRolle, datenLaden]);
+
+  // Mitglied aus Familie entfernen
+  const handleFamilieMitgliedEntfernen = useCallback(async (familieId: string, familieMitgliedId: string) => {
+    if (!confirm('Familienmitglied wirklich entfernen?')) return;
+    try {
+      await apiClient.delete(`/familien/${familieId}/mitglied/${familieMitgliedId}`);
+      datenLaden();
+    } catch (error) {
+      console.error('Fehler beim Entfernen:', error);
+    }
+  }, [datenLaden]);
+
+  // Gefilterte Mitglieder fuer die Suche
+  const gefilterteMitgliederFuerFamilie = alleMitglieder.filter((m) => {
+    if (!familieMitgliedSuche) return false;
+    const suchtext = familieMitgliedSuche.toLowerCase();
+    const vollerName = `${m.firstName} ${m.lastName}`.toLowerCase();
+    return vollerName.includes(suchtext) || m.memberNumber.toLowerCase().includes(suchtext);
+  });
 
   const handleUnterschriftGespeichert = useCallback(
     async (dataUrl: string) => {
@@ -508,15 +578,29 @@ export default function MitgliedDetailPage() {
             Mitgliedsnr. {mitglied.memberNumber}
           </p>
         </div>
-        {istTrainerOderAdmin && (
-          <Button
-            variant="outline"
-            onClick={() => router.push(`/mitglieder/${mitgliedId}/entwicklung`)}
-          >
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Entwicklung
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {istTrainerOderAdmin && (
+            <Button
+              variant="outline"
+              onClick={() => setBearbeitenOffen(true)}
+            >
+              <Pencil className="h-4 w-4 mr-2" />
+              Bearbeiten
+            </Button>
+          )}
+          {/* Entwicklung nur fuer Spieler/Jugendspieler oder Kinder ohne User-Account */}
+          {istTrainerOderAdmin &&
+            (mitglied.user?.vereinsRollen?.some(r => r === 'Spieler' || r === 'Jugendspieler') ||
+             (!mitglied.user && mitglied.parentEmail)) && (
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/mitglieder/${mitgliedId}/entwicklung`)}
+            >
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Entwicklung
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Statistik-Karten */}
@@ -733,83 +817,182 @@ export default function MitgliedDetailPage() {
               Familie
             </div>
             {istTrainerOderAdmin && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setFamilieDialogOffen(true)}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Zuordnen
-              </Button>
+              <div className="flex gap-2">
+                {familien.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setZielfamilieId(familien[0].id);
+                      setFamilieMitgliedDialogOffen(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Mitglied hinzufuegen
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFamilieDialogOffen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  {familien.length > 0 ? 'Andere Familie' : 'Familie zuordnen'}
+                </Button>
+              </div>
             )}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {familien.length > 0 ? (
             <div className="space-y-4">
-              {familien.map((familie) => (
-                <div key={familie.id} className="space-y-2">
-                  <p className="text-sm font-medium">{familie.name}</p>
-                  <div className="space-y-1">
-                    {familie.mitglieder.map((fm) => (
-                      <div
-                        key={fm.id}
-                        className="flex items-center justify-between rounded-md border px-3 py-2"
-                      >
-                        <div className="flex items-center gap-2">
-                          {fm.rolle === 'KIND' ? (
-                            <Baby className="h-4 w-4 text-blue-500" />
-                          ) : (
-                            <User className="h-4 w-4 text-pink-500" />
-                          )}
-                          <span className="text-sm">
-                            {fm.member
-                              ? `${fm.member.firstName} ${fm.member.lastName}`
-                              : fm.user
-                                ? fm.user.email
-                                : 'Unbekannt'}
-                          </span>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {fm.rolle === 'KIND'
-                            ? 'Kind'
-                            : fm.rolle === 'MUTTER'
-                              ? 'Mutter'
-                              : fm.rolle === 'VATER'
-                                ? 'Vater'
-                                : fm.rolle === 'ERZIEHUNGSBERECHTIGTER'
-                                  ? 'Erziehungsberechtigter'
-                                  : 'Partner'}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => router.push(`/familien`)}
-                    className="text-xs"
+              {familien.map((familie) => {
+                const eltern = familie.mitglieder.filter((m) =>
+                  ['MUTTER', 'VATER', 'ERZIEHUNGSBERECHTIGTER'].includes(m.rolle),
+                );
+                const partner = familie.mitglieder.filter((m) => m.rolle === 'PARTNER');
+                const kinder = familie.mitglieder.filter((m) => m.rolle === 'KIND');
+
+                const rolleLabel = (rolle: string) => {
+                  switch (rolle) {
+                    case 'KIND': return 'Kind';
+                    case 'MUTTER': return 'Mutter';
+                    case 'VATER': return 'Vater';
+                    case 'ERZIEHUNGSBERECHTIGTER': return 'Erziehungsber.';
+                    case 'PARTNER': return 'Partner/in';
+                    default: return rolle;
+                  }
+                };
+
+                const rolleIcon = (rolle: string) => {
+                  switch (rolle) {
+                    case 'KIND': return <Baby className="h-4 w-4 text-blue-500" />;
+                    case 'PARTNER': return <Heart className="h-4 w-4 text-pink-500" />;
+                    default: return <User className="h-4 w-4 text-purple-500" />;
+                  }
+                };
+
+                const mitgliedZeile = (fm: FamilieMitglied) => (
+                  <div
+                    key={fm.id}
+                    className="flex items-center justify-between rounded-md border px-3 py-2"
                   >
-                    Zur Familienansicht
-                  </Button>
-                </div>
-              ))}
+                    <div className="flex items-center gap-2">
+                      {rolleIcon(fm.rolle)}
+                      <span className="text-sm">
+                        {fm.member
+                          ? `${fm.member.firstName} ${fm.member.lastName}`
+                          : fm.user
+                            ? fm.user.email
+                            : 'Unbekannt'}
+                      </span>
+                      {fm.memberId === mitgliedId && (
+                        <Badge variant="secondary" className="text-xs ml-1">
+                          aktuell
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        {rolleLabel(fm.rolle)}
+                      </Badge>
+                      {istTrainerOderAdmin && fm.memberId !== mitgliedId && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleFamilieMitgliedEntfernen(familie.id, fm.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+
+                return (
+                  <div key={familie.id} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">{familie.name}</p>
+                      {istTrainerOderAdmin && familien.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            setZielfamilieId(familie.id);
+                            setFamilieMitgliedDialogOffen(true);
+                          }}
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-1" />
+                          Hinzufuegen
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Eltern */}
+                    {eltern.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Eltern</p>
+                        {eltern.map(mitgliedZeile)}
+                      </div>
+                    )}
+
+                    {/* Partner */}
+                    {partner.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Partner</p>
+                        {partner.map(mitgliedZeile)}
+                      </div>
+                    )}
+
+                    {/* Kinder */}
+                    {kinder.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Kinder</p>
+                        {kinder.map(mitgliedZeile)}
+                      </div>
+                    )}
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/familien`)}
+                      className="text-xs"
+                    >
+                      Zur Familienansicht
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              Noch keiner Familie zugeordnet.
-            </p>
+            <div className="text-center py-4">
+              <p className="text-sm text-muted-foreground mb-3">
+                Noch keiner Familie zugeordnet.
+              </p>
+              {istTrainerOderAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFamilieDialogOffen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Familie erstellen
+                </Button>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Dialog: Zur Familie hinzufuegen */}
+      {/* Dialog: Zur Familie hinzufuegen / zuordnen */}
       <Dialog open={familieDialogOffen} onOpenChange={setFamilieDialogOffen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Zur Familie hinzufuegen</DialogTitle>
+            <DialogTitle>Zur Familie zuordnen</DialogTitle>
             <DialogDescription>
-              Waehlen Sie eine bestehende Familie oder erstellen Sie eine neue.
+              Ordnen Sie dieses Mitglied einer bestehenden Familie zu oder erstellen Sie eine neue.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -824,24 +1007,26 @@ export default function MitgliedDetailPage() {
                 <option value="MUTTER">Mutter</option>
                 <option value="VATER">Vater</option>
                 <option value="ERZIEHUNGSBERECHTIGTER">Erziehungsberechtigter</option>
-                <option value="PARTNER">Partner</option>
+                <option value="PARTNER">Partner/in</option>
               </select>
             </div>
-            <div className="space-y-2">
-              <Label>Familie auswaehlen</Label>
-              <select
-                value={ausgewaehlteFamilieId}
-                onChange={(e) => setAusgewaehlteFamilieId(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="">Familie waehlen...</option>
-                {verfuegbareFamilien.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name} ({f.mitglieder.length} Mitglieder)
-                  </option>
-                ))}
-              </select>
-            </div>
+            {verfuegbareFamilien.length > 0 && (
+              <div className="space-y-2">
+                <Label>Bestehende Familie auswaehlen</Label>
+                <select
+                  value={ausgewaehlteFamilieId}
+                  onChange={(e) => setAusgewaehlteFamilieId(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="">Familie waehlen...</option>
+                  {verfuegbareFamilien.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name} ({f.mitglieder.length} Mitglieder)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="flex justify-between pt-2">
               <Button
                 variant="outline"
@@ -858,13 +1043,137 @@ export default function MitgliedDetailPage() {
                 >
                   Abbrechen
                 </Button>
-                <Button
-                  onClick={handleFamilieHinzufuegen}
-                  disabled={!ausgewaehlteFamilieId || familieHinzufuegend}
-                >
-                  {familieHinzufuegend ? 'Wird zugeordnet...' : 'Zuordnen'}
-                </Button>
+                {verfuegbareFamilien.length > 0 && (
+                  <Button
+                    onClick={handleFamilieHinzufuegen}
+                    disabled={!ausgewaehlteFamilieId || familieHinzufuegend}
+                  >
+                    {familieHinzufuegend ? 'Wird zugeordnet...' : 'Zuordnen'}
+                  </Button>
+                )}
               </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Familienmitglied suchen und hinzufuegen */}
+      <Dialog open={familieMitgliedDialogOffen} onOpenChange={setFamilieMitgliedDialogOffen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Familienmitglied hinzufuegen</DialogTitle>
+            <DialogDescription>
+              Suchen Sie ein bestehendes Mitglied und fuegen Sie es zur Familie hinzu.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Rolle des neuen Familienmitglieds</Label>
+              <select
+                value={neueMitgliedRolle}
+                onChange={(e) => setNeueMitgliedRolle(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="KIND">Kind</option>
+                <option value="MUTTER">Mutter</option>
+                <option value="VATER">Vater</option>
+                <option value="ERZIEHUNGSBERECHTIGTER">Erziehungsberechtigter</option>
+                <option value="PARTNER">Partner/in</option>
+              </select>
+            </div>
+
+            {familien.length > 1 && (
+              <div className="space-y-2">
+                <Label>Zu welcher Familie?</Label>
+                <select
+                  value={zielfamilieId}
+                  onChange={(e) => setZielfamilieId(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {familien.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Mitglied suchen</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Name oder Mitgliedsnummer..."
+                  value={familieMitgliedSuche}
+                  onChange={(e) => {
+                    setFamilieMitgliedSuche(e.target.value);
+                    setAusgewaehltesMitgliedFamilie('');
+                  }}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+
+            {familieMitgliedSuche && (
+              <div className="max-h-48 overflow-y-auto border rounded-md">
+                {gefilterteMitgliederFuerFamilie.length > 0 ? (
+                  gefilterteMitgliederFuerFamilie.slice(0, 10).map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => {
+                        setAusgewaehltesMitgliedFamilie(m.id);
+                        setFamilieMitgliedSuche(`${m.firstName} ${m.lastName}`);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center justify-between border-b last:border-b-0 ${
+                        ausgewaehltesMitgliedFamilie === m.id ? 'bg-muted' : ''
+                      }`}
+                    >
+                      <span>{m.firstName} {m.lastName}</span>
+                      <span className="text-xs text-muted-foreground">#{m.memberNumber}</span>
+                    </button>
+                  ))
+                ) : (
+                  <p className="px-3 py-2 text-sm text-muted-foreground">
+                    Kein Mitglied gefunden.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {ausgewaehltesMitgliedFamilie && (
+              <div className="rounded-md bg-muted/50 px-3 py-2 text-sm flex items-center gap-2">
+                <User className="h-4 w-4" />
+                <span>
+                  {alleMitglieder.find((m) => m.id === ausgewaehltesMitgliedFamilie)
+                    ? `${alleMitglieder.find((m) => m.id === ausgewaehltesMitgliedFamilie)!.firstName} ${alleMitglieder.find((m) => m.id === ausgewaehltesMitgliedFamilie)!.lastName}`
+                    : 'Ausgewaehlt'}
+                </span>
+                <span className="ml-auto text-xs text-muted-foreground">
+                  wird als {neueMitgliedRolle === 'KIND' ? 'Kind' : neueMitgliedRolle === 'MUTTER' ? 'Mutter' : neueMitgliedRolle === 'VATER' ? 'Vater' : neueMitgliedRolle === 'ERZIEHUNGSBERECHTIGTER' ? 'Erziehungsber.' : 'Partner/in'} hinzugefuegt
+                </span>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setFamilieMitgliedDialogOffen(false);
+                  setFamilieMitgliedSuche('');
+                  setAusgewaehltesMitgliedFamilie('');
+                  setNeueMitgliedRolle('KIND');
+                }}
+              >
+                Abbrechen
+              </Button>
+              <Button
+                onClick={handleFamilieMitgliedHinzufuegen}
+                disabled={!ausgewaehltesMitgliedFamilie || familieMitgliedHinzufuegend}
+              >
+                {familieMitgliedHinzufuegend ? 'Wird hinzugefuegt...' : 'Hinzufuegen'}
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -1335,6 +1644,35 @@ export default function MitgliedDetailPage() {
         <p className="text-muted-foreground">
           Noch keine Veranstaltungen vorhanden.
         </p>
+      )}
+
+      {/* Bearbeiten-Dialog */}
+      {mitglied && (
+        <MitgliedFormular
+          offen={bearbeitenOffen}
+          onSchliessen={() => setBearbeitenOffen(false)}
+          onGespeichert={datenLaden}
+          mitglied={{
+            id: mitglied.id,
+            firstName: mitglied.firstName,
+            lastName: mitglied.lastName,
+            email: mitglied.email,
+            memberNumber: mitglied.memberNumber,
+            birthDate: mitglied.birthDate,
+            phone: mitglied.phone,
+            address: mitglied.address,
+            sport: mitglied.sport,
+            parentEmail: mitglied.parentEmail,
+            status: mitglied.status,
+            joinDate: mitglied.joinDate,
+            beitragsklasseId: mitglied.beitragsklasseId,
+            beitragBetrag: mitglied.beitragBetrag,
+            beitragIntervall: mitglied.beitragIntervall,
+            userId: mitglied.userId,
+            fotoErlaubnis: mitglied.fotoErlaubnis,
+            fahrgemeinschaftErlaubnis: mitglied.fahrgemeinschaftErlaubnis,
+          }}
+        />
       )}
     </div>
   );

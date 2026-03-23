@@ -1,6 +1,6 @@
 #!/bin/bash
 # Vereinbase - Log-Rotation (DSGVO: IP-Daten nach 7 Tagen loeschen)
-# Cronjob: 0 4 * * * /home/tschatscher/clubos/scripts/log-rotation.sh
+# Cronjob: 0 4 * * * /home/tschatscher/vereinbase/scripts/log-rotation.sh
 
 set -euo pipefail
 

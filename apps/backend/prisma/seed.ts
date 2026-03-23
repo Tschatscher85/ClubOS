@@ -71,6 +71,14 @@ const STANDARD_ROLLEN_VORLAGEN = [
     farbe: '#db2777',
     sortierung: 7,
   },
+  {
+    name: 'Jugendspieler',
+    beschreibung: 'Jugendmitglied, wird von Eltern verwaltet bis zum eigenen Login',
+    systemRolle: Role.MEMBER,
+    berechtigungen: ['KALENDER', 'NACHRICHTEN', 'TEAMS', 'TURNIERE', 'FAHRGEMEINSCHAFTEN'],
+    farbe: '#f59e0b',
+    sortierung: 8,
+  },
 ];
 
 async function main() {
@@ -190,6 +198,180 @@ async function main() {
     },
   });
   console.log(`Elternteil erstellt: ${eltern.email}`);
+
+  // ==================== Member-Profile fuer alle User ====================
+
+  // Admin (Vorstand) — Member-Profil
+  let adminMember = await prisma.member.findFirst({
+    where: { tenantId: tenant.id, userId: superadmin.id },
+  });
+  if (!adminMember) {
+    adminMember = await prisma.member.create({
+      data: {
+        tenantId: tenant.id,
+        userId: superadmin.id,
+        memberNumber: 'M-0000',
+        firstName: 'Thomas',
+        lastName: 'Admin',
+        email: 'admin@vereinbase.de',
+        birthDate: new Date('1985-01-15'),
+        status: 'ACTIVE',
+        sport: ['FUSSBALL'],
+      },
+    });
+    console.log(`Admin-Profil erstellt: ${adminMember.firstName} ${adminMember.lastName} (${adminMember.memberNumber})`);
+  } else {
+    console.log(`Admin-Profil existiert bereits: ${adminMember.firstName} ${adminMember.lastName}`);
+  }
+
+  // Vorstand — Member-Profil
+  let vorstandMember = await prisma.member.findFirst({
+    where: { tenantId: tenant.id, userId: vereinsAdmin.id },
+  });
+  if (!vorstandMember) {
+    vorstandMember = await prisma.member.create({
+      data: {
+        tenantId: tenant.id,
+        userId: vereinsAdmin.id,
+        memberNumber: 'M-0003',
+        firstName: 'Stefan',
+        lastName: 'Vorstand',
+        email: 'vorstand@vereinbase.de',
+        birthDate: new Date('1978-09-10'),
+        status: 'ACTIVE',
+        sport: ['FUSSBALL'],
+      },
+    });
+    console.log(`Vorstand-Profil erstellt: ${vorstandMember.firstName} ${vorstandMember.lastName} (${vorstandMember.memberNumber})`);
+  } else {
+    console.log(`Vorstand-Profil existiert bereits: ${vorstandMember.firstName} ${vorstandMember.lastName}`);
+  }
+
+  // Trainer — Member-Profil
+  let trainerMember = await prisma.member.findFirst({
+    where: { tenantId: tenant.id, userId: trainer.id },
+  });
+  if (!trainerMember) {
+    trainerMember = await prisma.member.create({
+      data: {
+        tenantId: tenant.id,
+        userId: trainer.id,
+        memberNumber: 'M-0004',
+        firstName: 'Juergen',
+        lastName: 'Trainer',
+        email: 'trainer@vereinbase.de',
+        birthDate: new Date('1982-04-20'),
+        status: 'ACTIVE',
+        sport: ['FUSSBALL'],
+      },
+    });
+    console.log(`Trainer-Profil erstellt: ${trainerMember.firstName} ${trainerMember.lastName} (${trainerMember.memberNumber})`);
+  } else {
+    console.log(`Trainer-Profil existiert bereits: ${trainerMember.firstName} ${trainerMember.lastName}`);
+  }
+
+  // Eltern — eigenes Member-Profil (zusaetzlich zur Familie-Verknuepfung)
+  let elternMember = await prisma.member.findFirst({
+    where: { tenantId: tenant.id, userId: eltern.id },
+  });
+  if (!elternMember) {
+    elternMember = await prisma.member.create({
+      data: {
+        tenantId: tenant.id,
+        userId: eltern.id,
+        memberNumber: 'M-0005',
+        firstName: 'Sandra',
+        lastName: 'Mueller',
+        email: 'eltern@vereinbase.de',
+        birthDate: new Date('1986-11-03'),
+        status: 'ACTIVE',
+        sport: [],
+      },
+    });
+    console.log(`Eltern-Profil erstellt: ${elternMember.firstName} ${elternMember.lastName} (${elternMember.memberNumber})`);
+  } else {
+    console.log(`Eltern-Profil existiert bereits: ${elternMember.firstName} ${elternMember.lastName}`);
+  }
+
+  // Kind-Profil (Mitglied) erstellen — verknuepft mit Eltern-Account
+  let kindMember = await prisma.member.findFirst({
+    where: { tenantId: tenant.id, memberNumber: 'M-0001' },
+  });
+  if (!kindMember) {
+    kindMember = await prisma.member.create({
+      data: {
+        tenantId: tenant.id,
+        memberNumber: 'M-0001',
+        firstName: 'Lukas',
+        lastName: 'Mueller',
+        email: 'lukas@example.com',
+        birthDate: new Date('2014-06-15'),
+        parentEmail: 'eltern@vereinbase.de',
+        status: 'ACTIVE',
+        sport: ['FUSSBALL'],
+        fotoErlaubnis: true,
+        fotoErlaubnisAm: new Date(),
+        fahrgemeinschaftErlaubnis: true,
+        fahrgemeinschaftErlaubnisAm: new Date(),
+        notfallKontakt: 'Mama Mueller',
+        notfallTelefon: '0170 1234567',
+      },
+    });
+    console.log(`Kind-Profil erstellt: ${kindMember.firstName} ${kindMember.lastName} (${kindMember.memberNumber})`);
+  } else {
+    console.log(`Kind-Profil existiert bereits: ${kindMember.firstName} ${kindMember.lastName}`);
+  }
+
+  // Spieler-Mitglied (Erwachsener) mit User verknuepfen
+  let spielerMember = await prisma.member.findFirst({
+    where: { tenantId: tenant.id, userId: mitglied.id },
+  });
+  if (!spielerMember) {
+    spielerMember = await prisma.member.create({
+      data: {
+        tenantId: tenant.id,
+        userId: mitglied.id,
+        memberNumber: 'M-0002',
+        firstName: 'Max',
+        lastName: 'Schmidt',
+        email: 'spieler@vereinbase.de',
+        birthDate: new Date('1995-03-22'),
+        status: 'ACTIVE',
+        sport: ['FUSSBALL'],
+      },
+    });
+    console.log(`Spieler-Profil erstellt: ${spielerMember.firstName} ${spielerMember.lastName}`);
+  } else {
+    console.log(`Spieler-Profil existiert bereits: ${spielerMember.firstName} ${spielerMember.lastName}`);
+  }
+
+  // Familie erstellen und Kind + Eltern verknuepfen
+  const existierendeFamilie = await prisma.familie.findFirst({
+    where: { tenantId: tenant.id, name: 'Familie Mueller' },
+  });
+  if (!existierendeFamilie) {
+    const familie = await prisma.familie.create({
+      data: {
+        tenantId: tenant.id,
+        name: 'Familie Mueller',
+        mitglieder: {
+          create: [
+            {
+              memberId: kindMember.id,
+              rolle: 'KIND',
+            },
+            {
+              userId: eltern.id,
+              rolle: 'MUTTER',
+            },
+          ],
+        },
+      },
+    });
+    console.log(`Familie erstellt: ${familie.name} (Kind: Lukas, Eltern: eltern@vereinbase.de)`);
+  } else {
+    console.log(`Familie existiert bereits: ${existierendeFamilie.name}`);
+  }
 
   console.log('');
   console.log('Seeding abgeschlossen!');

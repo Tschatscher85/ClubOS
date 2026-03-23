@@ -413,7 +413,7 @@ model FAQ {
 
 ---
 
-## 📦 Aktueller Status (Stand: 22.03.2026)
+## 📦 Aktueller Status (Stand: 23.03.2026)
 
 **ALLE Features implementiert. Nur Infrastruktur (DNS, Docker, Mobile) offen.**
 
@@ -494,6 +494,16 @@ model FAQ {
 - [x] Foerdermittel-Jahresbericht (PDF mit pdfkit)
 - [x] Ehrenamt-Modul (Helfer-Aufgaben, Uebungsleiter 3.300 EUR)
 - [x] Vereinsfest-Planer (Schichten, Einkauf, Kasse)
+- [x] Rolle Jugendspieler (MEMBER, gleiche Rechte wie Spieler, Eltern-verwaltet)
+- [x] Kind-Login: Optionaler eigener Login fuer Minderjaehrige (Temp-Passwort, Auto-Rolle Jugendspieler)
+- [x] Eltern-Verknuepfung: Member-Suche statt nur E-Mail, Auto-Familie-Erstellung
+- [x] Familie-Verwaltung im Mitglied-Detail (Eltern/Kinder/Partner gruppiert, hinzufuegen/entfernen, Spiegelung)
+- [x] Sportarten-Filter: Nur Sportarten mit aktiver Abteilung im Mitglied-Formular
+- [x] Entwicklung nur fuer Spieler/Jugendspieler sichtbar
+- [x] Team-Trainer-Sync: Trainer-Zuweisung spiegelt automatisch in TeamMember-Tabelle
+- [x] Mitglied-Bearbeiten-Button auf Detail-Seite (ADMIN/TRAINER)
+- [x] Alle ClubOS-Referenzen bereinigt (Scripts, Doku, CLAUDE.md)
+- [x] Seed: Vollstaendige Test-Daten (6 User + Member-Profile, Familie Mueller, 8 Rollenvorlagen)
 
 ### Sidebar-Navigation (konsolidiert 22.03.2026):
 ```
@@ -552,18 +562,18 @@ Oeffentlich: /umfrage/[token], /verein/[slug]/aktuell (Schwarzes Brett)
 
 ---
 
-## 🚨 Feature-Roadmap (Stand: 22.03.2026)
+## 🚨 Feature-Roadmap (Stand: 23.03.2026)
 
 ### SOFORT (Diese Woche) — ERLEDIGT
 - [x] Passwort aus CLAUDE.md entfernt (Sicherheit)
 - [x] Umlaute in 100+ UI-Strings korrigiert
 - [x] DNS auf vereinbase.de (nginx extern in Docker)
-- [x] Alle ClubOS-Referenzen zu Vereinbase umbenannt (Code komplett, nur DB-Name offen)
+- [x] Alle ClubOS-Referenzen zu Vereinbase umbenannt (komplett abgeschlossen)
 - [x] Login-E-Mails auf @vereinbase.de
 - [x] DB umbenannt: vereinbase_dev (DB-Berechtigungen fuer User vereinbase gefixt)
 - [x] FRONTEND_URL gefixt: https://vereinbase.de (Einladungslinks funktionieren extern)
 - [x] E-Mail-Verifizierung sendet echte Mails per SMTP (nicht mehr nur console.log)
-- [x] Registrierung: vereinsRollen=['Vorstand'] + 7 Standard-Rollenvorlagen automatisch
+- [x] Registrierung: vereinsRollen=['Vorstand'] + 8 Standard-Rollenvorlagen automatisch
 - [x] Sidebar konsolidiert: 6 Bereiche zusammengelegt (Tab-basiert)
 - [x] Sportart+Abteilung vereint: Team-Sport wird von Abteilung abgeleitet
 - [x] KI PDF-Scan: Alle Seiten (30k Zeichen, Seitenmarkierungen)
@@ -617,7 +627,7 @@ Oeffentlich: /umfrage/[token], /verein/[slug]/aktuell (Schwarzes Brett)
 - Backend: PM2 (vereinbase-backend, Port 3001)
 - Domain: vereinbase.de
 - DB: PostgreSQL (vereinbase_dev, User: vereinbase)
-- DB-Owner: Schema public gehoert User "clubos" — Rechte fuer "vereinbase" manuell gesetzt
+- DB-Owner: Schema public gehoert User "vereinbase"
 - DB-Backup: Cron taeglich 3:00 Uhr
 - Frontend .env.local: NEXT_PUBLIC_API_URL=http://localhost:3001
 - Backend .env: FRONTEND_URL=https://vereinbase.de

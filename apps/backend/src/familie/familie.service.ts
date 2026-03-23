@@ -28,7 +28,7 @@ export class FamilieService {
     });
   }
 
-  /** Mitglied zur Familie hinzufuegen */
+  /** Mitglied zur Familie hinzufuegen (mit Duplikat-Pruefung und Partner-Spiegelung) */
   async mitgliedHinzufuegen(
     familieId: string,
     tenantId: string,
@@ -45,6 +45,18 @@ export class FamilieService {
       throw new BadRequestException('Entweder memberId oder userId muss angegeben werden.');
     }
 
+    // Duplikat-Pruefung: Ist dieses Mitglied/User schon in der Familie?
+    const bereitsVorhanden = await this.prisma.familieMitglied.findFirst({
+      where: {
+        familieId,
+        ...(daten.memberId ? { memberId: daten.memberId } : {}),
+        ...(daten.userId ? { userId: daten.userId } : {}),
+      },
+    });
+    if (bereitsVorhanden) {
+      throw new BadRequestException('Dieses Mitglied ist bereits in dieser Familie.');
+    }
+
     const neuesMitglied = await this.prisma.familieMitglied.create({
       data: {
         familieId,
@@ -57,6 +69,54 @@ export class FamilieService {
         user: { select: { id: true, email: true, role: true } },
       },
     });
+
+    // Partner-Spiegelung: Wenn ein PARTNER hinzugefuegt wird und es schon einen PARTNER gibt,
+    // sind beide automatisch in derselben Familie (natuerliches Mirroring).
+    // Zusaetzlich: Wenn ein neues Mitglied mit userId als PARTNER/MUTTER/VATER hinzugefuegt wird,
+    // pruefe ob der User schon eine eigene Familie hat und verknuepfe ggf. Kinder.
+    if (
+      daten.userId &&
+      ([FamilienRolle.PARTNER, FamilienRolle.MUTTER, FamilienRolle.VATER, FamilienRolle.ERZIEHUNGSBERECHTIGTER] as FamilienRolle[]).includes(daten.rolle)
+    ) {
+      // Pruefe ob der User in einer anderen Familie schon Elternteil ist
+      const andereElternMitgliedschaften = await this.prisma.familieMitglied.findMany({
+        where: {
+          userId: daten.userId,
+          familieId: { not: familieId },
+          rolle: { in: [FamilienRolle.MUTTER, FamilienRolle.VATER, FamilienRolle.PARTNER, FamilienRolle.ERZIEHUNGSBERECHTIGTER] },
+        },
+        include: {
+          familie: {
+            include: {
+              mitglieder: {
+                where: { rolle: FamilienRolle.KIND },
+              },
+            },
+          },
+        },
+      });
+
+      // Wenn der User in einer anderen Familie Kinder hat, diese auch in die neue Familie uebernehmen
+      for (const mitgliedschaft of andereElternMitgliedschaften) {
+        for (const kind of mitgliedschaft.familie.mitglieder) {
+          if (kind.memberId) {
+            const kindSchonDrin = await this.prisma.familieMitglied.findFirst({
+              where: { familieId, memberId: kind.memberId },
+            });
+            if (!kindSchonDrin) {
+              await this.prisma.familieMitglied.create({
+                data: {
+                  familieId,
+                  memberId: kind.memberId,
+                  userId: null,
+                  rolle: FamilienRolle.KIND,
+                },
+              });
+            }
+          }
+        }
+      }
+    }
 
     // Auto-Name: Wenn Familie noch "Neue Familie" heisst, nach erstem Mitglied benennen
     if (familie.name === 'Neue Familie') {
