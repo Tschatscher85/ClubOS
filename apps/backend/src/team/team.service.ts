@@ -217,6 +217,18 @@ export class TeamService {
 
     if (kindEintraege.length === 0) return;
 
+    // Sportarten des Kindes und Team-Sportart laden
+    const [kindMitglied, team] = await Promise.all([
+      this.prisma.member.findUnique({
+        where: { id: memberId },
+        select: { sport: true },
+      }),
+      this.prisma.team.findUnique({
+        where: { id: teamId },
+        include: { abteilung: { select: { sport: true } } },
+      }),
+    ]);
+
     const familieIds = kindEintraege.map((k) => k.familieId);
 
     // Alle Elternteile in diesen Familien finden
@@ -248,6 +260,26 @@ export class TeamService {
         await this.prisma.teamMember.create({
           data: { teamId, memberId: elternMemberId, rolle: 'ELTERN' },
         });
+      }
+
+      // Sportarten des Kindes auf Eltern uebertragen (ohne Duplikate)
+      const elternMitglied = await this.prisma.member.findUnique({
+        where: { id: elternMemberId },
+        select: { sport: true },
+      });
+      if (elternMitglied) {
+        const kindSportarten = kindMitglied?.sport || [];
+        const teamSportart = team?.abteilung?.sport;
+        const neueSportarten = new Set([...elternMitglied.sport]);
+        for (const s of kindSportarten) neueSportarten.add(s);
+        if (teamSportart) neueSportarten.add(teamSportart);
+
+        if (neueSportarten.size > elternMitglied.sport.length) {
+          await this.prisma.member.update({
+            where: { id: elternMemberId },
+            data: { sport: Array.from(neueSportarten) },
+          });
+        }
       }
     }
   }
