@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -273,9 +274,11 @@ export function EventFormular({
         await apiClient.post('/veranstaltungen', daten);
       }
 
+      toast.success(istBearbeitung ? 'Veranstaltung aktualisiert' : 'Veranstaltung erstellt');
       onGespeichert();
       onSchliessen();
     } catch (error) {
+      toast.error('Fehler beim Speichern');
       setFehler(
         error instanceof Error ? error.message : 'Fehler beim Speichern.',
       );
@@ -297,6 +300,8 @@ export function EventFormular({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <p className="text-xs text-muted-foreground">* Pflichtfeld</p>
+
           {/* Titel */}
           <div className="space-y-2">
             <Label htmlFor="titel">Titel *</Label>

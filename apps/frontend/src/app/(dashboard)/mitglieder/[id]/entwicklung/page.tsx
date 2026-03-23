@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -399,6 +400,15 @@ export default function EntwicklungPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <div className="text-sm text-muted-foreground mb-2">
+        <Link href="/mitglieder" className="hover:text-primary hover:underline">Mitglieder</Link>
+        <span className="mx-1">&rsaquo;</span>
+        <Link href={`/mitglieder/${mitgliedId}`} className="hover:text-primary hover:underline">{mitglied.firstName} {mitglied.lastName}</Link>
+        <span className="mx-1">&rsaquo;</span>
+        <span className="text-foreground">Entwicklung</span>
+      </div>
+
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button

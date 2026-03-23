@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   Shield,
   ArrowLeft,
@@ -270,8 +272,10 @@ export default function TeamDetailPage() {
         ...(rolle && { rolle }),
       });
       setGewaehltesMitglied('');
+      toast.success('Mitglied zum Team hinzugefuegt');
       datenLaden();
     } catch (error) {
+      toast.error('Fehler beim Hinzufuegen');
       console.error('Fehler:', error);
     } finally {
       setHinzufuegenLadend(false);
@@ -282,8 +286,10 @@ export default function TeamDetailPage() {
     if (!confirm('Mitglied wirklich aus dem Team entfernen?')) return;
     try {
       await apiClient.delete(`/teams/${teamId}/mitglieder/${memberId}`);
+      toast.success('Mitglied aus Team entfernt');
       datenLaden();
     } catch (error) {
+      toast.error('Fehler beim Entfernen');
       console.error('Fehler:', error);
     }
   };
@@ -444,6 +450,13 @@ export default function TeamDetailPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <div className="text-sm text-muted-foreground mb-2">
+        <Link href="/teams" className="hover:text-primary hover:underline">Teams</Link>
+        <span className="mx-1">&rsaquo;</span>
+        <span className="text-foreground">{team.name}</span>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">

@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import { MitgliedDokumente } from '@/components/mitglieder/mitglied-dokumente';
 import { TrainerLizenzenBereich } from '@/components/mitglieder/trainer-lizenzen-bereich';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -379,8 +381,10 @@ export default function MitgliedDetailPage() {
         memberId: mitgliedId,
         rolle: 'KIND',
       });
+      toast.success('Familie erstellt');
       datenLaden();
     } catch (error) {
+      toast.error('Fehler beim Erstellen der Familie');
       console.error('Fehler beim Erstellen der Familie:', error);
     } finally {
       setFamilieErstellend(false);
@@ -400,8 +404,10 @@ export default function MitgliedDetailPage() {
       setAusgewaehltesMitgliedFamilie('');
       setFamilieMitgliedSuche('');
       setNeueMitgliedRolle('KIND');
+      toast.success('Familienmitglied hinzugefuegt');
       datenLaden();
     } catch (error) {
+      toast.error('Fehler beim Hinzufuegen');
       console.error('Fehler beim Hinzufuegen:', error);
     } finally {
       setFamilieMitgliedHinzufuegend(false);
@@ -413,8 +419,10 @@ export default function MitgliedDetailPage() {
     if (!familie || !confirm('Familienmitglied wirklich entfernen?')) return;
     try {
       await apiClient.delete(`/familien/${familie.id}/mitglied/${familieMitgliedId}`);
+      toast.success('Entfernt');
       datenLaden();
     } catch (error) {
+      toast.error('Fehler beim Entfernen');
       console.error('Fehler beim Entfernen:', error);
     }
   }, [familie, datenLaden]);
@@ -476,6 +484,13 @@ export default function MitgliedDetailPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <div className="text-sm text-muted-foreground mb-2">
+        <Link href="/mitglieder" className="hover:text-primary hover:underline">Mitglieder</Link>
+        <span className="mx-1">&rsaquo;</span>
+        <span className="text-foreground">{mitglied.firstName} {mitglied.lastName}</span>
+      </div>
+
       {/* Header mit Profilbild */}
       <div className="flex items-center gap-4">
         <Button

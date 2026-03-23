@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 import { apiClient } from '@/lib/api-client';
 import { sportartenLaden, sportartenFallback, sportartLabel } from '@/lib/sportarten';
 
@@ -413,6 +414,7 @@ export function MitgliedFormular({
         }
       }
 
+      toast.success(istBearbeitung ? 'Mitglied aktualisiert' : 'Mitglied erfolgreich angelegt');
       onGespeichert();
       if (erhaltenesPasswort) {
         setTempPasswort(erhaltenesPasswort);
@@ -420,6 +422,7 @@ export function MitgliedFormular({
         onSchliessen();
       }
     } catch (error) {
+      toast.error('Fehler beim Speichern');
       setFehler(
         error instanceof Error ? error.message : 'Fehler beim Speichern.',
       );
@@ -443,6 +446,8 @@ export function MitgliedFormular({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <p className="text-xs text-muted-foreground">* Pflichtfeld</p>
+
           {/* Name */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

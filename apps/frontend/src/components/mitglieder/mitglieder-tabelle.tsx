@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2, UserCheck, UserX } from 'lucide-react';
+import { Pencil, Trash2, UserCheck, UserX, Users } from 'lucide-react';
 import { sportartLabel } from '@/lib/sportarten';
 
 const INTERVALL_KURZ: Record<string, string> = {
@@ -62,8 +62,12 @@ export function MitgliederTabelle({
 }: MitgliederTabelleProps) {
   if (mitglieder.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        Noch keine Mitglieder vorhanden. Legen Sie das erste Mitglied an.
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
+        <h3 className="text-lg font-semibold mb-1">Noch keine Mitglieder</h3>
+        <p className="text-sm text-muted-foreground">
+          Legen Sie Ihr erstes Mitglied an oder laden Sie jemanden per E-Mail ein.
+        </p>
       </div>
     );
   }

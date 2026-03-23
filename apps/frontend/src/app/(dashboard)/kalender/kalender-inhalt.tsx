@@ -454,8 +454,18 @@ export default function KalenderInhalt() {
       {ansicht === 'liste' && (
         <div className="space-y-2">
           {kommendeEvents.length === 0 && gefilterteBelegungen.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              Keine kommenden Veranstaltungen{hatFilter ? ' für diesen Filter' : ''}.
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Clock className="h-12 w-12 text-muted-foreground/50 mb-4" />
+              <h3 className="text-lg font-semibold mb-1">Keine Veranstaltungen</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {hatFilter ? 'Keine Veranstaltungen fuer diesen Filter gefunden.' : 'Erstellen Sie Ihre erste Veranstaltung, um den Kalender zu fuellen.'}
+              </p>
+              {istTrainerOderAdmin && !hatFilter && (
+                <Button onClick={() => setFormularOffen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Event erstellen
+                </Button>
+              )}
             </div>
           ) : (
             <>
@@ -569,8 +579,18 @@ export default function KalenderInhalt() {
             <div className="absolute left-[19px] top-0 bottom-0 w-0.5 bg-border" />
 
             {nachDatum.size === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                Keine kommenden Termine{hatFilter ? ' für diesen Filter' : ''}.
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <Clock className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                <h3 className="text-lg font-semibold mb-1">Keine Veranstaltungen</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {hatFilter ? 'Keine Termine fuer diesen Filter gefunden.' : 'Erstellen Sie Ihre erste Veranstaltung, um die Timeline zu fuellen.'}
+                </p>
+                {istTrainerOderAdmin && !hatFilter && (
+                  <Button onClick={() => setFormularOffen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Event erstellen
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="space-y-6">
