@@ -413,7 +413,7 @@ model FAQ {
 
 ---
 
-## 📦 Aktueller Status (Stand: 23.03.2026)
+## 📦 Aktueller Status (Stand: 24.03.2026)
 
 **ALLE Features implementiert. Nur Infrastruktur (DNS, Docker, Mobile) offen.**
 
@@ -495,15 +495,27 @@ model FAQ {
 - [x] Ehrenamt-Modul (Helfer-Aufgaben, Uebungsleiter 3.300 EUR)
 - [x] Vereinsfest-Planer (Schichten, Einkauf, Kasse)
 - [x] Rolle Jugendspieler (MEMBER, gleiche Rechte wie Spieler, Eltern-verwaltet)
-- [x] Kind-Login: Optionaler eigener Login fuer Minderjaehrige (Temp-Passwort, Auto-Rolle Jugendspieler)
 - [x] Eltern-Verknuepfung: Member-Suche statt nur E-Mail, Auto-Familie-Erstellung
 - [x] Familie-Verwaltung im Mitglied-Detail (Eltern/Kinder/Partner gruppiert, hinzufuegen/entfernen, Spiegelung)
 - [x] Sportarten-Filter: Nur Sportarten mit aktiver Abteilung im Mitglied-Formular
-- [x] Entwicklung nur fuer Spieler/Jugendspieler sichtbar
+- [x] Entwicklung + Verletzung nur fuer Spieler/Jugendspieler sichtbar
 - [x] Team-Trainer-Sync: Trainer-Zuweisung spiegelt automatisch in TeamMember-Tabelle
 - [x] Mitglied-Bearbeiten-Button auf Detail-Seite (ADMIN/TRAINER)
 - [x] Alle ClubOS-Referenzen bereinigt (Scripts, Doku, CLAUDE.md)
 - [x] Seed: Vollstaendige Test-Daten (6 User + Member-Profile, Familie Mueller, 8 Rollenvorlagen)
+- [x] E-Mail = Login: Automatisch User bei Mitglied-Erstellung (kein separates Benutzerkonto)
+- [x] Familie nur ueber memberId (kein userId-Duplikat mehr)
+- [x] Team-Rolle = Vereins-Rolle (automatisch: Eltern→ELTERN, Trainer→TRAINER)
+- [x] Eltern automatisch ins Team wenn Kind drin (+ Sportarten uebernommen)
+- [x] KI Trainingsplan Button im Team-Detail (Sparkles, navigiert zu /trainingsplaene?teamId=)
+- [x] Sportarten-Settings entfernt (Abteilung = Sportart)
+- [x] Benutzer-Settings entfernt (E-Mail = Login)
+- [x] Team-Rollen-Dropdown im Mitglied-Formular entfernt (auto-abgeleitet)
+- [x] Toast-Notifications (sonner): Erfolg/Fehler bei allen Aktionen
+- [x] Pflichtfeld-Marker (* + Hinweis) in Mitglied- und Event-Formularen
+- [x] Breadcrumbs auf Detail-Seiten (Mitglieder, Teams, Entwicklung)
+- [x] Verbesserte Empty States mit Icons und Action-Buttons
+- [x] vereinsRollen-Feld auf Member-Model (fuer Mitglieder ohne User-Account)
 
 ### Sidebar-Navigation (konsolidiert 22.03.2026):
 ```
@@ -562,7 +574,7 @@ Oeffentlich: /umfrage/[token], /verein/[slug]/aktuell (Schwarzes Brett)
 
 ---
 
-## 🚨 Feature-Roadmap (Stand: 23.03.2026)
+## 🚨 Feature-Roadmap (Stand: 24.03.2026)
 
 ### SOFORT (Diese Woche) — ERLEDIGT
 - [x] Passwort aus CLAUDE.md entfernt (Sicherheit)
