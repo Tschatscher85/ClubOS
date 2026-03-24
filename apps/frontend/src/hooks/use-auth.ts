@@ -28,3 +28,7 @@ export function useHatBerechtigung(berechtigung: string) {
   if (['SUPERADMIN', 'ADMIN'].includes(benutzer.rolle)) return true;
   return (benutzer.berechtigungen ?? []).includes(berechtigung);
 }
+
+export function useHatHydriert() {
+  return useAuthStore((s) => s._hatHydriert);
+}

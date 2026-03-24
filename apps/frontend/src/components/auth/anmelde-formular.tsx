@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PasswortInput } from '@/components/ui/passwort-input';
 import { useAuth } from '@/hooks/use-auth';
+import { useAuthStore } from '@/stores/auth-store';
 import { Shield, ArrowLeft, Loader2 } from 'lucide-react';
 
 export function AnmeldeFormular() {
@@ -22,6 +23,7 @@ export function AnmeldeFormular() {
     istLadend,
     fehler,
     benoetigtZweiFaktor,
+    istAngemeldet,
   } = useAuth();
   const router = useRouter();
   const codeInputRef = useRef<HTMLInputElement>(null);
@@ -37,15 +39,19 @@ export function AnmeldeFormular() {
     e.preventDefault();
     try {
       await anmelden(email, passwort);
-      // Wenn kein 2FA benoetigt wird, direkt zum Dashboard
-      // (benoetigtZweiFaktor wird im Store gesetzt, falls 2FA aktiv)
+      // Nach erfolgreichem Login direkt zum Dashboard navigieren
+      // (anmelden() setzt istAngemeldet synchron im Store)
+      // Pruefen ob 2FA benoetigt wird - dann NICHT weiterleiten
+      const store = useAuthStore.getState();
+      if (!store.benoetigtZweiFaktor && store.istAngemeldet) {
+        router.push('/dashboard');
+      }
     } catch {
       // Fehler wird im Store gesetzt
     }
   };
 
-  // Redirect zum Dashboard wenn angemeldet (nach normalem Login oder nach 2FA)
-  const { istAngemeldet } = useAuth();
+  // Redirect zum Dashboard wenn bereits angemeldet (z.B. bei Seitenreload)
   useEffect(() => {
     if (istAngemeldet) {
       router.push('/dashboard');
@@ -57,6 +63,8 @@ export function AnmeldeFormular() {
     if (!zweiCode) return;
     try {
       await zweiFaktorVerifizieren(zweiCode);
+      // Nach erfolgreicher 2FA direkt weiterleiten
+      router.push('/dashboard');
     } catch {
       // Fehler wird im Store gesetzt
     }
@@ -75,6 +83,7 @@ export function AnmeldeFormular() {
         setTimeout(async () => {
           try {
             await zweiFaktorVerifizieren(nurZiffern);
+            router.push('/dashboard');
           } catch {
             // Fehler im Store
           }

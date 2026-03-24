@@ -56,6 +56,8 @@ interface AuthState {
   // 2FA-Zustand
   benoetigtZweiFaktor: boolean;
   tempToken: string | null;
+  // Hydration-Status (wird true nachdem Zustand aus localStorage geladen wurde)
+  _hatHydriert: boolean;
 
   anmelden: (email: string, passwort: string) => Promise<void>;
   zweiFaktorVerifizieren: (code: string) => Promise<void>;
@@ -105,6 +107,7 @@ export const useAuthStore = create<AuthState>()(
         fehler: null,
         benoetigtZweiFaktor: false,
         tempToken: null,
+        _hatHydriert: false,
 
         anmelden: async (email: string, passwort: string) => {
           set({ istLadend: true, fehler: null, benoetigtZweiFaktor: false, tempToken: null });
@@ -268,6 +271,11 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         istAngemeldet: state.istAngemeldet,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state._hatHydriert = true;
+        }
+      },
     },
   ),
 );

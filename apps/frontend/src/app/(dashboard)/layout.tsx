@@ -77,21 +77,14 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { istAngemeldet, accessToken, profilLaden, themeAnwenden } =
+  const { istAngemeldet, accessToken, profilLaden, themeAnwenden, _hatHydriert } =
     useAuthStore();
   const [bereit, setBereit] = useState(false);
   const [gesperrt, setGesperrt] = useState<{ grund?: string } | null>(null);
-  // Client-Mount-Flag: erst nach dem ersten Render auf dem Client
-  // ist Zustand aus localStorage hydriert
-  const [aufClient, setAufClient] = useState(false);
 
   useEffect(() => {
-    setAufClient(true);
-  }, []);
-
-  useEffect(() => {
-    // Erst nach Client-Mount Auth pruefen (Zustand muss erst aus localStorage laden)
-    if (!aufClient) return;
+    // Erst nach Hydration aus localStorage Auth pruefen
+    if (!_hatHydriert) return;
 
     if (!accessToken) {
       router.replace('/anmelden');
@@ -112,7 +105,7 @@ export default function DashboardLayout({
       })
       .catch(() => {})
       .finally(() => setBereit(true));
-  }, [aufClient, accessToken, router, profilLaden, themeAnwenden]);
+  }, [_hatHydriert, accessToken, router, profilLaden, themeAnwenden]);
 
   // Nach Profil-Check: nicht angemeldet → zur Anmeldeseite
   useEffect(() => {
