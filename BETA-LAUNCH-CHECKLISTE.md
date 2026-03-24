@@ -1,198 +1,142 @@
 # Vereinbase — Beta-Launch Checkliste & Testanleitung
 
-## Stand: 21.03.2026
+## Stand: 24.03.2026
 
 ---
 
-## 1. SOFORT ERLEDIGEN (sudo-Befehle, 5 Minuten)
+## 1. SERVER-STATUS
 
-```bash
-# Server startet nach Reboot automatisch:
-sudo bash scripts/setup-pm2-systemd.sh
+### Erledigt:
+- [x] PM2 Autostart nach Reboot (`sudo bash scripts/setup-pm2-systemd.sh`)
+- [x] DB umbenannt: `vereinbase_dev` (User: `vereinbase`)
+- [x] DB-Berechtigungen gefixt (Tabellen-Owner von `clubos` auf `vereinbase` uebertragen)
+- [x] DNS: `vereinbase.de` → A-Record gesetzt, SSL via Caddy
+- [x] nginx in Docker: leitet vereinbase.de auf Port 3000
+- [x] SMTP konfiguriert (Strato, smtp.strato.de:465, info@vereinbase.de)
+- [x] E-Mail-Adressen eingerichtet (info@, datenschutz@, kuendigung@vereinbase.de)
+- [x] SMTP/IMAP in Admin Web-UI konfigurierbar (PlattformConfig, kein .env noetig)
+- [x] Test-Mail funktioniert
+- [x] E-Mail-Verifizierung sendet echte Mails per SMTP
+- [x] Login + Redirect funktioniert (Race Condition gefixt am 24.03.)
 
-# Datenbank umbenennen (bereits erledigt):
-# sudo bash scripts/db-umbenennen.sh (Script entfernt, Migration abgeschlossen)
-```
+### Aktuelles Setup:
+| Komponente | Status | Details |
+|------------|--------|---------|
+| Frontend | PM2 (Port 3000) | `pm2 restart vereinbase-frontend` |
+| Backend | PM2 (Port 3001) | `pm2 restart vereinbase-backend` |
+| PostgreSQL | Lokal | DB: vereinbase_dev, User: vereinbase |
+| Redis | Lokal | BullMQ Jobs (Mail, Push, Erinnerungen) |
+| nginx | Docker | Reverse Proxy, vereinbase.de → 3000 |
+| Domain | vereinbase.de | SSL via Caddy |
+| SMTP | Strato | smtp.strato.de:465, info@vereinbase.de |
+| Backup | Cron 03:00 | 30 Tage + monatlich |
 
 ---
 
-## 2. E-MAIL EINRICHTEN (WICHTIG!)
+## 2. E-MAIL SETUP
 
-### Aktueller Stand:
-- **Kein SMTP konfiguriert!** Alle Mails werden nur in die Konsole geloggt (pm2 logs)
-- Einladungen, Passwort-Reset, Login-Daten, Erinnerungen gehen NICHT raus
+### Was funktioniert:
+- Ausgehende Mails: SMTP ueber Strato (info@vereinbase.de)
+- IMAP-Poller: Alle 5 Min (pro Benutzer konfigurierbar unter Einstellungen → E-Mail)
+- E-Mail-Verifizierung bei Registrierung
+- Passwort-Reset per E-Mail
+- Einladungen per Workflow
 
-### Was du brauchst:
-Ein SMTP-Konto. Optionen:
-- **Eigener Mailserver** (z.B. Mailcow auf dem Server)
-- **Brevo** (ehemals Sendinblue) — kostenlos bis 300 Mails/Tag
-- **Google Workspace** (wenn du @vereinbase.de bei Google hast)
-- **Hetzner Mail** (günstig, deutsch)
-
-### So konfigurierst du es:
-In `/home/tschatscher/vereinbase/apps/backend/.env` ergänzen:
-
-```env
-# SMTP Konfiguration (Ausgehende Mails)
-SMTP_HOST=smtp.dein-provider.de
-SMTP_PORT=587
-SMTP_USER=info@vereinbase.de
-SMTP_PASS=dein-passwort
-SMTP_FROM=info@vereinbase.de
-```
-
-Danach: `npx pm2 restart vereinbase-backend`
-
-### E-Mail-Adressen die existieren müssen:
+### E-Mail-Adressen:
 | Adresse | Verwendung | Steht in |
 |---------|-----------|----------|
-| info@vereinbase.de | Kontakt, Impressum | Impressum, Landing Page |
+| info@vereinbase.de | Kontakt, Absender | Impressum, E-Mails |
 | datenschutz@vereinbase.de | DSGVO-Anfragen | Datenschutz, AVV |
-| kuendigung@vereinbase.de | Kündigung per Mail | AGB |
+| kuendigung@vereinbase.de | Kuendigung per Mail | AGB |
 
-### IMAP (Posteingang):
-IMAP-Poller ist implementiert (alle 5 Min). Konfiguration pro Benutzer unter:
-**Einstellungen → E-Mail** (jeder Trainer/Admin kann sein SMTP/IMAP-Konto hinterlegen)
+### Alle E-Mail-Typen:
+| Anlass | Wann | An wen |
+|--------|------|--------|
+| E-Mail-Verifizierung | Nach Registrierung | Admin |
+| Login-Daten | Bei Mitglied-Aktivierung (E-Mail = Login) | Mitglied |
+| Einladung | Manuell (Workflows) | Neues Mitglied |
+| Passwort vergessen | Selbst-Service | User |
+| Erinnerung (24h/2h) | Automatisch (BullMQ) | Team-Mitglieder |
+| Geburtstag | Taeglich 08:00 (CronJob) | Mitglied + Trainer |
+| Notfall-Broadcast | Manuell (Trainer) | Ganzes Team |
+| Geburtstags-E-Mail | Taeglich 08:00 | Mitglied (HTML mit Logo) |
 
-Oder global in .env:
-```env
-IMAP_HOST=imap.dein-provider.de
-IMAP_PORT=993
-IMAP_USER=info@vereinbase.de
-IMAP_PASS=dein-passwort
-```
+### Verein richtet eigene E-Mail ein:
+1. Admin → **Einstellungen → E-Mail**
+2. SMTP-Server eingeben (z.B. smtp.gmail.com, smtp.web.de)
+3. "Test-Mail senden" klicken
+4. Ab jetzt gehen alle Vereins-Mails ueber das eigene Konto raus
 
 ---
 
-## 3. VEREIN ANLEGEN UND TESTEN — Schritt für Schritt
+## 3. VEREIN ANLEGEN UND TESTEN — Schritt fuer Schritt
 
 ### Schritt 1: Neuen Verein registrieren
 1. Gehe auf `vereinbase.de/registrieren`
 2. Eingeben:
    - **Vereinsname**: z.B. "TSV Kuchen"
-   - **URL-Slug**: z.B. "tsv-kuchen" (wird zu tsv-kuchen.vereinbase.de)
-   - **E-Mail**: deine Test-E-Mail
+   - **URL-Slug**: z.B. "tsv-kuchen"
+   - **E-Mail**: Admin-E-Mail
    - **Passwort**: mindestens 8 Zeichen
 3. Klick "Registrieren"
-4. Du bist jetzt ADMIN des neuen Vereins
+4. Du bist jetzt ADMIN mit 8 Standard-Rollenvorlagen
 
 ### Schritt 2: Onboarding durchlaufen
 1. **Logo hochladen** (optional)
-2. **Vereinsfarbe wählen** (z.B. Rot für TSV)
-3. **Sportarten auswählen** (z.B. Fußball, Handball)
-4. **Erstes Team anlegen** (z.B. "E-Jugend", Altersklasse "U10")
-5. **Mitglieder einladen** (E-Mails eingeben — funktioniert erst wenn SMTP konfiguriert)
+2. **Vereinsfarbe waehlen** (z.B. Rot)
+3. **Abteilungen anlegen** (z.B. Fussball, Handball — Abteilung = Sportart)
+4. **Mitglieder einladen** (E-Mails eingeben)
 
-### Schritt 3: Vereinsdaten vervollständigen
+### Schritt 3: Vereinsdaten vervollstaendigen
 Gehe zu **Einstellungen → Vereinsdaten**:
 - VR-Nummer, Satzung, Adresse
 - Vorstandsmitglieder (1. Vorsitzender, Kassenwart, etc.)
-- IBAN für SEPA
+- IBAN fuer SEPA
 - Versicherungen
 
 ### Schritt 4: Abteilungen & Teams anlegen
-Gehe zu **Einstellungen → Sportbetrieb**:
-1. **Abteilung erstellen**: z.B. "Fußball"
-2. **Sportarten aktivieren**: Fußball, Handball, etc.
-3. **Teams anlegen**: z.B. "Bambini", "E-Jugend 1", "Senioren"
-   - Abteilung zuordnen
-   - Sportart wählen
-   - Altersklasse wählen
-   - Trainer wird später zugeordnet
+1. **Abteilung erstellen** unter Einstellungen → Sportbetrieb (z.B. "Fussball")
+2. **Teams anlegen** → Abteilung zuordnen → Altersklasse waehlen
+3. Trainer wird spaeter ueber Vereinsrollen zugeordnet
 
 ### Schritt 5: Mitglieder anlegen
-Gehe zu **Mitglieder & Personal**:
-1. Klick "Neues Mitglied anlegen"
+1. **Mitglieder & Personal** → "Neues Mitglied anlegen"
 2. Name, Geburtsdatum, Sportart, Team-Zuordnung
-3. Bei Minderjährigen: Eltern-E-Mail + Foto-/Fahrgemeinschaft-Einverständnis
-4. Status auf "Aktiv" setzen → Login wird automatisch erstellt
+3. E-Mail = Login: Mitglied bekommt automatisch Zugang
+4. Bei Minderjaehrigen: Eltern-E-Mail + Einverstaendnisse
+5. Vereinsrollen zuweisen (z.B. Spieler, Trainer, Vorstand)
+6. Team-Rolle wird automatisch abgeleitet
 
-### Schritt 6: Vorstand & Trainer einrichten
-1. Mitglied anlegen (z.B. "Thomas Müller")
-2. Im Team als "TRAINER" zuordnen
-3. Unter **Einstellungen → Benutzer**: Rolle auf "TRAINER" setzen
-4. Für Vorstand: Rolle auf "ADMIN" setzen
-
-### Schritt 7: Workflows für Einladungen
-Gehe zu **Workflows**:
-1. Workflow "Neues Mitglied Fußball" erstellen
-2. PDFs auswählen: Mitgliedsantrag → Datenschutz → Einverständnis (Reihenfolge!)
-3. Sportart: Fußball
+### Schritt 6: Workflows fuer Einladungen
+1. **Workflows** → Neuer Workflow
+2. PDFs auswaehlen: Mitgliedsantrag → Datenschutz → Einverstaendnis (Reihenfolge!)
+3. Sportart und Altersgruppe festlegen
 4. E-Mail-Text anpassen
 
-### Schritt 8: Erste Veranstaltung
-Gehe zu **Kalender → Veranstaltungen**:
-1. "Neue Veranstaltung" klicken
+### Schritt 7: Erste Veranstaltung
+1. **Kalender** → "Neue Veranstaltung"
 2. Typ: Training, Datum, Team, Halle
-3. Erinnerung wird automatisch 24h + 2h vorher gesendet (wenn SMTP aktiv)
+3. Erinnerung automatisch 24h + 2h vorher (Push + E-Mail)
+4. QR-Check-In fuer schnelle Anwesenheitserfassung
 
 ---
 
-## 4. WIE GEHEN MAILS RAUS?
-
-### Übersicht aller E-Mail-Typen:
-
-| Anlass | Wann | An wen | Funktioniert ohne SMTP? |
-|--------|------|--------|------------------------|
-| Einladung | Manuell (Workflows) | Neues Mitglied | Nein (nur Console-Log) |
-| Login-Daten | Bei Mitglied-Aktivierung | Mitglied | Nein |
-| Passwort vergessen | Selbst-Service | User | Nein |
-| E-Mail-Verifizierung | Nach Registrierung | Admin | Nein |
-| Erinnerung (24h/2h) | Automatisch (BullMQ) | Team-Mitglieder | Nein |
-| Geburtstag | Täglich 08:00 (CronJob) | Mitglied + Trainer | Nein |
-| Notfall-Broadcast | Manuell (Trainer) | Ganzes Team | Nein |
-| Zahlungswarnung | Stripe Webhook | Admin | Nein |
-
-### Workaround OHNE SMTP (zum Testen):
-```bash
-# Mails werden in die Konsole geloggt:
-npx pm2 logs vereinbase-backend
-
-# Dort siehst du z.B.:
-# [Mail] SMTP nicht konfiguriert. Einladung an max@test.de: https://vereinbase.de/einladung/abc123
-# [Mail] Login-Daten an trainer@test.de: Passwort=TempPass123
-```
-
-Du kannst die Links/Passwörter aus den Logs kopieren und manuell verwenden.
-
-### Wie der Verein seine E-Mail-Adresse eingibt:
-1. Admin geht zu **Einstellungen → E-Mail**
-2. SMTP-Server eingeben (z.B. smtp.gmail.com, smtp.web.de, etc.)
-3. Benutzername + Passwort
-4. Absendername + Signatur
-5. "Test-Mail senden" klicken
-6. Ab jetzt gehen alle Mails über das Vereins-Konto raus
-
----
-
-## 5. IMAP POSTEINGANG
-
-### Status:
-- IMAP-Poller ist implementiert (alle 5 Min polling)
-- Pro Benutzer konfigurierbar unter **Einstellungen → E-Mail**
-- Oder global via .env (IMAP_HOST, IMAP_PORT, IMAP_USER, IMAP_PASS)
-- Posteingang-Seite: **Nachrichten → Posteingang** (nur für Trainer/Admin)
-
-### Konfiguration pro Benutzer:
-1. Trainer/Admin geht zu **Einstellungen → E-Mail**
-2. IMAP-Server eingeben (z.B. imap.gmail.com:993)
-3. Benutzername + Passwort
-4. Ab jetzt werden eingehende Mails im Posteingang angezeigt
-
----
-
-## 6. BETA-LAUNCH CHECKLISTE
+## 4. BETA-LAUNCH CHECKLISTE
 
 ### Vor dem ersten Pilotverein:
-- [ ] sudo bash scripts/setup-pm2-systemd.sh
-- [ ] sudo bash scripts/db-umbenennen.sh
-- [ ] SMTP in .env konfigurieren
-- [ ] E-Mail-Adressen einrichten (info@, datenschutz@, kuendigung@)
+- [x] PM2 Autostart eingerichtet
+- [x] DB umbenannt und Berechtigungen gefixt
+- [x] SMTP konfiguriert und getestet
+- [x] E-Mail-Adressen eingerichtet
+- [x] Login + Dashboard-Redirect funktioniert
+- [x] E-Mail-Verifizierung funktioniert
+- [ ] **Stripe Billing einbauen** (Checkout, Webhook, PlanGuard)
+- [ ] **HRB-Nummer + USt-IdNr** nach Notartermin in Impressum eintragen
+- [ ] **JWT-Secrets aendern** (aktuell Platzhalter!)
 - [ ] Selbst einen Test-Verein registrieren und durchspielen
 - [ ] Als PARENT einloggen → nur Kalender, Nachrichten, Pinnwand, Eltern-Portal?
 - [ ] Als MEMBER einloggen → kein Ehrenamt, keine Verwaltung?
 - [ ] Team ohne Trainer anlegen → funktioniert?
-- [ ] HRB-Nummer nach Notartermin eintragen (Impressum)
 
 ### Pilotverein onboarden:
 - [ ] Verein registriert sich selbst auf vereinbase.de
@@ -203,22 +147,25 @@ Du kannst die Links/Passwörter aus den Logs kopieren und manuell verwenden.
 - [ ] Feedback nach 1 Woche sammeln
 
 ### Nach 2 Wochen Pilotphase:
-- [ ] Stripe einbauen (damit Vereine nach Testphase zahlen)
+- [ ] Stripe aktivieren (damit Vereine nach Testphase zahlen)
 - [ ] Feedback umsetzen
 - [ ] 2-3 weitere Vereine onboarden
 
 ---
 
-## 7. SCHNELLTEST-ACCOUNTS (bereits vorhanden)
+## 5. SCHNELLTEST-ACCOUNTS
 
 ```
-URL: vereinbase.de (oder 192.168.0.151)
+URL: vereinbase.de
 
-admin@vereinbase.de     / Survive1985#  → SUPERADMIN (Plattform)
-vorstand@vereinbase.de  / Survive1985#  → ADMIN (Vereins-Vorstand)
-trainer@vereinbase.de   / Survive1985#  → TRAINER
-spieler@vereinbase.de   / Survive1985#  → MEMBER (Spieler)
-eltern@vereinbase.de    / Survive1985#  → PARENT (Elternteil)
+admin@vereinbase.de     → SUPERADMIN (Plattform)
+vorstand@vereinbase.de  → ADMIN (Vereins-Vorstand)
+trainer@vereinbase.de   → TRAINER
+spieler@vereinbase.de   → MEMBER (Spieler)
+eltern@vereinbase.de    → PARENT (Elternteil)
+
+Passwort: Siehe Seed-Datei (apps/backend/prisma/seed.ts)
+Tenant: FC Kunchen 1920 e.V. (Slug: fckunchen)
 ```
 
 ### So testest du alle Rollen:
@@ -230,19 +177,23 @@ eltern@vereinbase.de    / Survive1985#  → PARENT (Elternteil)
 
 ---
 
-## 8. HÄUFIGE FRAGEN
+## 6. HAEUFIGE FRAGEN
+
+**"Login funktioniert nicht / nach Login passiert nichts?"**
+→ Am 24.03. gefixt: Race Condition im Zustand-Hydration behoben. Frontend neu bauen: `npx turbo build --filter=@vereinbase/frontend && pm2 restart vereinbase-frontend`
+→ DB-Berechtigungsfehler ("permission denied"): Tabellen-Owner war noch `clubos` statt `vereinbase`. Gefixt mit GRANT-Befehlen.
 
 **"Ich sehe keine Mails?"**
-→ SMTP ist nicht konfiguriert. Siehe Abschnitt 2. Temporär: `npx pm2 logs` zeigt alle Mails in der Konsole.
+→ SMTP ist konfiguriert (Strato). Falls trotzdem keine Mails: `pm2 logs vereinbase-backend` zeigt alle Mail-Versuche.
 
 **"Server nicht erreichbar" Banner?"**
-→ Der Health-Check geht gegen /api/health. Wenn du über VPN/extern zugreifst, kann das fehlschlagen. Lokal auf 192.168.0.151 funktioniert es.
-
-**"Team anlegen geht nicht?"**
-→ Bug war gefixt am 21.03. — abteilungId fehlte im DTO. Jetzt funktioniert es auch ohne Trainer.
+→ Health-Check geht gegen /api/health. Wenn du ueber VPN/extern zugreifst, kann das fehlschlagen. Lokal auf 192.168.0.151 funktioniert es.
 
 **"Wie erstelle ich einen HALLENWART?"**
-→ Unter Einstellungen → Benutzer: Neuen Benutzer anlegen mit Rolle "HALLENWART". Dieser sieht nur den Belegungsplan.
+→ Mitglied anlegen → Vereinsrollen-Tab → Vereinsrolle "HALLENWART" zuweisen. Sieht nur Belegungsplan.
 
-**"Wo sehe ich Passwörter für neue Mitglieder?"**
-→ Wenn SMTP konfiguriert: per Mail. Ohne SMTP: in `npx pm2 logs vereinbase-backend`.
+**"Wo sehe ich Passwoerter fuer neue Mitglieder?"**
+→ E-Mail = Login: Mitglied bekommt Login-Link per E-Mail. Passwort setzen ueber Passwort-Vergessen-Flow.
+
+**"Team anlegen geht nicht?"**
+→ Erst eine Abteilung anlegen (Einstellungen → Sportbetrieb), dann Team erstellen mit Abteilungs-Zuordnung.

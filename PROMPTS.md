@@ -707,6 +707,8 @@ VM_SSH_KEY   = [SSH Private Key]
 
 ---
 
-> **Hinweis:** Diese Prompts bauen auf dem Stand vom 18. März 2026 auf.
-> Alle Core-Features (34 Backend-Module + 20 Frontend-Seiten) sind fertig.
-> Die Prompts hier decken ausschließlich die noch offenen Phasen 6–9 ab.
+> **Hinweis:** Diese Prompts bauen auf dem Stand vom 24. Maerz 2026 auf.
+> 90+ Backend-Module + 65+ Frontend-Seiten sind fertig.
+> Phase 6 (Homepage-Editor, SSR, Subdomain-Routing), Phase 7 (2FA, Web Push)
+> sind bereits implementiert. Offene Prompts: Phase 8 (Stripe) und Phase 9 (Mobile App).
+> Die Prompts fuer Phase 6-A bis 7-B sind hier zur Referenz erhalten.

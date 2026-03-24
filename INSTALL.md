@@ -1,105 +1,156 @@
-# Vereinbase - Installationsanleitung (Self-Hosting)
+# Vereinbase - Installationsanleitung
 
-## Voraussetzungen
+## Optionen
 
-- **Server:** Ubuntu 22.04 oder 24.04 (andere Linux-Distributionen funktionieren ebenfalls)
-- **RAM:** Mindestens 2 GB (4 GB empfohlen)
-- **Speicher:** Mindestens 10 GB frei
-- **Docker:** Docker Engine 24+ installiert
-- **Docker Compose:** v2 (im Docker-Paket enthalten)
-- **Domain:** Optional - fuer SSL-Zertifikate wird eine Domain benoetigt
+Es gibt zwei Wege Vereinbase zu betreiben:
 
-### Docker installieren (falls noch nicht vorhanden)
-
-```bash
-# Docker installieren (Ubuntu)
-curl -fsSL https://get.docker.com | sh
-
-# Aktuellen Benutzer zur Docker-Gruppe hinzufuegen
-sudo usermod -aG docker $USER
-
-# Abmelden und neu anmelden, damit die Gruppenaenderung wirkt
-```
+1. **Direkt mit Node.js + PM2** (empfohlen fuer Entwicklung und kleinere Deployments)
+2. **Docker + Traefik** (empfohlen fuer Self-Hosting mit automatischem SSL)
 
 ---
 
-## Schnelle Installation
+## Option 1: Node.js + PM2 (Produktiv-Setup)
+
+### Voraussetzungen
+
+- **Server:** Ubuntu 22.04 oder 24.04
+- **RAM:** Mindestens 2 GB (4 GB empfohlen)
+- **Speicher:** Mindestens 10 GB frei
+- **Node.js:** 18+ (empfohlen: 20 LTS)
+- **PostgreSQL:** 15+
+- **Redis:** 7+
+
+### Schnelle Installation
 
 ```bash
 # Repository klonen
 git clone https://github.com/Tschatscher85/Vereinbase.git
-cd vereinbase
+cd Vereinbase
 
-# Installationsskript ausfuehren
+# Automatisches Setup (installiert PostgreSQL, Redis, Node.js, richtet DB ein)
+sudo bash setup.sh
+
+# Starten (Development)
+bash start.sh
+```
+
+### Manuelles Setup
+
+```bash
+# Dependencies installieren
+npm install
+
+# Shared Package bauen
+npm run build --workspace=packages/shared
+
+# Prisma Client generieren
+npx prisma generate --schema=apps/backend/prisma/schema.prisma
+
+# .env erstellen und anpassen
+cp apps/backend/.env.example apps/backend/.env
+# WICHTIG: JWT_SECRET und JWT_REFRESH_SECRET aendern!
+
+# Datenbank erstellen und migrieren
+createdb vereinbase_dev
+npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma
+
+# Testdaten einfuegen
+cd apps/backend && npx ts-node prisma/seed.ts && cd ../..
+```
+
+### Produktions-Build und Start
+
+```bash
+# Frontend bauen (standalone)
+npx turbo build --filter=@vereinbase/frontend
+
+# Backend bauen
+npm run build --workspace=apps/backend
+
+# Mit PM2 starten
+pm2 start ecosystem.config.js
+
+# PM2 beim Systemstart automatisch starten
+sudo bash scripts/setup-pm2-systemd.sh
+```
+
+### PM2 Prozesse
+
+| Prozess | Port | Beschreibung |
+|---------|------|--------------|
+| vereinbase-frontend | 3000 | Next.js (standalone) |
+| vereinbase-backend | 3001 | NestJS API |
+
+```bash
+# Status anzeigen
+pm2 status
+
+# Logs anzeigen
+pm2 logs vereinbase-backend
+pm2 logs vereinbase-frontend
+
+# Neustart
+pm2 restart vereinbase-backend
+pm2 restart vereinbase-frontend
+```
+
+---
+
+## Option 2: Docker + Traefik (Self-Hosting)
+
+### Voraussetzungen
+
+- **Docker:** Engine 24+ mit Docker Compose v2
+- **Domain:** Fuer automatische SSL-Zertifikate (optional)
+
+### Docker installieren (falls noch nicht vorhanden)
+
+```bash
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+# Abmelden und neu anmelden
+```
+
+### Schnelle Installation
+
+```bash
+git clone https://github.com/Tschatscher85/Vereinbase.git
+cd Vereinbase
 chmod +x install.sh
 ./install.sh
 ```
 
-Das Skript erledigt automatisch:
-1. Prueft ob Docker und Docker Compose installiert sind
+Das Skript:
+1. Prueft Docker und Docker Compose
 2. Generiert sichere Passwoerter und Secrets
 3. Fragt nach Domain, SMTP und KI-Einstellungen
 4. Baut die Docker-Images
 5. Startet alle Services
 6. Fuehrt Datenbank-Migrationen aus
 
----
-
-## Manuelle Installation
-
-### 1. Repository klonen
+### Manuelle Docker-Installation
 
 ```bash
-git clone https://github.com/Tschatscher85/Vereinbase.git
-cd vereinbase
-```
-
-### 2. Konfiguration erstellen
-
-```bash
+# Konfiguration erstellen
 cp .env.example .env
-```
 
-Die `.env` Datei bearbeiten und mindestens diese Werte setzen:
+# Sichere Secrets generieren
+export JWT_SECRET=$(openssl rand -base64 48)
+export JWT_REFRESH_SECRET=$(openssl rand -base64 48)
+export DB_PASSWORD=$(openssl rand -base64 32)
 
-```bash
-# Sichere Passwoerter generieren
-DB_PASSWORD=$(openssl rand -base64 32)
-JWT_SECRET=$(openssl rand -base64 48)
-JWT_REFRESH_SECRET=$(openssl rand -base64 48)
-```
+# DATABASE_URL zusammenbauen
+# DATABASE_URL=postgresql://vereinbase:${DB_PASSWORD}@postgres:5432/vereinbase
 
-Alle Pflichtfelder in der `.env` ausfuellen (siehe Abschnitt "Konfiguration").
-
-### 3. DATABASE_URL zusammenbauen
-
-In der `.env` die DATABASE_URL mit dem gesetzten Passwort aktualisieren:
-
-```
-DATABASE_URL=postgresql://vereinbase:DEIN_DB_PASSWORT@postgres:5432/vereinbase
-```
-
-### 4. Services starten
-
-```bash
-# Alle Services bauen und starten
+# Services bauen und starten
 docker compose -f docker-compose.prod.yml up -d --build
-```
 
-### 5. Datenbank einrichten
+# Datenbank einrichten
+docker compose -f docker-compose.prod.yml exec backend \
+  npx prisma db push --schema=apps/backend/prisma/schema.prisma
 
-```bash
-# Warten bis die Datenbank bereit ist, dann Schema anwenden
-docker compose -f docker-compose.prod.yml exec backend npx prisma db push --schema=apps/backend/prisma/schema.prisma
-```
-
-### 6. Pruefen ob alles laeuft
-
-```bash
-# Status aller Container anzeigen
+# Status pruefen
 docker compose -f docker-compose.prod.yml ps
-
-# Health-Check
 curl http://localhost:3001/health
 ```
 
@@ -107,18 +158,16 @@ curl http://localhost:3001/health
 
 ## Konfiguration
 
-### Pflichtfelder
+### Pflichtfelder (.env)
 
 | Variable | Beschreibung |
 |---|---|
-| `DB_PASSWORD` | Datenbank-Passwort (wird automatisch generiert) |
+| `DATABASE_URL` | PostgreSQL Connection String |
 | `JWT_SECRET` | Geheimer Schluessel fuer Access Tokens |
 | `JWT_REFRESH_SECRET` | Geheimer Schluessel fuer Refresh Tokens |
-| `DATABASE_URL` | Vollstaendige Datenbank-URL |
+| `FRONTEND_URL` | Oeffentliche URL des Frontends (z.B. https://vereinbase.de) |
 
 ### Domain und SSL
-
-Fuer den Betrieb mit eigener Domain und automatischem SSL-Zertifikat:
 
 ```env
 DOMAIN=vereinbase.meinverein.de
@@ -127,19 +176,11 @@ FRONTEND_URL=https://vereinbase.meinverein.de
 NEXT_PUBLIC_API_URL=https://api.vereinbase.meinverein.de
 ```
 
-Wichtig: Die DNS-Eintraege muessen auf den Server zeigen:
-- `vereinbase.meinverein.de` -> Server-IP (A-Record)
-- `api.vereinbase.meinverein.de` -> Server-IP (A-Record)
+DNS-Eintraege:
+- `vereinbase.meinverein.de` → Server-IP (A-Record)
+- `api.vereinbase.meinverein.de` → Server-IP (A-Record)
 
-Zum Aktivieren von Traefik mit SSL:
-
-```bash
-docker compose -f docker-compose.prod.yml --profile ssl up -d --build
-```
-
-### E-Mail (optional)
-
-Fuer Einladungen und Benachrichtigungen wird ein SMTP-Server benoetigt:
+### E-Mail (SMTP)
 
 ```env
 SMTP_HOST=smtp.brevo.com
@@ -149,9 +190,20 @@ SMTP_PASS=dein-smtp-passwort
 SMTP_FROM=noreply@meinverein.de
 ```
 
-### KI-Integration (optional)
+Alternativ: Pro Verein konfigurierbar unter **Einstellungen → E-Mail**.
 
-Fuer automatische Formular-Erkennung (PDF/DOCX zu digitalem Formular):
+### IMAP (Posteingang, optional)
+
+```env
+IMAP_HOST=imap.dein-provider.de
+IMAP_PORT=993
+IMAP_USER=info@meinverein.de
+IMAP_PASS=dein-passwort
+```
+
+Pro Benutzer konfigurierbar unter **Einstellungen → E-Mail**.
+
+### KI-Integration (optional)
 
 ```env
 # Anthropic (empfohlen)
@@ -163,109 +215,134 @@ KI_PROVIDER=openai
 OPENAI_API_KEY=sk-...
 ```
 
+Alternativ: Per Superadmin Web-UI konfigurierbar (Plattform-Keys), pro Verein freischaltbar.
+
+### Web Push (optional)
+
+```bash
+# VAPID-Keys generieren (einmalig)
+npx web-push generate-vapid-keys
+```
+
+```env
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_EMAIL=admin@meinverein.de
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=... (gleicher Public Key)
+```
+
+### Sentry Monitoring (optional)
+
+```env
+SENTRY_DSN_BACKEND=https://xxx@sentry.io/xxx
+NEXT_PUBLIC_SENTRY_DSN=https://xxx@sentry.io/xxx
+```
+
 ---
 
 ## Updates
 
+### PM2-Setup
+
 ```bash
-# Neueste Version holen
+git pull origin main
+npm install
+npm run build --workspace=packages/shared
+npx turbo build --filter=@vereinbase/frontend
+npm run build --workspace=apps/backend
+npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma
+pm2 restart all
+```
+
+### Docker-Setup
+
+```bash
 git pull
-
-# Services neu bauen und starten
 docker compose -f docker-compose.prod.yml up -d --build
-
-# Datenbank-Schema aktualisieren (falls noetig)
-docker compose -f docker-compose.prod.yml exec backend npx prisma db push --schema=apps/backend/prisma/schema.prisma
+docker compose -f docker-compose.prod.yml exec backend \
+  npx prisma db push --schema=apps/backend/prisma/schema.prisma
 ```
 
 ---
 
 ## Backup
 
-### Datenbank sichern
+### Automatisches Backup (eingebaut)
+
+Vereinbase erstellt automatisch taegliche Backups um 03:00 Uhr:
+- 30 Tage Daily-Backups
+- Monatliche Langzeit-Backups
+- Pro-Verein-Export moeglich (Admin-Dashboard)
+
+### Manuelles Backup
 
 ```bash
-# Backup erstellen
-docker compose -f docker-compose.prod.yml exec postgres pg_dump -U vereinbase vereinbase > backup_$(date +%Y%m%d_%H%M%S).sql
+# PM2-Setup
+pg_dump -U vereinbase vereinbase_dev > backup_$(date +%Y%m%d_%H%M%S).sql
 
-# Backup wiederherstellen
-docker compose -f docker-compose.prod.yml exec -T postgres psql -U vereinbase vereinbase < backup_20260318_120000.sql
-```
+# Docker-Setup
+docker compose -f docker-compose.prod.yml exec postgres \
+  pg_dump -U vereinbase vereinbase > backup_$(date +%Y%m%d_%H%M%S).sql
 
-### Volumes sichern
-
-```bash
-# Alle Docker-Volumes auflisten
-docker volume ls | grep vereinbase
+# Wiederherstellen
+psql -U vereinbase vereinbase_dev < backup_20260324_120000.sql
 ```
 
 ---
 
 ## Troubleshooting
 
-### Container starten nicht
+### Backend startet nicht
 
 ```bash
-# Logs aller Services anzeigen
-docker compose -f docker-compose.prod.yml logs
+# PM2 Logs pruefen
+pm2 logs vereinbase-backend --lines 50
 
-# Logs eines bestimmten Services
-docker compose -f docker-compose.prod.yml logs backend
-docker compose -f docker-compose.prod.yml logs postgres
+# Haeufige Ursachen:
+# - DATABASE_URL falsch → PostgreSQL-Verbindung pruefen
+# - Port 3001 belegt → fuser -k 3001/tcp
+# - Prisma-Schema nicht aktuell → npx prisma migrate deploy
 ```
 
-### Datenbank-Verbindung fehlgeschlagen
+### Frontend startet nicht
 
-1. Pruefen ob PostgreSQL laeuft:
-   ```bash
-   docker compose -f docker-compose.prod.yml ps postgres
-   ```
+```bash
+pm2 logs vereinbase-frontend --lines 50
 
-2. Pruefen ob das Passwort in `DATABASE_URL` mit `DB_PASSWORD` uebereinstimmt
-
-3. Datenbank neu starten:
-   ```bash
-   docker compose -f docker-compose.prod.yml restart postgres
-   ```
-
-### Port bereits belegt
-
-Falls Port 3000 oder 3001 bereits belegt ist:
-
-```env
-# In .env alternative Ports setzen
-BACKEND_PORT=3002
-FRONTEND_PORT=3003
+# Haeufige Ursachen:
+# - Build nicht aktuell → npx turbo build --filter=@vereinbase/frontend
+# - Port 3000 belegt → fuser -k 3000/tcp
 ```
 
-### SSL-Zertifikat wird nicht erstellt
+### Datenbank-Berechtigungsfehler
 
-1. Pruefen ob DNS-Eintraege korrekt auf den Server zeigen
-2. Pruefen ob Port 80 und 443 von aussen erreichbar sind
-3. Traefik-Logs pruefen:
-   ```bash
-   docker compose -f docker-compose.prod.yml logs traefik
-   ```
+Falls "permission denied for schema public":
+```bash
+# Als DB-Owner Berechtigungen vergeben
+psql -h localhost -U <alter_owner> -d vereinbase_dev -c "
+  GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO vereinbase;
+  GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO vereinbase;
+"
+```
+
+### SSL-Zertifikat wird nicht erstellt (Docker)
+
+1. DNS-Eintraege pruefen (muessen auf Server zeigen)
+2. Port 80 und 443 von aussen erreichbar?
+3. `docker compose -f docker-compose.prod.yml logs traefik`
 
 ### Alles zuruecksetzen
 
 ```bash
-# Alle Container stoppen und entfernen
-docker compose -f docker-compose.prod.yml down
+# PM2-Setup
+pm2 stop all
+dropdb vereinbase_dev
+createdb vereinbase_dev
+npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma
+npx prisma db seed --schema=apps/backend/prisma/schema.prisma
+pm2 restart all
 
-# ACHTUNG: Alle Daten loeschen (Datenbank, Redis, SSL-Zertifikate)
-docker compose -f docker-compose.prod.yml down -v
-
-# Neu starten
+# Docker-Setup
+docker compose -f docker-compose.prod.yml down -v  # ACHTUNG: Loescht alle Daten!
 ./install.sh
-```
-
-### Speicherplatz pruefen
-
-```bash
-# Docker-Speicherverbrauch anzeigen
-docker system df
-
-# Nicht verwendete Images und Container entfernen
-docker system prune
 ```
