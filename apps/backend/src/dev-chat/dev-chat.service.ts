@@ -1,19 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
-import Anthropic from '@anthropic-ai/sdk';
+import { spawn } from 'child_process';
+import { createInterface } from 'readline';
 import * as fs from 'fs';
-import * as path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
 
 const PROJEKT_ROOT = '/home/tschatscher/clubos';
-const MAX_VERLAUF = 60; // Maximal 60 Nachrichten im Verlauf
-const MAX_DURCHLAEUFE = 25; // Maximal 25 Tool-Use-Schleifen
-const BEFEHL_TIMEOUT = 120_000; // 2 Minuten fuer Shell-Befehle
-const MAX_AUSGABE = 50_000; // Max 50k Zeichen pro Tool-Ergebnis
 
 /** SSE Event das an den Client gesendet wird */
 export interface DevChatEvent {
@@ -27,139 +17,20 @@ export interface BildInfo {
   daten: string; // base64-encoded
 }
 
-/** Werkzeug-Definitionen fuer Claude */
-const WERKZEUGE: Anthropic.Tool[] = [
-  {
-    name: 'datei_lesen',
-    description:
-      'Liest den Inhalt einer Datei im Vereinbase-Projekt oder auf dem Server.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        pfad: {
-          type: 'string',
-          description:
-            'Pfad zur Datei (relativ zum Projektroot /home/tschatscher/clubos oder absolut)',
-        },
-      },
-      required: ['pfad'],
-    },
-  },
-  {
-    name: 'datei_schreiben',
-    description: 'Erstellt oder ueberschreibt eine Datei mit dem angegebenen Inhalt.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        pfad: {
-          type: 'string',
-          description: 'Pfad zur Datei',
-        },
-        inhalt: {
-          type: 'string',
-          description: 'Der komplette Inhalt der Datei',
-        },
-      },
-      required: ['pfad', 'inhalt'],
-    },
-  },
-  {
-    name: 'datei_bearbeiten',
-    description:
-      'Ersetzt einen exakten Textabschnitt in einer Datei durch neuen Text. Der alte Text muss exakt uebereinstimmen.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        pfad: {
-          type: 'string',
-          description: 'Pfad zur Datei',
-        },
-        alter_text: {
-          type: 'string',
-          description: 'Der exakte Text der ersetzt werden soll',
-        },
-        neuer_text: {
-          type: 'string',
-          description: 'Der neue Text',
-        },
-      },
-      required: ['pfad', 'alter_text', 'neuer_text'],
-    },
-  },
-  {
-    name: 'befehl_ausfuehren',
-    description:
-      'Fuehrt einen Shell-Befehl auf dem Server aus. Nuetzlich fuer git, npm, pm2, builds etc.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        befehl: {
-          type: 'string',
-          description: 'Der auszufuehrende Shell-Befehl',
-        },
-        verzeichnis: {
-          type: 'string',
-          description:
-            'Arbeitsverzeichnis (optional, Standard: Projektroot)',
-        },
-      },
-      required: ['befehl'],
-    },
-  },
-  {
-    name: 'dateien_suchen',
-    description:
-      'Sucht nach Dateien (nach Name) oder nach Textinhalten in Dateien im Projekt.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        muster: {
-          type: 'string',
-          description:
-            'Suchmuster - Glob-Pattern fuer Dateinamen (z.B. "*.controller.ts") oder Regex fuer Inhalte',
-        },
-        typ: {
-          type: 'string',
-          enum: ['dateiname', 'inhalt'],
-          description: 'Art der Suche: dateiname oder inhalt',
-        },
-        verzeichnis: {
-          type: 'string',
-          description: 'Suchverzeichnis relativ zum Projektroot (optional)',
-        },
-      },
-      required: ['muster', 'typ'],
-    },
-  },
-  {
-    name: 'verzeichnis_listen',
-    description: 'Listet alle Dateien und Ordner in einem Verzeichnis auf.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        pfad: {
-          type: 'string',
-          description: 'Pfad zum Verzeichnis',
-        },
-      },
-      required: ['pfad'],
-    },
-  },
-];
-
 @Injectable()
 export class DevChatService {
   private readonly logger = new Logger(DevChatService.name);
-  private readonly verlaufMap = new Map<string, Anthropic.MessageParam[]>();
-  private systemPromptCache: string | null = null;
+  /** Session-ID pro User fuer --resume */
+  private readonly sessionMap = new Map<string, string>();
 
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly prisma: PrismaService,
-  ) {}
+  /** Chat-Verlauf loeschen (neue Session) */
+  verlaufLoeschen(userId: string): void {
+    this.sessionMap.delete(userId);
+  }
 
   /**
-   * Verarbeitet eine Nachricht und liefert SSE-Events als async Generator.
+   * Verarbeitet eine Nachricht ueber die Claude CLI (Abo, kein API-Key noetig).
+   * Liefert SSE-Events als async Generator.
    */
   async *verarbeiteNachricht(
     userId: string,
@@ -167,222 +38,225 @@ export class DevChatService {
     bilder?: BildInfo[],
     signal?: AbortSignal,
   ): AsyncGenerator<DevChatEvent> {
-    const verlauf = this.verlaufHolen(userId);
+    // CLI-Argumente
+    const args = ['-p', '--output-format', 'stream-json', '--verbose'];
 
-    // User-Nachricht mit optionalen Bildern aufbauen
-    const content: Anthropic.ContentBlockParam[] = [];
+    // Bestehende Session fortsetzen
+    const sessionId = this.sessionMap.get(userId);
+    if (sessionId) {
+      args.push('--resume', sessionId);
+    }
+
+    // Bilder als Temp-Dateien speichern und im Prompt erwaehnen
+    let vollNachricht = nachricht;
+    const tempDateien: string[] = [];
 
     if (bilder && bilder.length > 0) {
-      for (const bild of bilder) {
-        content.push({
-          type: 'image',
-          source: {
-            type: 'base64',
-            media_type: bild.typ as
-              | 'image/png'
-              | 'image/jpeg'
-              | 'image/gif'
-              | 'image/webp',
-            data: bild.daten,
-          },
-        });
+      for (let i = 0; i < bilder.length; i++) {
+        const ext = bilder[i].typ.split('/')[1] || 'png';
+        const tempPfad = `/tmp/dev-chat-${Date.now()}-${i}.${ext}`;
+        fs.writeFileSync(tempPfad, Buffer.from(bilder[i].daten, 'base64'));
+        tempDateien.push(tempPfad);
+        vollNachricht = `[Bild angehaengt: ${tempPfad}]\n${vollNachricht}`;
       }
     }
 
-    content.push({ type: 'text', text: nachricht });
-    verlauf.push({ role: 'user', content });
+    args.push(vollNachricht);
 
-    // API-Key und Client
-    const apiKey = await this.apiKeyHolen();
-    const client = new Anthropic({ apiKey });
-    const systemPrompt = this.systemPromptLaden();
+    // Claude CLI als Subprozess starten
+    this.logger.log(`Dev-Chat: Starte claude CLI fuer User ${userId}`);
+    const proc = spawn('claude', args, {
+      cwd: PROJEKT_ROOT,
+      env: { ...process.env },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
 
-    // Tool-Use-Schleife
-    let durchlaeufe = 0;
+    // Bei Client-Abbruch Prozess beenden
+    const abortHandler = () => {
+      this.logger.log('Dev-Chat: Client hat abgebrochen, beende CLI');
+      proc.kill('SIGTERM');
+    };
+    if (signal) {
+      signal.addEventListener('abort', abortHandler);
+    }
 
-    while (durchlaeufe < MAX_DURCHLAEUFE) {
-      if (signal?.aborted) return;
-      durchlaeufe++;
+    try {
+      // stderr loggen (fuer Debugging)
+      let stderrBuffer = '';
+      proc.stderr?.on('data', (chunk: Buffer) => {
+        stderrBuffer += chunk.toString();
+      });
 
-      try {
-        const antwort = await client.messages.create({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 8192,
-          system: systemPrompt,
-          tools: WERKZEUGE,
-          messages: verlauf,
-        });
+      // stdout zeilenweise als JSON parsen
+      const rl = createInterface({ input: proc.stdout });
+      let letzterWerkzeugName = '';
 
-        // Assistenten-Antwort zum Verlauf hinzufuegen
-        verlauf.push({
-          role: 'assistant',
-          content: antwort.content as Anthropic.ContentBlockParam[],
-        });
+      for await (const zeile of rl) {
+        if (signal?.aborted) break;
+        if (!zeile.trim()) continue;
 
-        // Content-Bloecke verarbeiten
-        const werkzeugErgebnisse: Anthropic.ToolResultBlockParam[] = [];
+        try {
+          const event = JSON.parse(zeile);
 
-        for (const block of antwort.content) {
-          if (signal?.aborted) return;
-
-          if (block.type === 'text') {
-            yield { typ: 'text', daten: block.text };
-          } else if (block.type === 'tool_use') {
-            // Werkzeug-Start melden
-            yield {
-              typ: 'werkzeug_start',
-              daten: {
-                name: block.name,
-                eingabe: this.eingabeKuerzen(block.input),
-              },
-            };
-
-            // Werkzeug ausfuehren
-            const ergebnis = await this.werkzeugAusfuehren(
-              block.name,
-              block.input as Record<string, unknown>,
-            );
-
-            yield {
-              typ: 'werkzeug_ergebnis',
-              daten: {
-                name: block.name,
-                ergebnis: ergebnis.text.slice(0, 2000), // Gekuerztes Ergebnis fuer UI
-                fehler: ergebnis.fehler,
-              },
-            };
-
-            werkzeugErgebnisse.push({
-              type: 'tool_result',
-              tool_use_id: block.id,
-              content: ergebnis.text,
-              is_error: ergebnis.fehler,
-            });
+          // Events konvertieren und weiterleiten
+          for (const sseEvent of this.eventKonvertieren(
+            event,
+            userId,
+            letzterWerkzeugName,
+          )) {
+            yield sseEvent;
           }
-        }
 
-        // Wenn keine Werkzeuge verwendet wurden oder end_turn: fertig
-        if (
-          werkzeugErgebnisse.length === 0 ||
-          antwort.stop_reason === 'end_turn'
-        ) {
-          break;
+          // Letzten Werkzeug-Namen tracken fuer tool_result Events
+          if (event.type === 'assistant' && event.message?.content) {
+            for (const block of event.message.content) {
+              if (block.type === 'tool_use') {
+                letzterWerkzeugName = block.name || '';
+              }
+            }
+          }
+        } catch {
+          // Nicht-JSON Zeilen ignorieren (z.B. Warnings)
         }
-
-        // Werkzeug-Ergebnisse zum Verlauf hinzufuegen und weitermachen
-        verlauf.push({ role: 'user', content: werkzeugErgebnisse });
-      } catch (err: unknown) {
-        const fehlerText =
-          err instanceof Error ? err.message : 'Unbekannter Fehler';
-        this.logger.error(`Dev-Chat Fehler: ${fehlerText}`);
-        yield { typ: 'fehler', daten: fehlerText };
-        break;
       }
-    }
 
-    // Verlauf kuerzen wenn zu lang
-    if (verlauf.length > MAX_VERLAUF) {
-      const gekuerzt = verlauf.slice(-MAX_VERLAUF);
-      this.verlaufMap.set(userId, gekuerzt);
+      // Auf Prozess-Ende warten
+      await new Promise<void>((resolve) => {
+        if (proc.exitCode !== null) {
+          resolve();
+        } else {
+          proc.on('close', () => resolve());
+        }
+      });
+
+      // Stderr loggen falls es Fehler gab
+      if (stderrBuffer.trim()) {
+        this.logger.warn(`Dev-Chat stderr: ${stderrBuffer.slice(0, 500)}`);
+      }
+    } catch (err: unknown) {
+      const fehlerText =
+        err instanceof Error ? err.message : 'Unbekannter Fehler';
+      this.logger.error(`Dev-Chat CLI Fehler: ${fehlerText}`);
+      yield { typ: 'fehler', daten: fehlerText };
+    } finally {
+      if (signal) {
+        signal.removeEventListener('abort', abortHandler);
+      }
+      // Temp-Dateien aufraeumen
+      for (const pfad of tempDateien) {
+        try {
+          fs.unlinkSync(pfad);
+        } catch {
+          // Ignorieren
+        }
+      }
     }
 
     yield { typ: 'fertig' };
   }
 
-  /** Chat-Verlauf loeschen */
-  verlaufLoeschen(userId: string): void {
-    this.verlaufMap.delete(userId);
-  }
+  // ==================== Event-Konvertierung ====================
 
-  // ==================== Private Methoden ====================
+  /**
+   * Konvertiert Claude CLI stream-json Events in unsere SSE-Events.
+   *
+   * CLI Events:
+   *   type: "system"    → Init mit session_id
+   *   type: "assistant"  → Text + Tool-Use Bloecke
+   *   type: "result"     → Session-ID fuer naechste Nachricht
+   */
+  private *eventKonvertieren(
+    event: Record<string, unknown>,
+    userId: string,
+    letzterWerkzeugName: string,
+  ): Generator<DevChatEvent> {
+    const eventType = event.type as string;
 
-  /** Verlauf fuer einen User holen oder erstellen */
-  private verlaufHolen(userId: string): Anthropic.MessageParam[] {
-    if (!this.verlaufMap.has(userId)) {
-      this.verlaufMap.set(userId, []);
+    switch (eventType) {
+      case 'system': {
+        // Init-Event: Session-ID speichern
+        const sid = (event as Record<string, unknown>).session_id as
+          | string
+          | undefined;
+        if (sid) {
+          this.sessionMap.set(userId, sid);
+          this.logger.log(`Dev-Chat: Session ${sid} fuer User ${userId}`);
+        }
+        break;
+      }
+
+      case 'assistant': {
+        const message = (event as Record<string, unknown>).message as
+          | Record<string, unknown>
+          | undefined;
+        const content = message?.content as
+          | Array<Record<string, unknown>>
+          | undefined;
+
+        if (content && Array.isArray(content)) {
+          for (const block of content) {
+            if (block.type === 'text' && block.text) {
+              yield { typ: 'text', daten: block.text as string };
+            } else if (block.type === 'tool_use') {
+              yield {
+                typ: 'werkzeug_start',
+                daten: {
+                  name: (block.name as string) || 'Werkzeug',
+                  eingabe: this.eingabeKuerzen(block.input),
+                },
+              };
+            }
+          }
+        }
+
+        // Session-ID updaten
+        const sid = (event as Record<string, unknown>).session_id as
+          | string
+          | undefined;
+        if (sid) {
+          this.sessionMap.set(userId, sid);
+        }
+        break;
+      }
+
+      case 'tool_result':
+      case 'tool_output': {
+        const ergebnis =
+          ((event as Record<string, unknown>).content as string) ||
+          ((event as Record<string, unknown>).result as string) ||
+          ((event as Record<string, unknown>).output as string) ||
+          '';
+        const ergebnisText =
+          typeof ergebnis === 'string' ? ergebnis : JSON.stringify(ergebnis);
+
+        yield {
+          typ: 'werkzeug_ergebnis',
+          daten: {
+            name:
+              ((event as Record<string, unknown>).name as string) ||
+              ((event as Record<string, unknown>).tool_name as string) ||
+              letzterWerkzeugName ||
+              'Werkzeug',
+            ergebnis: ergebnisText.slice(0, 2000),
+            fehler: !!(event as Record<string, unknown>).is_error,
+          },
+        };
+        break;
+      }
+
+      case 'result': {
+        // Finale Session-ID speichern
+        const sid = (event as Record<string, unknown>).session_id as
+          | string
+          | undefined;
+        if (sid) {
+          this.sessionMap.set(userId, sid);
+        }
+        break;
+      }
+
+      // rate_limit_event und andere ignorieren
     }
-    return this.verlaufMap.get(userId)!;
-  }
-
-  /** System-Prompt aus CLAUDE.md laden und cachen */
-  private systemPromptLaden(): string {
-    if (this.systemPromptCache) return this.systemPromptCache;
-
-    let claudeMd = '';
-    try {
-      claudeMd = fs.readFileSync(
-        path.join(PROJEKT_ROOT, 'CLAUDE.md'),
-        'utf-8',
-      );
-    } catch {
-      claudeMd = '(CLAUDE.md konnte nicht geladen werden)';
-    }
-
-    this.systemPromptCache = `Du bist ein erfahrener Entwickler-Assistent fuer die Vereinbase SaaS-Plattform.
-Du hilfst dem Entwickler beim Programmieren, Debuggen und Verbessern der Anwendung.
-Du kannst Dateien lesen, schreiben, bearbeiten und Shell-Befehle ausfuehren.
-
-PROJEKT-ROOT: ${PROJEKT_ROOT} (Turborepo Monorepo)
-- Frontend: apps/frontend (Next.js 14, App Router, shadcn/ui, Tailwind CSS)
-- Backend: apps/backend (NestJS, Prisma, PostgreSQL)
-- Shared: packages/shared
-
-WICHTIGE REGELN:
-- Alle UI-Texte auf Deutsch
-- Verwende ae, oe, ue statt ae, oe, ue in Code und Kommentaren (wegen Server-Encoding)
-- TypeScript strict mode - kein 'any' wo vermeidbar
-- Bestehende Patterns und Konventionen im Projekt folgen
-- IMMER Dateien lesen bevor du sie bearbeitest
-- Aenderungen klar erklaeren
-- Nach Code-Aenderungen: Build + PM2 Restart vorschlagen
-
-BUILD & DEPLOY:
-- Frontend Build: npx turbo build --filter=@vereinbase/frontend
-- Backend Build: npm run build --workspace=apps/backend
-- Frontend Restart: pm2 restart vereinbase-frontend
-- Backend Restart: pm2 restart vereinbase-backend
-- Git: git add + commit + push
-
-VERFUEGBARE WERKZEUGE:
-- datei_lesen: Dateien lesen (relativ zu ${PROJEKT_ROOT} oder absolut)
-- datei_schreiben: Dateien erstellen/ueberschreiben
-- datei_bearbeiten: Exakten Text in Dateien ersetzen
-- befehl_ausfuehren: Shell-Befehle ausfuehren (git, npm, pm2, etc.)
-- dateien_suchen: Nach Dateien oder Textinhalten suchen
-- verzeichnis_listen: Verzeichnisinhalt anzeigen
-
-KONTEXT ZUM PROJEKT:
-${claudeMd}`;
-
-    return this.systemPromptCache;
-  }
-
-  /** API-Key aus PlattformConfig oder .env laden */
-  private async apiKeyHolen(): Promise<string> {
-    // 1. PlattformConfig aus DB
-    try {
-      const config = await this.prisma.plattformConfig.findUnique({
-        where: { id: 'singleton' },
-        select: { anthropicApiKey: true },
-      });
-      if (config?.anthropicApiKey) return config.anthropicApiKey;
-    } catch {
-      // Tabelle existiert evtl. noch nicht
-    }
-
-    // 2. Environment Variable
-    const envKey = this.configService.get<string>('ANTHROPIC_API_KEY');
-    if (envKey) return envKey;
-
-    throw new Error(
-      'Kein Anthropic API-Key konfiguriert. Bitte im Admin-Dashboard unter KI-Einstellungen oder in der .env setzen.',
-    );
-  }
-
-  /** Pfad relativ zum Projektroot oder absolut aufloesen */
-  private pfadAufloesen(pfad: string): string {
-    if (path.isAbsolute(pfad)) return pfad;
-    return path.join(PROJEKT_ROOT, pfad);
   }
 
   /** Werkzeug-Eingabe fuer die UI kuerzen */
@@ -399,121 +273,5 @@ ${claudeMd}`;
       }
     }
     return gekuerzt;
-  }
-
-  /** Ein Werkzeug ausfuehren und Ergebnis zurueckgeben */
-  private async werkzeugAusfuehren(
-    name: string,
-    eingabe: Record<string, unknown>,
-  ): Promise<{ text: string; fehler: boolean }> {
-    try {
-      switch (name) {
-        case 'datei_lesen': {
-          const pfad = this.pfadAufloesen(eingabe.pfad as string);
-          const inhalt = await fs.promises.readFile(pfad, 'utf-8');
-          return { text: inhalt.slice(0, MAX_AUSGABE), fehler: false };
-        }
-
-        case 'datei_schreiben': {
-          const pfad = this.pfadAufloesen(eingabe.pfad as string);
-          await fs.promises.mkdir(path.dirname(pfad), { recursive: true });
-          await fs.promises.writeFile(pfad, eingabe.inhalt as string, 'utf-8');
-          return { text: `Datei geschrieben: ${pfad}`, fehler: false };
-        }
-
-        case 'datei_bearbeiten': {
-          const pfad = this.pfadAufloesen(eingabe.pfad as string);
-          let inhalt = await fs.promises.readFile(pfad, 'utf-8');
-          const alterText = eingabe.alter_text as string;
-          const neuerText = eingabe.neuer_text as string;
-
-          if (!inhalt.includes(alterText)) {
-            return {
-              text: `Der angegebene Text wurde nicht in ${pfad} gefunden. Bitte pruefe den exakten Text.`,
-              fehler: true,
-            };
-          }
-
-          inhalt = inhalt.replace(alterText, neuerText);
-          await fs.promises.writeFile(pfad, inhalt, 'utf-8');
-          return { text: `Datei bearbeitet: ${pfad}`, fehler: false };
-        }
-
-        case 'befehl_ausfuehren': {
-          const cwd = eingabe.verzeichnis
-            ? this.pfadAufloesen(eingabe.verzeichnis as string)
-            : PROJEKT_ROOT;
-
-          const { stdout, stderr } = await execAsync(
-            eingabe.befehl as string,
-            {
-              cwd,
-              timeout: BEFEHL_TIMEOUT,
-              maxBuffer: 1024 * 1024 * 5, // 5MB Buffer
-              env: { ...process.env, FORCE_COLOR: '0' },
-            },
-          );
-
-          let ausgabe = stdout || '';
-          if (stderr) ausgabe += `\nSTDERR:\n${stderr}`;
-          return {
-            text: ausgabe.slice(0, MAX_AUSGABE) || '(keine Ausgabe)',
-            fehler: false,
-          };
-        }
-
-        case 'dateien_suchen': {
-          const suchVerzeichnis = eingabe.verzeichnis
-            ? this.pfadAufloesen(eingabe.verzeichnis as string)
-            : PROJEKT_ROOT;
-          const muster = eingabe.muster as string;
-
-          if (eingabe.typ === 'dateiname') {
-            const { stdout } = await execAsync(
-              `find . -name "${muster}" -not -path "*/node_modules/*" -not -path "*/.next/*" -type f | head -50`,
-              { cwd: suchVerzeichnis, timeout: 15_000 },
-            );
-            return {
-              text: stdout || 'Keine Dateien gefunden.',
-              fehler: false,
-            };
-          } else {
-            const { stdout } = await execAsync(
-              `grep -rn "${muster}" . --include="*.ts" --include="*.tsx" --include="*.json" --include="*.prisma" --include="*.css" --exclude-dir=node_modules --exclude-dir=.next | head -80`,
-              { cwd: suchVerzeichnis, timeout: 15_000 },
-            );
-            return {
-              text: stdout || 'Keine Treffer gefunden.',
-              fehler: false,
-            };
-          }
-        }
-
-        case 'verzeichnis_listen': {
-          const pfad = this.pfadAufloesen(eingabe.pfad as string);
-          const eintraege = await fs.promises.readdir(pfad, {
-            withFileTypes: true,
-          });
-          const liste = eintraege
-            .sort((a, b) => {
-              // Ordner zuerst, dann alphabetisch
-              if (a.isDirectory() && !b.isDirectory()) return -1;
-              if (!a.isDirectory() && b.isDirectory()) return 1;
-              return a.name.localeCompare(b.name);
-            })
-            .map((e) => `${e.isDirectory() ? '[DIR]' : '     '} ${e.name}`)
-            .join('\n');
-          return { text: liste || '(leeres Verzeichnis)', fehler: false };
-        }
-
-        default:
-          return { text: `Unbekanntes Werkzeug: ${name}`, fehler: true };
-      }
-    } catch (err: unknown) {
-      const fehlerText =
-        err instanceof Error ? err.message : 'Unbekannter Fehler';
-      this.logger.error(`Werkzeug ${name} fehlgeschlagen: ${fehlerText}`);
-      return { text: `Fehler: ${fehlerText}`, fehler: true };
-    }
   }
 }
