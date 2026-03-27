@@ -40,11 +40,10 @@ export function AnmeldeFormular() {
     try {
       await anmelden(email, passwort);
       // Nach erfolgreichem Login direkt zum Dashboard navigieren
-      // Wenn anmelden() nicht geworfen hat, war es erfolgreich
+      // (anmelden() setzt istAngemeldet synchron im Store)
+      // Pruefen ob 2FA benoetigt wird - dann NICHT weiterleiten
       const store = useAuthStore.getState();
-      if (!store.benoetigtZweiFaktor) {
-        // Kurze Verzoegerung damit Zustand-Persist den State in localStorage schreibt
-        await new Promise((r) => setTimeout(r, 50));
+      if (!store.benoetigtZweiFaktor && store.istAngemeldet) {
         router.push('/dashboard');
       }
     } catch {

@@ -74,16 +74,9 @@ function istZweiFaktorAntwort(
   return 'requires2FA' in antwort && antwort.requires2FA === true;
 }
 
-// Wird in der Factory gesetzt und von onRehydrateStorage genutzt.
-// Noetig weil useAuthStore beim synchronen localStorage-Rehydrate noch nicht existiert.
-let _setHydriert: (() => void) | null = null;
-
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => {
-      // set() fuer onRehydrateStorage merken (sicher, weil set() sofort verfuegbar ist)
-      _setHydriert = () => set({ _hatHydriert: true });
-
       // API-Client mit Store verbinden
       initApiClient(
         () => ({
@@ -251,14 +244,9 @@ export const useAuthStore = create<AuthState>()(
             if (profil.tenant.primaryColor) {
               applyTenantTheme(profil.tenant.primaryColor);
             }
-          } catch (err) {
-            // Nur bei 401 (Sitzung abgelaufen) abmelden, NICHT bei Netzwerk/Timeout-Fehlern
-            const msg = err instanceof Error ? err.message : '';
-            if (msg.includes('Sitzung abgelaufen') || msg.includes('401')) {
-              get().abmelden();
-            }
-            // Bei anderen Fehlern (Timeout, Netzwerk) Auth-State beibehalten
-            throw err;
+          } catch {
+            // Token ungueltig -> abmelden
+            get().abmelden();
           }
         },
 
@@ -283,11 +271,10 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         istAngemeldet: state.istAngemeldet,
       }),
-      onRehydrateStorage: () => () => {
-        // WICHTIG: useAuthStore.setState() geht hier NICHT weil useAuthStore
-        // bei synchronem localStorage-Rehydrate noch nicht zugewiesen ist.
-        // Deshalb nutzen wir die in der Factory gespeicherte set()-Referenz.
-        _setHydriert?.();
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state._hatHydriert = true;
+        }
       },
     },
   ),
