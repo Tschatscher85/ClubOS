@@ -70,6 +70,7 @@ import { TrainerLizenzModule } from './trainer-lizenz/trainer-lizenz.module';
 import { FundingModule } from './funding/funding.module';
 import { VersicherungModule } from './versicherung/versicherung.module';
 import { VereinsPartnerModule } from './vereins-partner/vereins-partner.module';
+import { DevChatModule } from './dev-chat/dev-chat.module';
 import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
 import { TenantStatusMiddleware } from './common/middleware/tenant-status.middleware';
 import configuration from './config/configuration';
@@ -165,6 +166,7 @@ import configuration from './config/configuration';
     FundingModule,
     VersicherungModule,
     VereinsPartnerModule,
+    DevChatModule,
   ],
   providers: [
     {

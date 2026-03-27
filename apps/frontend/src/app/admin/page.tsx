@@ -24,6 +24,7 @@ import {
   Activity,
   Server,
   Trash2,
+  Bot,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useBenutzer } from '@/hooks/use-auth';
@@ -565,6 +566,29 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <Badge variant="outline">Öffnen</Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Dev-Chat */}
+        <Card
+          className="cursor-pointer hover:border-blue-400 transition-colors border-blue-200 bg-blue-50/50"
+          onClick={() => router.push('/admin/dev-chat')}
+        >
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-blue-100 p-2">
+                  <Bot className="h-5 w-5 text-blue-700" />
+                </div>
+                <div>
+                  <p className="font-medium">Dev-Chat</p>
+                  <p className="text-xs text-muted-foreground">
+                    Mit Claude an Vereinbase programmieren
+                  </p>
+                </div>
+              </div>
+              <Badge variant="outline" className="border-blue-300 text-blue-700">Oeffnen</Badge>
             </div>
           </CardContent>
         </Card>
