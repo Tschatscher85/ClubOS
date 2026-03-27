@@ -3,7 +3,6 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { json, urlencoded } from 'express';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import {
@@ -14,12 +13,7 @@ import {
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
-    bodyParser: false,
   });
-
-  // Body-Parser mit erhoehtem Limit (fuer Bild-Uploads im Dev-Chat)
-  app.use(json({ limit: '10mb' }));
-  app.use(urlencoded({ extended: true, limit: '10mb' }));
 
   // Statische Dateien (Uploads) bereitstellen
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
