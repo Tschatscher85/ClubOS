@@ -74,9 +74,14 @@ function istZweiFaktorAntwort(
   return 'requires2FA' in antwort && antwort.requires2FA === true;
 }
 
+// set() aus der Factory - sicher verfuegbar bevor onRehydrateStorage laeuft
+let _markiereHydriert: (() => void) | null = null;
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => {
+      _markiereHydriert = () => set({ _hatHydriert: true });
+
       // API-Client mit Store verbinden
       initApiClient(
         () => ({
@@ -271,10 +276,10 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         istAngemeldet: state.istAngemeldet,
       }),
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          state._hatHydriert = true;
-        }
+      onRehydrateStorage: () => () => {
+        // KEIN if(state) - muss IMMER feuern, auch wenn localStorage leer ist (Inkognito).
+        // Nutzt set() aus der Factory (sicher, weil Factory vor Rehydration laeuft).
+        _markiereHydriert?.();
       },
     },
   ),
