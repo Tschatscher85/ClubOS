@@ -6,7 +6,6 @@ import { useAuthStore } from '@/stores/auth-store';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { EmailVerifizierungBanner } from '@/components/auth/email-verifizierung-banner';
-import { apiClient } from '@/lib/api-client';
 import { Ban, Mail, ArrowLeft } from 'lucide-react';
 
 function ImpersonationBanner() {
@@ -77,8 +76,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { istAngemeldet, accessToken, profilLaden, themeAnwenden, _hatHydriert } =
-    useAuthStore();
+  const { istAngemeldet, accessToken, _hatHydriert } = useAuthStore();
   const [bereit, setBereit] = useState(false);
   const [gesperrt, setGesperrt] = useState<{ grund?: string } | null>(null);
 
@@ -91,21 +89,41 @@ export default function DashboardLayout({
       return;
     }
 
-    // Theme anwenden und Profil laden
+    // Theme anwenden
+    const { themeAnwenden, profilLaden } = useAuthStore.getState();
     themeAnwenden();
+
+    // Profil laden (EIN Call, kein Doppel-Request)
     profilLaden()
       .then(() => {
-        // Tenant-Status pruefen mit einem einfachen API-Call
-        return apiClient.get('/auth/profil').catch((err: Error) => {
-          if (err.message?.includes('gesperrt')) {
-            setGesperrt({ grund: err.message });
-          }
-          throw err;
-        });
+        // Sperr-Check: profilLaden hat den Tenant geladen
+        const tenant = useAuthStore.getState().tenant;
+        if (!tenant) {
+          setGesperrt({ grund: 'Verein konnte nicht geladen werden.' });
+        }
       })
-      .catch(() => {})
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : '';
+        if (msg.includes('gesperrt')) {
+          setGesperrt({ grund: msg });
+        }
+      })
       .finally(() => setBereit(true));
-  }, [_hatHydriert, accessToken, router, profilLaden, themeAnwenden]);
+
+    // Safety-Timeout: Falls profilLaden haengt, nach 8 Sekunden trotzdem bereit setzen
+    const timeout = setTimeout(() => {
+      setBereit((prev) => {
+        if (!prev) {
+          console.warn('Dashboard: Safety-Timeout - bereit erzwungen');
+        }
+        return true;
+      });
+    }, 8000);
+
+    return () => clearTimeout(timeout);
+  // Nur bei Hydration und Token-Aenderung ausfuehren
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [_hatHydriert, accessToken]);
 
   // Nach Profil-Check: nicht angemeldet → zur Anmeldeseite
   useEffect(() => {

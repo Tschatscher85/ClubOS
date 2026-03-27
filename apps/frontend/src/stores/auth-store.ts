@@ -244,9 +244,14 @@ export const useAuthStore = create<AuthState>()(
             if (profil.tenant.primaryColor) {
               applyTenantTheme(profil.tenant.primaryColor);
             }
-          } catch {
-            // Token ungueltig -> abmelden
-            get().abmelden();
+          } catch (err) {
+            // Nur bei 401 (Sitzung abgelaufen) abmelden, NICHT bei Netzwerk/Timeout-Fehlern
+            const msg = err instanceof Error ? err.message : '';
+            if (msg.includes('Sitzung abgelaufen') || msg.includes('401')) {
+              get().abmelden();
+            }
+            // Bei anderen Fehlern (Timeout, Netzwerk) Auth-State beibehalten
+            throw err;
           }
         },
 
@@ -271,10 +276,10 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         istAngemeldet: state.istAngemeldet,
       }),
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          state._hatHydriert = true;
-        }
+      onRehydrateStorage: () => () => {
+        // WICHTIG: In Zustand v5 triggert direkte State-Mutation KEIN Re-Render!
+        // Muss ueber setState laufen damit Subscriber benachrichtigt werden.
+        useAuthStore.setState({ _hatHydriert: true });
       },
     },
   ),
