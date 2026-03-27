@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login Test</title>
+  <style>
+    body { font-family: sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
+    input, button { display: block; width: 100%; padding: 10px; margin: 8px 0; box-sizing: border-box; font-size: 16px; }
+    button { background: #1a56db; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    #log { background: #f0f0f0; padding: 12px; margin-top: 16px; white-space: pre-wrap; font-size: 13px; font-family: monospace; max-height: 400px; overflow: auto; border-radius: 6px; }
+    .ok { color: green; } .err { color: red; }
+  </style>
+</head>
+<body>
+  <h2>Login Test (ohne React)</h2>
+  <input id="email" type="email" value="admin@vereinbase.de" placeholder="E-Mail">
+  <input id="pass" type="password" value="Survive1985#" placeholder="Passwort">
+  <button onclick="doLogin()">Einloggen</button>
+  <button onclick="goToDashboard()">Zum Dashboard (nach Login)</button>
+  <div id="log">Bereit. Klicke "Einloggen".</div>
+
+  <script>
+    var token = null;
+    function log(msg, ok) {
+      var el = document.getElementById('log');
+      var span = document.createElement('span');
+      span.className = ok ? 'ok' : (ok === false ? 'err' : '');
+      span.textContent = new Date().toLocaleTimeString() + ' ' + msg + '\n';
+      el.appendChild(span);
+      el.scrollTop = el.scrollHeight;
+    }
+
+    async function doLogin() {
+      var email = document.getElementById('email').value;
+      var pass = document.getElementById('pass').value;
+      log('Login-Request an /api/auth/anmelden ...');
+      try {
+        var resp = await fetch('/api/auth/anmelden', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, passwort: pass })
+        });
+        log('HTTP Status: ' + resp.status);
+        var data = await resp.json();
+        if (data.accessToken) {
+          token = data.accessToken;
+          log('LOGIN OK! Token: ' + token.substring(0, 30) + '...', true);
+          log('Benutzer: ' + data.benutzer.email + ' (' + data.benutzer.rolle + ')', true);
+          log('Tenant: ' + data.tenant.name, true);
+          // In localStorage speichern wie Zustand es tut
+          var authData = JSON.stringify({
+            state: {
+              benutzer: data.benutzer,
+              tenant: data.tenant,
+              accessToken: data.accessToken,
+              refreshToken: data.refreshToken,
+              istAngemeldet: true
+            },
+            version: 0
+          });
+          localStorage.setItem('vereinbase-auth', authData);
+          log('Auth in localStorage gespeichert.', true);
+          log('Klicke jetzt "Zum Dashboard" oder gehe zu /dashboard', true);
+        } else {
+          log('FEHLER: Kein Token in Antwort: ' + JSON.stringify(data).substring(0, 200), false);
+        }
+      } catch(e) {
+        log('FEHLER: ' + e.message, false);
+      }
+    }
+
+    function goToDashboard() {
+      if (!token) {
+        log('Erst einloggen!', false);
+        return;
+      }
+      log('Navigiere zu /dashboard ...');
+      window.location.href = '/dashboard';
+    }
+
+    // Zeige aktuellen localStorage-Status
+    try {
+      var stored = localStorage.getItem('vereinbase-auth');
+      if (stored) {
+        var parsed = JSON.parse(stored);
+        log('localStorage hat Auth-Daten: ' + (parsed.state?.benutzer?.email || 'unbekannt'));
+      } else {
+        log('localStorage ist leer (kein Login gespeichert)');
+      }
+    } catch(e) {
+      log('localStorage Fehler: ' + e.message, false);
+    }
+  </script>
+</body>
+</html>
