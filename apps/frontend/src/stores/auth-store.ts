@@ -74,9 +74,16 @@ function istZweiFaktorAntwort(
   return 'requires2FA' in antwort && antwort.requires2FA === true;
 }
 
+// Wird in der Factory gesetzt und von onRehydrateStorage genutzt.
+// Noetig weil useAuthStore beim synchronen localStorage-Rehydrate noch nicht existiert.
+let _setHydriert: (() => void) | null = null;
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => {
+      // set() fuer onRehydrateStorage merken (sicher, weil set() sofort verfuegbar ist)
+      _setHydriert = () => set({ _hatHydriert: true });
+
       // API-Client mit Store verbinden
       initApiClient(
         () => ({
@@ -277,9 +284,10 @@ export const useAuthStore = create<AuthState>()(
         istAngemeldet: state.istAngemeldet,
       }),
       onRehydrateStorage: () => () => {
-        // WICHTIG: In Zustand v5 triggert direkte State-Mutation KEIN Re-Render!
-        // Muss ueber setState laufen damit Subscriber benachrichtigt werden.
-        useAuthStore.setState({ _hatHydriert: true });
+        // WICHTIG: useAuthStore.setState() geht hier NICHT weil useAuthStore
+        // bei synchronem localStorage-Rehydrate noch nicht zugewiesen ist.
+        // Deshalb nutzen wir die in der Factory gespeicherte set()-Referenz.
+        _setHydriert?.();
       },
     },
   ),
