@@ -13,9 +13,9 @@ export default function PinnwandUndInfosPage() {
       <div className="flex items-center gap-3">
         <ClipboardList className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">Pinnwand & Infos</h1>
+          <h1 className="text-2xl font-bold">Pinnwand & Mehr</h1>
           <p className="text-muted-foreground">
-            Aushaenge, Umfragen, Galerie und Fahrgemeinschaften
+            Aushaenge, Umfragen, Fotos und Fahrgemeinschaften
           </p>
         </div>
       </div>
