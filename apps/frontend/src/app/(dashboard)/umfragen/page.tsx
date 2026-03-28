@@ -238,20 +238,13 @@ export default function UmfragenPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header (versteckt wenn in Pinnwand eingebettet) */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <BarChart3 className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold">Umfragen</h1>
-            <p className="text-muted-foreground">
-              Schnellumfragen erstellen und teilen
-            </p>
-          </div>
-        </div>
+        <Badge variant="secondary">
+          {umfragen.length} {umfragen.length === 1 ? 'Umfrage' : 'Umfragen'}
+        </Badge>
         {istTrainerOderAdmin && (
-          <Button id="umfrage-erstellen-btn" onClick={handleNeu}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button id="umfrage-erstellen-btn" className="hidden" onClick={handleNeu}>
             Neue Umfrage
           </Button>
         )}

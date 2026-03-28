@@ -969,18 +969,20 @@ model SchnellAnmeldungToken {
 // ==================== Fahrtenborse ====================
 
 model Fahrgemeinschaft {
-  id        String   @id @default(cuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  eventId   String?
-  fahrerId  String // userId des Fahrers
-  startort  String
-  zielort   String
-  abfahrt   DateTime
-  plaetze   Int      @default(4)
-  kommentar String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  eventId        String?
+  fahrerId       String // userId des Fahrers
+  startort       String
+  zielort        String
+  abfahrt        DateTime
+  plaetze        Int      @default(4)
+  kindersitz     Int      @default(0) // Anzahl verfuegbare Kindersitze
+  sitzErhoehung  Int      @default(0) // Anzahl verfuegbare Sitzerhoehungen
+  kommentar      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   mitfahrer Mitfahrer[]
 
@@ -993,6 +995,9 @@ model Mitfahrer {
   fahrgemeinschaftId String
   fahrgemeinschaft   Fahrgemeinschaft @relation(fields: [fahrgemeinschaftId], references: [id], onDelete: Cascade)
   userId             String
+  anzahlPersonen     Int              @default(1) // Wie viele Personen mitfahren (z.B. Papa + Kind = 2)
+  brauchtKindersitz  Boolean          @default(false)
+  brauchtErhoehung   Boolean          @default(false)
   createdAt          DateTime         @default(now())
 
   @@unique([fahrgemeinschaftId, userId])
