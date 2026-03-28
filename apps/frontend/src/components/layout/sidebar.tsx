@@ -29,6 +29,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { useTenant, useBenutzer } from '@/hooks/use-auth';
+import { useUngeleseneNachrichten } from '@/hooks/use-ungelesen';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarNavItem } from './sidebar-nav-item';
 import { ROUTEN, API_BASE_URL } from '@/lib/constants';
@@ -134,6 +135,7 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
 export function Sidebar() {
   const tenant = useTenant();
   const benutzer = useBenutzer();
+  const ungeleseneNachrichten = useUngeleseneNachrichten();
 
   const initialen = tenant?.name
     ? tenant.name
@@ -195,6 +197,7 @@ export function Sidebar() {
                     href={item.href}
                     label={item.label}
                     icon={item.icon}
+                    badge={item.href === ROUTEN.NACHRICHTEN ? ungeleseneNachrichten : undefined}
                   />
                 ))}
               </div>

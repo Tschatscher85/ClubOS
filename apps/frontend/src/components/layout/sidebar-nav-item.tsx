@@ -9,9 +9,10 @@ interface SidebarNavItemProps {
   href: string;
   label: string;
   icon: LucideIcon;
+  badge?: number;
 }
 
-export function SidebarNavItem({ href, label, icon: Icon }: SidebarNavItemProps) {
+export function SidebarNavItem({ href, label, icon: Icon, badge }: SidebarNavItemProps) {
   const pathname = usePathname();
   const istAktiv = pathname === href;
 
@@ -26,7 +27,12 @@ export function SidebarNavItem({ href, label, icon: Icon }: SidebarNavItemProps)
       )}
     >
       <Icon className="h-5 w-5" />
-      {label}
+      <span className="flex-1">{label}</span>
+      {badge && badge > 0 ? (
+        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      ) : null}
     </Link>
   );
 }

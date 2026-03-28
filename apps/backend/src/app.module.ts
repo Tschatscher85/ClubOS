@@ -71,6 +71,8 @@ import { FundingModule } from './funding/funding.module';
 import { VersicherungModule } from './versicherung/versicherung.module';
 import { VereinsPartnerModule } from './vereins-partner/vereins-partner.module';
 import { DevChatModule } from './dev-chat/dev-chat.module';
+import { TrainingsprotokollModule } from './trainingsprotokoll/trainingsprotokoll.module';
+import { SpielerpassModule } from './spielerpass/spielerpass.module';
 import { SubdomainMiddleware } from './common/middleware/subdomain.middleware';
 import { TenantStatusMiddleware } from './common/middleware/tenant-status.middleware';
 import configuration from './config/configuration';
@@ -167,6 +169,8 @@ import configuration from './config/configuration';
     VersicherungModule,
     VereinsPartnerModule,
     DevChatModule,
+    TrainingsprotokollModule,
+    SpielerpassModule,
   ],
   providers: [
     {

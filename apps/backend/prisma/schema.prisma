@@ -110,11 +110,13 @@ model Tenant {
   customSportarten   CustomSportart[]
   pinboardItems      PinboardItem[]
   rollenVorlagen     RollenVorlage[]
-  spielberichte      Spielbericht[]
-  ressourcen         Ressource[]
-  trainingsplaene    Trainingsplan[]
-  verletzungen       Verletzung[]
-  aufstellungen      Aufstellung[]
+  spielberichte        Spielbericht[]
+  ressourcen           Ressource[]
+  trainingsplaene      Trainingsplan[]
+  trainingsprotokolle  Trainingsprotokoll[]
+  spielerpaesse        Spielerpass[]
+  verletzungen         Verletzung[]
+  aufstellungen        Aufstellung[]
   entwicklungsboegen Entwicklungsbogen[]
   referral           Referral?
   beitragsklassen    Beitragsklasse[]
@@ -298,6 +300,7 @@ model Member {
   festSchichtHelfer          FestSchichtHelfer[]
   einverstaendnisAntworten   EinverstaendnisAntwort[]
   dokumente                  MitgliedDokument[]
+  spielerpass                Spielerpass?
 
   @@index([tenantId])
   @@index([email])
@@ -422,8 +425,9 @@ model Team {
   pinboardItems      PinboardItem[]
   kasse              TeamKasse?
   strafkatalog       Strafkatalog[]
-  trikots            Trikot[]
-  trainingsplaene    Trainingsplan[]
+  trikots              Trikot[]
+  trainingsplaene      Trainingsplan[]
+  trainingsprotokolle  Trainingsprotokoll[]
   aufstellungen      Aufstellung[]
   entwicklungsboegen Entwicklungsbogen[]
   umfragen           Umfrage[]
@@ -1590,6 +1594,52 @@ model Trainingsplan {
 
   @@index([teamId])
   @@index([tenantId])
+}
+
+// ==================== Trainingsprotokoll ====================
+
+model Trainingsprotokoll {
+  id          String   @id @default(cuid())
+  teamId      String
+  tenantId    String
+  trainerId   String   // userId des Trainers
+  datum       DateTime
+  dauer       Int      // Minuten
+  thema       String
+  inhalt      String?  // Was wurde trainiert (Freitext)
+  notizen     String?  // Besonderheiten, Verletzungen etc.
+  teilnehmer  Json     // Array von {memberId, anwesend: boolean}
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+  @@index([tenantId])
+  @@index([datum])
+}
+
+// ==================== Digitaler Spielerpass ====================
+
+model Spielerpass {
+  id              String   @id @default(cuid())
+  memberId        String   @unique
+  tenantId        String
+  passNummer      String?  // z.B. DFB-Pass-Nr
+  spielberechtigt Boolean  @default(true)
+  sportart        String?
+  altersklasse    String?
+  gueltigBis      DateTime?
+  gesperrt        Boolean  @default(false)
+  sperrgrund      String?
+  qrToken         String   @unique // Token fuer QR-Code Scan
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  member          Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([qrToken])
 }
 
 // ==================== Spieler-Entwicklungsbogen ====================
