@@ -30,6 +30,9 @@ interface Mitglied {
   beitragsArt?: string | null;
   beitragBetrag?: number | null;
   beitragIntervall?: string | null;
+  anwesenheitsQuote?: number | null;
+  vereinsRollen?: string[];
+  user?: { id: string; vereinsRollen?: string[] } | null;
 }
 
 interface RollenInfo {
@@ -81,6 +84,7 @@ export function MitgliederTabelle({
             <th className="h-12 px-4 text-left font-medium hidden md:table-cell">Rolle</th>
             <th className="h-12 px-4 text-left font-medium hidden lg:table-cell">Sportarten</th>
             <th className="h-12 px-4 text-left font-medium hidden lg:table-cell">Team</th>
+            <th className="h-12 px-4 text-left font-medium hidden lg:table-cell">Quote</th>
             <th className="h-12 px-4 text-left font-medium hidden xl:table-cell">Geburtsdatum</th>
             <th className="h-12 px-4 text-left font-medium hidden xl:table-cell">Eintritt</th>
             <th className="h-12 px-4 text-left font-medium hidden xl:table-cell">Beitrag</th>
@@ -147,6 +151,19 @@ export function MitgliederTabelle({
                       <span className="text-muted-foreground text-xs">—</span>
                     )}
                   </div>
+                </td>
+                <td className="px-4 py-3 hidden lg:table-cell">
+                  {m.anwesenheitsQuote != null ? (
+                    <span className={`font-medium ${
+                      m.anwesenheitsQuote > 75 ? 'text-green-600' :
+                      m.anwesenheitsQuote > 50 ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>
+                      {m.anwesenheitsQuote}%
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">—</span>
+                  )}
                 </td>
                 <td className="px-4 py-3 hidden xl:table-cell text-muted-foreground">
                   {m.birthDate

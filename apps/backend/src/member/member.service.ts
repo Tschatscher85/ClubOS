@@ -68,7 +68,7 @@ export class MemberService {
   }
 
   async alleAbrufen(tenantId: string) {
-    return this.prisma.member.findMany({
+    const mitglieder = await this.prisma.member.findMany({
       where: { tenantId },
       orderBy: { lastName: 'asc' },
       include: {
@@ -79,8 +79,62 @@ export class MemberService {
             },
           },
         },
+        user: { select: { id: true, vereinsRollen: true } },
+        _count: { select: { attendances: true } },
       },
     });
+
+    // Anwesenheitsquote fuer Spieler/Jugendspieler berechnen
+    const spielerIds = mitglieder
+      .filter((m) => {
+        const rollen = m.user?.vereinsRollen || m.vereinsRollen || [];
+        return rollen.some((r) => r === 'Spieler' || r === 'Jugendspieler');
+      })
+      .map((m) => m.id);
+
+    let quotenMap: Record<string, number> = {};
+    if (spielerIds.length > 0) {
+      const stats = await this.prisma.attendance.groupBy({
+        by: ['memberId', 'status'],
+        where: { memberId: { in: spielerIds } },
+      });
+
+      // Gesamt und Zugesagt pro Mitglied zaehlen
+      const gesamtMap: Record<string, number> = {};
+      const zugesagtMap: Record<string, number> = {};
+      for (const s of stats) {
+        gesamtMap[s.memberId] = (gesamtMap[s.memberId] || 0) + (s as any)._count?.status || 0;
+      }
+
+      // Einfachere Methode: direkt zaehlen
+      const gesamt = await this.prisma.attendance.groupBy({
+        by: ['memberId'],
+        where: { memberId: { in: spielerIds } },
+        _count: true,
+      });
+      const zugesagt = await this.prisma.attendance.groupBy({
+        by: ['memberId'],
+        where: { memberId: { in: spielerIds }, status: 'YES' },
+        _count: true,
+      });
+
+      const gesamtLookup: Record<string, number> = {};
+      for (const g of gesamt) gesamtLookup[g.memberId] = g._count;
+      const zugesagtLookup: Record<string, number> = {};
+      for (const z of zugesagt) zugesagtLookup[z.memberId] = z._count;
+
+      quotenMap = {};
+      for (const id of spielerIds) {
+        const g = gesamtLookup[id] || 0;
+        const z = zugesagtLookup[id] || 0;
+        quotenMap[id] = g > 0 ? Math.round((z / g) * 100) : 0;
+      }
+    }
+
+    return mitglieder.map((m) => ({
+      ...m,
+      anwesenheitsQuote: quotenMap[m.id] ?? null,
+    }));
   }
 
   async nachIdAbrufen(tenantId: string, id: string) {
@@ -115,6 +169,7 @@ export class MemberService {
     const aktualisiert = await this.prisma.member.update({
       where: { id },
       data: {
+        ...(dto.mitgliedsnummer !== undefined && { memberNumber: dto.mitgliedsnummer }),
         ...(dto.vorname !== undefined && { firstName: dto.vorname }),
         ...(dto.nachname !== undefined && { lastName: dto.nachname }),
         ...(dto.email !== undefined && { email: dto.email }),
@@ -592,6 +647,45 @@ export class MemberService {
     });
   }
 
+  /** Anwesenheitsquote der Kinder eines Elternteils */
+  async meineKinderAnwesenheit(tenantId: string, elternEmail: string, userId?: string) {
+    const kinder = await this.meineKinder(tenantId, elternEmail, userId);
+    if (kinder.length === 0) return [];
+
+    const kinderIds = kinder.map((k) => k.id);
+
+    // Gesamt- und Zusage-Zaehlung pro Kind
+    const gesamt = await this.prisma.attendance.groupBy({
+      by: ['memberId'],
+      where: { memberId: { in: kinderIds } },
+      _count: true,
+    });
+    const zugesagt = await this.prisma.attendance.groupBy({
+      by: ['memberId'],
+      where: { memberId: { in: kinderIds }, status: 'YES' },
+      _count: true,
+    });
+
+    const gesamtMap: Record<string, number> = {};
+    for (const g of gesamt) gesamtMap[g.memberId] = g._count;
+    const zugesagtMap: Record<string, number> = {};
+    for (const z of zugesagt) zugesagtMap[z.memberId] = z._count;
+
+    return kinder.map((kind) => {
+      const g = gesamtMap[kind.id] || 0;
+      const z = zugesagtMap[kind.id] || 0;
+      return {
+        id: kind.id,
+        firstName: kind.firstName,
+        lastName: kind.lastName,
+        memberNumber: kind.memberNumber,
+        anwesenheitsQuote: g > 0 ? Math.round((z / g) * 100) : 0,
+        gesamt: g,
+        zugesagt: z,
+      };
+    });
+  }
+
   /** Teams der Kinder eines Elternteils finden */
   async meineKinderTeams(tenantId: string, elternEmail: string) {
     const kinder = await this.prisma.member.findMany({
@@ -683,11 +777,20 @@ export class MemberService {
     });
     if (!mitglied) throw new NotFoundException('Mitglied nicht gefunden.');
 
+    // Bestehende Rollen laden (damit Trainer-Rolle nicht ueberschrieben wird)
+    const bestehendeTeamMembers = await this.prisma.teamMember.findMany({
+      where: { memberId },
+      select: { teamId: true, rolle: true },
+    });
+    const bestehendeRollenMap = new Map(bestehendeTeamMembers.map((b) => [b.teamId, b.rolle]));
+
     // Normalisieren: string[] oder {teamId, rolle}[]
+    // Bestehende Rolle beibehalten wenn keine neue spezifiziert
     const zuordnungen: Array<{ teamId: string; rolle: string }> = (teamZuordnungen as Array<unknown>).map((z) => {
-      if (typeof z === 'string') return { teamId: z, rolle: 'SPIELER' };
+      if (typeof z === 'string') return { teamId: z, rolle: bestehendeRollenMap.get(z) || 'SPIELER' };
       const obj = z as { teamId?: string; rolle?: string };
-      return { teamId: obj.teamId || '', rolle: obj.rolle || 'SPIELER' };
+      const teamId = obj.teamId || '';
+      return { teamId, rolle: obj.rolle || bestehendeRollenMap.get(teamId) || 'SPIELER' };
     }).filter((z) => z.teamId);
 
     const teamIds = zuordnungen.map((z) => z.teamId);
@@ -699,12 +802,8 @@ export class MemberService {
     const gueltigeTeamIds = new Set(teams.map((t) => t.id));
     const gueltigeZuordnungen = zuordnungen.filter((z) => gueltigeTeamIds.has(z.teamId));
 
-    // Bestehende Zuordnungen abrufen
-    const bestehende = await this.prisma.teamMember.findMany({
-      where: { memberId },
-      select: { teamId: true, rolle: true },
-    });
-    const bestehendMap = new Map(bestehende.map((b) => [b.teamId, b.rolle]));
+    // Bestehende Zuordnungen (bereits oben geladen)
+    const bestehendMap = bestehendeRollenMap;
 
     // Neue Zuordnungen (noch nicht vorhanden)
     const zuErstellen = gueltigeZuordnungen.filter((z) => !bestehendMap.has(z.teamId));

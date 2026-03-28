@@ -23,6 +23,16 @@ interface Kind {
   }>;
 }
 
+interface KindAnwesenheit {
+  id: string;
+  firstName: string;
+  lastName: string;
+  memberNumber: string;
+  anwesenheitsQuote: number;
+  gesamt: number;
+  zugesagt: number;
+}
+
 interface Team {
   id: string;
   name: string;
@@ -59,6 +69,7 @@ export default function ElternPortalPage() {
   const benutzer = useBenutzer();
   const router = useRouter();
   const [kinder, setKinder] = useState<Kind[]>([]);
+  const [kinderAnwesenheit, setKinderAnwesenheit] = useState<KindAnwesenheit[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [abteilungen, setAbteilungen] = useState<Abteilung[]>([]);
   const [veranstaltungen, setVeranstaltungen] = useState<Veranstaltung[]>([]);
@@ -66,14 +77,16 @@ export default function ElternPortalPage() {
 
   const datenLaden = useCallback(async () => {
     try {
-      const [kinderDaten, teamsDaten, abteilungenDaten] = await Promise.all([
+      const [kinderDaten, teamsDaten, abteilungenDaten, anwesenheitDaten] = await Promise.all([
         apiClient.get<Kind[]>('/mitglieder/meine-kinder'),
         apiClient.get<Team[]>('/mitglieder/meine-kinder/teams'),
         apiClient.get<Abteilung[]>('/mitglieder/meine-kinder/abteilungen'),
+        apiClient.get<KindAnwesenheit[]>('/mitglieder/meine-kinder/anwesenheit').catch(() => [] as KindAnwesenheit[]),
       ]);
       setKinder(kinderDaten);
       setTeams(teamsDaten);
       setAbteilungen(abteilungenDaten);
+      setKinderAnwesenheit(anwesenheitDaten);
 
       // Veranstaltungen laden (optional, falls API existiert)
       try {
@@ -142,17 +155,33 @@ export default function ElternPortalPage() {
           </p>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {kinder.map((kind) => (
+            {kinder.map((kind) => {
+              const anwesenheit = kinderAnwesenheit.find((a) => a.id === kind.id);
+              return (
               <Card key={kind.id}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">
-                    {kind.firstName} {kind.lastName}
+                  <CardTitle className="text-base flex items-center justify-between">
+                    <span>{kind.firstName} {kind.lastName}</span>
+                    {anwesenheit && anwesenheit.gesamt > 0 && (
+                      <span className={`text-sm font-bold ${
+                        anwesenheit.anwesenheitsQuote > 75 ? 'text-green-600' :
+                        anwesenheit.anwesenheitsQuote > 50 ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>
+                        {anwesenheit.anwesenheitsQuote}%
+                      </span>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <p className="text-sm text-muted-foreground">
                     Mitgliedsnr. {kind.memberNumber}
                   </p>
+                  {anwesenheit && anwesenheit.gesamt > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {anwesenheit.zugesagt} von {anwesenheit.gesamt} Terminen zugesagt
+                    </p>
+                  )}
                   {kind.sport.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {kind.sport.map((s) => (
@@ -177,7 +206,8 @@ export default function ElternPortalPage() {
                   )}
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

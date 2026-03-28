@@ -152,6 +152,12 @@ export class NachweisStatusAendernDto {
 }
 
 export class AktualisiereMitgliedDto {
+  @ApiPropertyOptional({ example: 'M-0042', description: 'Mitgliedsnummer (haendisch aenderbar)' })
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  mitgliedsnummer?: string;
+
   @ApiPropertyOptional({ example: 'Max' })
   @IsOptional()
   @IsString()

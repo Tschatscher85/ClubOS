@@ -176,6 +176,17 @@ export class MemberController {
     return this.memberService.meineKinder(tenantId, elternEmail, userId);
   }
 
+  @Get('meine-kinder/anwesenheit')
+  @Rollen(Role.PARENT)
+  @ApiOperation({ summary: 'Anwesenheitsquote der eigenen Kinder (Eltern-Portal)' })
+  async meineKinderAnwesenheit(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @AktuellerBenutzer('email') elternEmail: string,
+    @AktuellerBenutzer('id') userId: string,
+  ) {
+    return this.memberService.meineKinderAnwesenheit(tenantId, elternEmail, userId);
+  }
+
   @Get('meine-kinder/teams')
   @Rollen(Role.PARENT)
   @ApiOperation({ summary: 'Teams der eigenen Kinder abrufen (Eltern-Portal)' })

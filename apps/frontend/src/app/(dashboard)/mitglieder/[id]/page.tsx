@@ -591,8 +591,9 @@ export default function MitgliedDetailPage() {
         </div>
       </div>
 
-      {/* Statistik-Karten */}
-      {statistik && (
+      {/* Statistik-Karten — nur fuer Spieler/Jugendspieler */}
+      {statistik && (mitglied.user?.vereinsRollen?.some(r => r === 'Spieler' || r === 'Jugendspieler') ||
+        mitglied.vereinsRollen?.some(r => r === 'Spieler' || r === 'Jugendspieler')) && (
         <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
@@ -1471,8 +1472,10 @@ export default function MitgliedDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Letzte Veranstaltungen */}
-      {statistik && statistik.letzteEvents.length > 0 && (
+      {/* Letzte Veranstaltungen — nur fuer Spieler/Jugendspieler */}
+      {statistik && statistik.letzteEvents.length > 0 &&
+        (mitglied.user?.vereinsRollen?.some(r => r === 'Spieler' || r === 'Jugendspieler') ||
+         mitglied.vereinsRollen?.some(r => r === 'Spieler' || r === 'Jugendspieler')) && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold">Letzte Veranstaltungen</h2>
           <div className="rounded-md border">
@@ -1515,7 +1518,9 @@ export default function MitgliedDetailPage() {
         </div>
       )}
 
-      {statistik && statistik.letzteEvents.length === 0 && (
+      {statistik && statistik.letzteEvents.length === 0 &&
+        (mitglied.user?.vereinsRollen?.some(r => r === 'Spieler' || r === 'Jugendspieler') ||
+         mitglied.vereinsRollen?.some(r => r === 'Spieler' || r === 'Jugendspieler')) && (
         <p className="text-muted-foreground">
           Noch keine Veranstaltungen vorhanden.
         </p>

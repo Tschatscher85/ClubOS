@@ -123,6 +123,7 @@ export function MitgliedFormular({
 }: MitgliedFormularProps) {
   const istBearbeitung = !!mitglied;
 
+  const [mitgliedsnummer, setMitgliedsnummer] = useState('');
   const [vorname, setVorname] = useState('');
   const [nachname, setNachname] = useState('');
   const [email, setEmail] = useState('');
@@ -220,6 +221,7 @@ export function MitgliedFormular({
   // Felder aktualisieren wenn ein anderes Mitglied geoeffnet wird
   useEffect(() => {
     if (offen && mitglied) {
+      setMitgliedsnummer(mitglied.memberNumber || '');
       setVorname(mitglied.firstName || '');
       setNachname(mitglied.lastName || '');
       setEmail(mitglied.email || '');
@@ -262,6 +264,7 @@ export function MitgliedFormular({
       setFehler('');
     } else if (offen && !mitglied) {
       // Neues Mitglied - alles zuruecksetzen
+      setMitgliedsnummer('');
       setVorname('');
       setNachname('');
       setEmail('');
@@ -349,6 +352,7 @@ export function MitgliedFormular({
       const daten = {
         vorname,
         nachname,
+        ...(istBearbeitung && mitgliedsnummer && { mitgliedsnummer }),
         ...(email && { email }),
         ...(geburtsdatum && { geburtsdatum }),
         eintrittsdatum,
@@ -469,6 +473,19 @@ export function MitgliedFormular({
               />
             </div>
           </div>
+
+          {/* Mitgliedsnummer (nur bei Bearbeitung) */}
+          {istBearbeitung && (
+            <div className="space-y-2">
+              <Label htmlFor="mitgliedsnummer">Mitgliedsnummer</Label>
+              <Input
+                id="mitgliedsnummer"
+                value={mitgliedsnummer}
+                onChange={(e) => setMitgliedsnummer(e.target.value)}
+                placeholder="M-0001"
+              />
+            </div>
+          )}
 
           {/* E-Mail */}
           <div className="space-y-2">
