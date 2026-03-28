@@ -14,13 +14,20 @@ const TabsContext = React.createContext<TabsContextValue>({
 });
 
 interface TabsProps {
-  defaultValue: string;
+  defaultValue?: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
   children: React.ReactNode;
   className?: string;
 }
 
-function Tabs({ defaultValue, children, className }: TabsProps) {
-  const [activeTab, setActiveTab] = React.useState(defaultValue);
+function Tabs({ defaultValue, value, onValueChange, children, className }: TabsProps) {
+  const [internalTab, setInternalTab] = React.useState(defaultValue || '');
+  const activeTab = value !== undefined ? value : internalTab;
+  const setActiveTab = React.useCallback((v: string) => {
+    if (onValueChange) onValueChange(v);
+    if (value === undefined) setInternalTab(v);
+  }, [onValueChange, value]);
 
   return (
     <TabsContext.Provider value={{ activeTab, setActiveTab }}>
