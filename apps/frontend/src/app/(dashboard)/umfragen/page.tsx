@@ -250,7 +250,7 @@ export default function UmfragenPage() {
           </div>
         </div>
         {istTrainerOderAdmin && (
-          <Button onClick={handleNeu}>
+          <Button id="umfrage-erstellen-btn" onClick={handleNeu}>
             <Plus className="h-4 w-4 mr-2" />
             Neue Umfrage
           </Button>

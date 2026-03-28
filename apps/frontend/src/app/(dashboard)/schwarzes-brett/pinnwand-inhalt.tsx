@@ -212,7 +212,7 @@ export default function PinnwandInhalt() {
       <div className="flex items-center justify-between">
         <Badge variant="secondary">{aushaenge.length} Aushaenge</Badge>
         {istTrainerOderAdmin && (
-          <Button onClick={() => dialogOeffnen()}>
+          <Button id="pinnwand-erstellen-btn" onClick={() => dialogOeffnen()}>
             <Plus className="h-4 w-4 mr-2" />
             Neuer Aushang
           </Button>

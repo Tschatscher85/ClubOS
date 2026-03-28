@@ -151,7 +151,7 @@ export default function FahrgemeinschaftenInhalt() {
         <Badge variant="secondary">
           {fahrten.length} {fahrten.length === 1 ? 'Fahrt' : 'Fahrten'} verfuegbar
         </Badge>
-        <Button onClick={() => setDialogOffen(true)}>
+        <Button id="fahrt-erstellen-btn" onClick={() => setDialogOffen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Neue Fahrt anbieten
         </Button>
