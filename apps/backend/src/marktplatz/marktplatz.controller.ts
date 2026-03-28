@@ -36,7 +36,7 @@ export class MarktplatzController {
   // ==================== Inserate ====================
 
   @Post()
-  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
   @ApiOperation({ summary: 'Inserat erstellen' })
   async erstellen(
     @AktuellerBenutzer('tenantId') tenantId: string,
@@ -67,7 +67,7 @@ export class MarktplatzController {
   }
 
   @Get('meine')
-  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
   @ApiOperation({ summary: 'Eigene Inserate des Vereins abrufen' })
   async meineAbrufen(
     @AktuellerBenutzer('tenantId') tenantId: string,
@@ -76,7 +76,7 @@ export class MarktplatzController {
   }
 
   @Get('bewerbungen-eingehend')
-  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
   @ApiOperation({ summary: 'Alle eingehenden Bewerbungen auf eigene Inserate' })
   async alleBewerbungenAbrufen(
     @AktuellerBenutzer('tenantId') tenantId: string,
@@ -94,7 +94,7 @@ export class MarktplatzController {
   }
 
   @Put(':id')
-  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
   @ApiOperation({ summary: 'Inserat aktualisieren' })
   async aktualisieren(
     @AktuellerBenutzer('tenantId') tenantId: string,
@@ -107,7 +107,7 @@ export class MarktplatzController {
   }
 
   @Delete(':id')
-  @Rollen(Role.SUPERADMIN, Role.ADMIN)
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Inserat loeschen' })
   async loeschen(

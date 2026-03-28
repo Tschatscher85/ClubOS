@@ -89,7 +89,7 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
     eintraege: [
       { href: ROUTEN.DOKUMENTE, label: 'Dokumente & Wiki', icon: FolderOpen, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
       { href: ROUTEN.SCHIEDSRICHTER, label: 'Schiedsrichter', icon: UserCheck, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER'] },
-      { href: ROUTEN.MARKTPLATZ, label: 'Marktplatz & Partner', icon: Store, rollen: ['SUPERADMIN', 'ADMIN'] },
+      { href: ROUTEN.MARKTPLATZ, label: 'Marktplatz & Partner', icon: Store, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER', 'MEMBER'] },
     ],
   },
   {
