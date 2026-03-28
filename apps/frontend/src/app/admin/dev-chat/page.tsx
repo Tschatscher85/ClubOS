@@ -20,7 +20,6 @@ import {
   FolderOpen,
   Search,
   Edit3,
-  Play,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useBenutzer } from '@/hooks/use-auth';
@@ -60,6 +59,13 @@ const WERKZEUG_ICONS: Record<string, typeof Terminal> = {
   befehl_ausfuehren: Terminal,
   dateien_suchen: Search,
   verzeichnis_listen: FolderOpen,
+  Read: FileText,
+  Write: Edit3,
+  Edit: Edit3,
+  Bash: Terminal,
+  Grep: Search,
+  Glob: FolderOpen,
+  Agent: Bot,
 };
 
 const WERKZEUG_LABELS: Record<string, string> = {
@@ -69,6 +75,13 @@ const WERKZEUG_LABELS: Record<string, string> = {
   befehl_ausfuehren: 'Befehl',
   dateien_suchen: 'Suche',
   verzeichnis_listen: 'Verzeichnis',
+  Read: 'Datei lesen',
+  Write: 'Datei schreiben',
+  Edit: 'Datei bearbeiten',
+  Bash: 'Befehl',
+  Grep: 'Suche',
+  Glob: 'Dateien suchen',
+  Agent: 'Agent',
 };
 
 // ==================== Markdown Renderer ====================
@@ -101,7 +114,6 @@ function CodeBlock({ sprache, code }: { sprache: string; code: string }) {
 }
 
 function MarkdownText({ text }: { text: string }) {
-  // Code-Bloecke aufteilen
   const teile = text.split(/(```[\s\S]*?```)/g);
 
   return (
@@ -116,7 +128,6 @@ function MarkdownText({ text }: { text: string }) {
 
         if (!teil.trim()) return null;
 
-        // Inline-Formatierung
         const formatiert = teil.split(/(`[^`]+`)/g).map((segment, j) => {
           if (segment.startsWith('`') && segment.endsWith('`')) {
             return (
@@ -128,7 +139,6 @@ function MarkdownText({ text }: { text: string }) {
               </code>
             );
           }
-          // Bold
           const boldParts = segment.split(/(\*\*[^*]+\*\*)/g).map((bp, k) => {
             if (bp.startsWith('**') && bp.endsWith('**')) {
               return (
@@ -160,11 +170,14 @@ function WerkzeugAnzeige({ werkzeug }: { werkzeug: WerkzeugAktivitaet }) {
   const label = WERKZEUG_LABELS[werkzeug.name] || werkzeug.name;
   const laedt = !werkzeug.ergebnis && werkzeug.ergebnis !== '';
 
-  // Eingabe-Zusammenfassung
   const eingabeText = (() => {
     const e = werkzeug.eingabe as Record<string, unknown>;
     if (e?.pfad) return String(e.pfad);
+    if (e?.file_path) return String(e.file_path);
+    if (e?.path) return String(e.path);
     if (e?.befehl) return String(e.befehl).slice(0, 60);
+    if (e?.command) return String(e.command).slice(0, 60);
+    if (e?.pattern) return String(e.pattern);
     if (e?.muster) return String(e.muster);
     return '';
   })();
@@ -218,6 +231,7 @@ export default function DevChatSeite() {
   const [eingabe, setEingabe] = useState('');
   const [bilder, setBilder] = useState<BildVorschau[]>([]);
   const [ladenAktiv, setLadenAktiv] = useState(false);
+  const [verlaufGeladen, setVerlaufGeladen] = useState(false);
   const [aktuelleAntwort, setAktuelleAntwort] = useState('');
   const [aktuelleWerkzeuge, setAktuelleWerkzeuge] = useState<
     WerkzeugAktivitaet[]
@@ -232,6 +246,47 @@ export default function DevChatSeite() {
       router.push('/dashboard');
     }
   }, [benutzer, router]);
+
+  // Chat-Verlauf beim Laden holen
+  useEffect(() => {
+    if (!accessToken || verlaufGeladen) return;
+
+    const verlaufLaden = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/dev-chat/verlauf`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.nachrichten && data.nachrichten.length > 0) {
+            const geladeneNachrichten: ChatNachricht[] = data.nachrichten.map(
+              (n: {
+                id: string;
+                rolle: 'user' | 'assistant';
+                inhalt: string;
+                bilder?: string[];
+                werkzeuge?: WerkzeugAktivitaet[];
+                zeitpunkt: string;
+              }) => ({
+                id: n.id,
+                rolle: n.rolle,
+                inhalt: n.inhalt,
+                bilder: n.bilder,
+                werkzeuge: n.werkzeuge,
+                zeitpunkt: new Date(n.zeitpunkt),
+              }),
+            );
+            setNachrichten(geladeneNachrichten);
+          }
+        }
+      } catch {
+        // Verlauf laden fehlgeschlagen - kein Problem, starten wir frisch
+      }
+      setVerlaufGeladen(true);
+    };
+
+    verlaufLaden();
+  }, [accessToken, verlaufGeladen]);
 
   // Auto-Scroll
   useEffect(() => {
@@ -299,7 +354,6 @@ export default function DevChatSeite() {
         reader.readAsDataURL(datei);
       }
 
-      // Input zuruecksetzen
       e.target.value = '';
     },
     [],
@@ -405,7 +459,7 @@ export default function DevChatSeite() {
                 break;
             }
           } catch {
-            // JSON-Parse-Fehler ignorieren (unvollstaendige Zeile)
+            // JSON-Parse-Fehler ignorieren
           }
         }
       }
@@ -487,7 +541,7 @@ export default function DevChatSeite() {
           <Bot className="w-5 h-5 text-blue-600" />
           <h1 className="font-semibold text-zinc-900">Dev-Chat</h1>
           <span className="text-xs text-zinc-400 hidden sm:inline">
-            Claude &middot; Vereinbase Entwicklung
+            Claude CLI &middot; Vereinbase Entwicklung
           </span>
         </div>
 
@@ -509,7 +563,7 @@ export default function DevChatSeite() {
         className="flex-1 overflow-y-auto px-4 py-6 space-y-6"
       >
         {/* Willkommen */}
-        {nachrichten.length === 0 && !ladenAktiv && (
+        {nachrichten.length === 0 && !ladenAktiv && verlaufGeladen && (
           <div className="flex flex-col items-center justify-center h-full text-center text-zinc-400 space-y-3 pb-20">
             <Bot className="w-12 h-12 text-zinc-300" />
             <div>
@@ -520,6 +574,10 @@ export default function DevChatSeite() {
                 Schreib mir was du aendern oder bauen willst.
                 <br />
                 Ich kann Dateien lesen, bearbeiten und Befehle ausfuehren.
+                <br />
+                <span className="text-zinc-300 text-xs">
+                  Claude CLI mit MCP-Tools &middot; Session bleibt erhalten
+                </span>
               </p>
             </div>
             <div className="flex flex-wrap gap-2 mt-4 justify-center">
@@ -662,7 +720,6 @@ export default function DevChatSeite() {
 
         {/* Eingabe-Zeile */}
         <div className="flex items-end gap-2">
-          {/* Bild-Upload Button */}
           <input
             ref={dateiInputRef}
             type="file"
@@ -681,7 +738,6 @@ export default function DevChatSeite() {
             <ImagePlus className="w-5 h-5" />
           </Button>
 
-          {/* Textarea */}
           <div className="flex-1 relative">
             <textarea
               ref={textareaRef}
@@ -697,7 +753,6 @@ export default function DevChatSeite() {
             />
           </div>
 
-          {/* Senden Button */}
           <Button
             onClick={nachrichtSenden}
             disabled={
@@ -715,8 +770,8 @@ export default function DevChatSeite() {
         </div>
 
         <p className="text-xs text-zinc-400 mt-1.5 text-center">
-          SUPERADMIN-Werkzeug &middot; Claude kann Dateien lesen, bearbeiten und
-          Befehle ausfuehren
+          SUPERADMIN-Werkzeug &middot; Claude CLI mit MCP-Tools, Session bleibt
+          erhalten
         </p>
       </div>
     </div>

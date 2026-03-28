@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Get,
   Delete,
   Body,
   Res,
@@ -47,6 +48,17 @@ export class DevChatController {
   private readonly logger = new Logger(DevChatController.name);
 
   constructor(private readonly devChatService: DevChatService) {}
+
+  /**
+   * Chat-Verlauf laden (persistent ueber Page-Reloads).
+   */
+  @Get('verlauf')
+  verlaufLaden(
+    @AktuellerBenutzer('id') userId: string,
+  ): { nachrichten: unknown[] } {
+    const nachrichten = this.devChatService.verlaufLaden(userId);
+    return { nachrichten };
+  }
 
   /**
    * Nachricht senden und SSE-Stream zurueckbekommen.
