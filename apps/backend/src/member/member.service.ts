@@ -166,6 +166,16 @@ export class MemberService {
   ) {
     await this.nachIdAbrufen(tenantId, id);
 
+    // Mitgliedsnummer Unique-Pruefung
+    if (dto.mitgliedsnummer) {
+      const bestehend = await this.prisma.member.findFirst({
+        where: { tenantId, memberNumber: dto.mitgliedsnummer, id: { not: id } },
+      });
+      if (bestehend) {
+        throw new ConflictException(`Mitgliedsnummer "${dto.mitgliedsnummer}" ist bereits vergeben.`);
+      }
+    }
+
     const aktualisiert = await this.prisma.member.update({
       where: { id },
       data: {

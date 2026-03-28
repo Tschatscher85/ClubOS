@@ -522,6 +522,12 @@ Wichtig:
   /**
    * Turnier-Landingpage erstellen
    */
+  async turnierLandingpageAbrufen(tournamentId: string) {
+    return this.prisma.turnierLandingpage.findUnique({
+      where: { tournamentId },
+    });
+  }
+
   async turnierLandingpageErstellen(
     tournamentId: string,
     daten: {

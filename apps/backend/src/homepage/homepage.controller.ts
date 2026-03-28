@@ -102,6 +102,17 @@ export class HomepageController {
 
   // ==================== Turnier-Landingpages (Admin) ====================
 
+  @Get('admin/turnier-landingpage')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Turnier-Landingpage nach tournamentId abrufen' })
+  async turnierLandingpageAbrufen(
+    @Query('tournamentId') tournamentId: string,
+  ) {
+    if (!tournamentId) return null;
+    return this.homepageService.turnierLandingpageAbrufen(tournamentId);
+  }
+
   @Post('admin/turnier-landingpage')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

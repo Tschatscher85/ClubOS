@@ -156,4 +156,60 @@ export class TournamentController {
     await this.tournamentService.spielLoeschen(tenantId, turnierId, spielId);
     return { nachricht: 'Spiel erfolgreich geloescht.' };
   }
+
+  // ==================== Spielplan-Generator ====================
+
+  @Post(':id/spielplan-generieren')
+  @UseGuards(JwtAuthGuard, RollenGuard, TenantGuard)
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Spielplan automatisch generieren (Gruppenphase)' })
+  async spielplanGenerieren(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') turnierId: string,
+    @Body() body: {
+      teams: string[];
+      startzeit: string;
+      spielDauerMinuten: number;
+      pufferMinuten: number;
+      felder?: string[];
+    },
+  ) {
+    return this.tournamentService.spielplanGenerieren(
+      tenantId,
+      turnierId,
+      body.teams,
+      body.startzeit,
+      body.spielDauerMinuten,
+      body.pufferMinuten,
+      body.felder,
+    );
+  }
+
+  // ==================== Zeiten synchronisieren ====================
+
+  @Put(':id/zeiten-sync')
+  @UseGuards(JwtAuthGuard, RollenGuard, TenantGuard)
+  @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Spielzeiten ab einem Spiel neu berechnen' })
+  async zeitenSync(
+    @AktuellerBenutzer('tenantId') tenantId: string,
+    @Param('id') turnierId: string,
+    @Body() body: {
+      abSpielId: string;
+      startzeit: string;
+      spielDauerMinuten: number;
+      pufferMinuten: number;
+    },
+  ) {
+    return this.tournamentService.zeitenSync(
+      tenantId,
+      turnierId,
+      body.abSpielId,
+      body.startzeit,
+      body.spielDauerMinuten,
+      body.pufferMinuten,
+    );
+  }
 }

@@ -147,6 +147,100 @@ export class TournamentService {
     return this.prisma.tournamentMatch.delete({ where: { id: spielId } });
   }
 
+  // ==================== Spielplan-Generator ====================
+
+  /**
+   * Generiert automatisch alle Spiele fuer eine Gruppenphase (Jeder gegen Jeden).
+   * Berechnet Zeiten basierend auf Startzeit, Spieldauer und Puffer.
+   * Wenn mehrere Felder vorhanden: parallele Spiele auf verschiedenen Feldern.
+   */
+  async spielplanGenerieren(
+    tenantId: string,
+    turnierId: string,
+    teams: string[],
+    startzeit: string,
+    spielDauerMinuten: number,
+    pufferMinuten: number,
+    felder?: string[],
+  ) {
+    await this.nachIdAbrufen(tenantId, turnierId);
+
+    // Alle Paarungen generieren (Jeder gegen Jeden)
+    const paarungen: Array<{ team1: string; team2: string }> = [];
+    for (let i = 0; i < teams.length; i++) {
+      for (let j = i + 1; j < teams.length; j++) {
+        paarungen.push({ team1: teams[i], team2: teams[j] });
+      }
+    }
+
+    // Zeiten berechnen
+    const start = new Date(startzeit);
+    const intervallMs = (spielDauerMinuten + pufferMinuten) * 60 * 1000;
+    const anzahlFelder = felder && felder.length > 0 ? felder.length : 1;
+    const feldNamen = felder && felder.length > 0 ? felder : [null];
+
+    const spiele = paarungen.map((paarung, index) => {
+      const zeitSlot = Math.floor(index / anzahlFelder);
+      const feldIndex = index % anzahlFelder;
+      const spielZeit = new Date(start.getTime() + zeitSlot * intervallMs);
+
+      return {
+        tournamentId: turnierId,
+        team1: paarung.team1,
+        team2: paarung.team2,
+        time: spielZeit,
+        field: feldNamen[feldIndex],
+      };
+    });
+
+    // Alle Spiele erstellen
+    await this.prisma.tournamentMatch.createMany({ data: spiele });
+
+    return {
+      nachricht: `${spiele.length} Spiele generiert.`,
+      anzahl: spiele.length,
+    };
+  }
+
+  /**
+   * Synchronisiert die Spielzeiten ab einem bestimmten Spiel.
+   * Setzt das gewaehlte Spiel auf die angegebene Startzeit
+   * und berechnet alle folgenden Spiele neu.
+   */
+  async zeitenSync(
+    tenantId: string,
+    turnierId: string,
+    abSpielId: string,
+    startzeit: string,
+    spielDauerMinuten: number,
+    pufferMinuten: number,
+  ) {
+    const turnier = await this.nachIdAbrufen(tenantId, turnierId);
+    const spiele = turnier.matches;
+
+    // Spiel finden ab dem synchronisiert wird
+    const startIndex = spiele.findIndex((s) => s.id === abSpielId);
+    if (startIndex === -1) return { nachricht: 'Spiel nicht gefunden.' };
+
+    const start = new Date(startzeit);
+    const intervallMs = (spielDauerMinuten + pufferMinuten) * 60 * 1000;
+
+    // Alle Spiele ab startIndex updaten
+    const updates = [];
+    for (let i = startIndex; i < spiele.length; i++) {
+      const neueZeit = new Date(start.getTime() + (i - startIndex) * intervallMs);
+      updates.push(
+        this.prisma.tournamentMatch.update({
+          where: { id: spiele[i].id },
+          data: { time: neueZeit },
+        }),
+      );
+    }
+
+    await this.prisma.$transaction(updates);
+    return { nachricht: `${updates.length} Spielzeiten synchronisiert.` };
+  }
+
   // ==================== Tabelle ====================
 
   private tabelleBerechnen(

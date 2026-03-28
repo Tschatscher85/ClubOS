@@ -178,6 +178,27 @@ export class FamilieService {
     });
   }
 
+  /** Familie eines bestimmten Mitglieds abrufen */
+  async nachMitglied(tenantId: string, memberId: string) {
+    const familieMitglied = await this.prisma.familieMitglied.findFirst({
+      where: { memberId },
+      select: { familieId: true },
+    });
+    if (!familieMitglied) return [];
+
+    const familie = await this.prisma.familie.findFirst({
+      where: { id: familieMitglied.familieId, tenantId },
+      include: {
+        mitglieder: {
+          include: {
+            member: { select: { id: true, firstName: true, lastName: true, memberNumber: true } },
+          },
+        },
+      },
+    });
+    return familie ? [familie] : [];
+  }
+
   /** Familie-Detail abrufen */
   async detailAbrufen(id: string, tenantId: string) {
     const familie = await this.prisma.familie.findFirst({

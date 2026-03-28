@@ -5,6 +5,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -36,10 +37,14 @@ export class FamilieController {
 
   @Get()
   @Rollen(Role.SUPERADMIN, Role.ADMIN, Role.TRAINER)
-  @ApiOperation({ summary: 'Alle Familien des Vereins abrufen' })
+  @ApiOperation({ summary: 'Alle Familien des Vereins abrufen (optional: memberId-Filter)' })
   async alleAbrufen(
     @AktuellerBenutzer('tenantId') tenantId: string,
+    @Query('memberId') memberId?: string,
   ) {
+    if (memberId) {
+      return this.familieService.nachMitglied(tenantId, memberId);
+    }
     return this.familieService.alleAbrufen(tenantId);
   }
 

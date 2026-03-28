@@ -112,7 +112,7 @@ export class DevChatService {
       '-p',
       '--output-format',
       'stream-json',
-      '--dangerously-skip-permissions',
+      '--permission-mode', 'bypassPermissions',
     ];
 
     // Bestehende Session fortsetzen

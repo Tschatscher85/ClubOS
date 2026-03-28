@@ -12,6 +12,10 @@ import {
   Globe,
   Save,
   Loader2,
+  Play,
+  Clock,
+  Zap,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -58,6 +62,19 @@ export default function TurnierDetailPage() {
   const [turnier, setTurnier] = useState<Turnier | null>(null);
   const [ladend, setLadend] = useState(true);
   const [spielFormularOffen, setSpielFormularOffen] = useState(false);
+
+  // Spielplan-Generator
+  const [generatorOffen, setGeneratorOffen] = useState(false);
+  const [genTeams, setGenTeams] = useState('');
+  const [genStartzeit, setGenStartzeit] = useState('');
+  const [genDauer, setGenDauer] = useState('10');
+  const [genPuffer, setGenPuffer] = useState('2');
+  const [genFelder, setGenFelder] = useState('');
+  const [genLadend, setGenLadend] = useState(false);
+
+  // Spielzeit-Einstellungen
+  const [spielDauer, setSpielDauer] = useState('10');
+  const [spielPuffer, setSpielPuffer] = useState('2');
 
   // Landingpage
   const [lpOffen, setLpOffen] = useState(false);
@@ -170,6 +187,45 @@ export default function TurnierDetailPage() {
     }
   };
 
+  // Spielplan generieren
+  const handleSpielplanGenerieren = async () => {
+    const teams = genTeams.split('\n').map((t) => t.trim()).filter(Boolean);
+    if (teams.length < 2 || !genStartzeit) return;
+    setGenLadend(true);
+    try {
+      const felder = genFelder.split(',').map((f) => f.trim()).filter(Boolean);
+      await apiClient.post(`/turniere/${id}/spielplan-generieren`, {
+        teams,
+        startzeit: new Date(genStartzeit).toISOString(),
+        spielDauerMinuten: parseInt(genDauer),
+        pufferMinuten: parseInt(genPuffer),
+        felder: felder.length > 0 ? felder : undefined,
+      });
+      setGeneratorOffen(false);
+      setGenTeams('');
+      datenLaden();
+    } catch (error) {
+      console.error('Fehler:', error);
+    } finally {
+      setGenLadend(false);
+    }
+  };
+
+  // "Spiel beginnt jetzt" - synct Uhrzeit ab diesem Spiel
+  const handleJetztStarten = async (spielId: string) => {
+    try {
+      await apiClient.put(`/turniere/${id}/zeiten-sync`, {
+        abSpielId: spielId,
+        startzeit: new Date().toISOString(),
+        spielDauerMinuten: parseInt(spielDauer),
+        pufferMinuten: parseInt(spielPuffer),
+      });
+      datenLaden();
+    } catch (error) {
+      console.error('Fehler:', error);
+    }
+  };
+
   if (ladend || !turnier) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -210,6 +266,10 @@ export default function TurnierDetailPage() {
           >
             <Radio className="h-4 w-4 mr-2" />
             {turnier.isLive ? 'Live beenden' : 'Live schalten'}
+          </Button>
+          <Button variant="outline" onClick={() => setGeneratorOffen(!generatorOffen)}>
+            <Zap className="h-4 w-4 mr-2" />
+            Spielplan
           </Button>
           <Button variant="outline" onClick={() => setSpielFormularOffen(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -317,6 +377,90 @@ export default function TurnierDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Spielplan-Generator */}
+      {generatorOffen && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2"><Zap className="h-5 w-5" /> Spielplan generieren</span>
+              <Button variant="ghost" size="icon" onClick={() => setGeneratorOffen(false)}><X className="h-4 w-4" /></Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Teams (eins pro Zeile) *</Label>
+              <textarea
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm min-h-[120px] mt-1"
+                value={genTeams}
+                onChange={(e) => setGenTeams(e.target.value)}
+                placeholder={"FC Kunchen\nTSV Rechberg\nSV Gammelshausen\nSC Geislingen\nFV Goeppingen\nTSG Eislingen"}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {genTeams.split('\n').filter((t) => t.trim()).length} Teams → {(() => { const n = genTeams.split('\n').filter((t) => t.trim()).length; return n > 1 ? (n * (n - 1)) / 2 : 0; })()} Spiele
+              </p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <Label>Startzeit *</Label>
+                <Input type="datetime-local" value={genStartzeit} onChange={(e) => setGenStartzeit(e.target.value)} className="mt-1" />
+              </div>
+              <div>
+                <Label>Spieldauer (Min.)</Label>
+                <Select className="mt-1" value={genDauer} onChange={(e) => setGenDauer(e.target.value)}>
+                  <option value="6">6 Min.</option>
+                  <option value="8">8 Min.</option>
+                  <option value="10">10 Min.</option>
+                  <option value="12">12 Min.</option>
+                  <option value="15">15 Min.</option>
+                  <option value="20">20 Min.</option>
+                </Select>
+              </div>
+              <div>
+                <Label>Puffer (Min.)</Label>
+                <Select className="mt-1" value={genPuffer} onChange={(e) => setGenPuffer(e.target.value)}>
+                  <option value="1">1 Min.</option>
+                  <option value="2">2 Min.</option>
+                  <option value="3">3 Min.</option>
+                  <option value="5">5 Min.</option>
+                </Select>
+              </div>
+              <div>
+                <Label>Spielfelder</Label>
+                <Input value={genFelder} onChange={(e) => setGenFelder(e.target.value)} placeholder="Feld 1, Feld 2" className="mt-1" />
+                <p className="text-xs text-muted-foreground mt-0.5">Komma-getrennt fuer parallele Spiele</p>
+              </div>
+            </div>
+            <Button onClick={handleSpielplanGenerieren} disabled={genLadend || genTeams.split('\n').filter((t) => t.trim()).length < 2 || !genStartzeit}>
+              {genLadend ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
+              Spielplan generieren
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Spielzeit-Einstellungen */}
+      {turnier.matches.length > 0 && (
+        <div className="flex items-center gap-3 text-sm">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          <span className="text-muted-foreground">Spieldauer:</span>
+          <Select className="w-24 h-8 text-xs" value={spielDauer} onChange={(e) => setSpielDauer(e.target.value)}>
+            <option value="6">6 Min.</option>
+            <option value="8">8 Min.</option>
+            <option value="10">10 Min.</option>
+            <option value="12">12 Min.</option>
+            <option value="15">15 Min.</option>
+            <option value="20">20 Min.</option>
+          </Select>
+          <span className="text-muted-foreground">Puffer:</span>
+          <Select className="w-20 h-8 text-xs" value={spielPuffer} onChange={(e) => setSpielPuffer(e.target.value)}>
+            <option value="1">1 Min.</option>
+            <option value="2">2 Min.</option>
+            <option value="3">3 Min.</option>
+            <option value="5">5 Min.</option>
+          </Select>
+        </div>
+      )}
+
       {/* Spielplan */}
       <Card>
         <CardHeader>
@@ -389,6 +533,20 @@ export default function TurnierDetailPage() {
                     <option value="BEENDET">Beendet</option>
                     <option value="ABGESAGT">Abgesagt</option>
                   </Select>
+
+                  {/* Jetzt starten */}
+                  {spiel.status === 'GEPLANT' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs gap-1"
+                      onClick={() => handleJetztStarten(spiel.id)}
+                      title="Spiel beginnt jetzt - synchronisiert alle folgenden Zeiten"
+                    >
+                      <Play className="h-3 w-3" />
+                      Jetzt
+                    </Button>
+                  )}
 
                   {/* Loeschen */}
                   <Button

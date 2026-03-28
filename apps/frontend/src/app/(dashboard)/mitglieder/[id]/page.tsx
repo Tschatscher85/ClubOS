@@ -276,13 +276,10 @@ export default function MitgliedDetailPage() {
         .then(setFormulare)
         .catch(() => setFormulare([]));
 
-      // Familie laden (ein Mitglied gehoert zu max. einer Familie)
-      apiClient.get<FamilieInfo[]>('/familien')
-        .then((alleFamilien) => {
-          const memberFamilie = alleFamilien.find((f) =>
-            f.mitglieder.some((m) => m.memberId === mitgliedId),
-          );
-          setFamilie(memberFamilie || null);
+      // Familie laden (gefiltert nach memberId)
+      apiClient.get<FamilieInfo[]>(`/familien?memberId=${mitgliedId}`)
+        .then((familien) => {
+          setFamilie(familien.length > 0 ? familien[0] : null);
         })
         .catch(() => {
           setFamilie(null);

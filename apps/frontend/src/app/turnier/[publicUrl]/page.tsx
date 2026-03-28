@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { Trophy, Radio, RefreshCw } from 'lucide-react';
+import { Trophy, Radio, RefreshCw, Filter } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 import { API_BASE_URL } from '@/lib/constants';
 
 interface Spiel {
@@ -58,6 +59,7 @@ export default function TurnierLivePage() {
   const publicUrl = params.publicUrl as string;
   const [turnier, setTurnier] = useState<TurnierLive | null>(null);
   const [fehler, setFehler] = useState('');
+  const [teamFilter, setTeamFilter] = useState('');
 
   const datenLaden = async () => {
     try {
@@ -72,11 +74,30 @@ export default function TurnierLivePage() {
 
   useEffect(() => {
     datenLaden();
-    // Auto-Refresh alle 10 Sekunden
     const interval = setInterval(datenLaden, 10000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [publicUrl]);
+
+  // Alle Team-Namen extrahieren
+  const alleTeams = useMemo(() => {
+    if (!turnier) return [];
+    const teams = new Set<string>();
+    turnier.matches.forEach((s) => {
+      if (s.team1) teams.add(s.team1);
+      if (s.team2) teams.add(s.team2);
+    });
+    return Array.from(teams).sort();
+  }, [turnier]);
+
+  // Gefilterte Spiele
+  const gefilterteSpiele = useMemo(() => {
+    if (!turnier) return [];
+    if (!teamFilter) return turnier.matches;
+    return turnier.matches.filter(
+      (s) => s.team1 === teamFilter || s.team2 === teamFilter,
+    );
+  }, [turnier, teamFilter]);
 
   if (fehler) {
     return (
@@ -118,6 +139,33 @@ export default function TurnierLivePage() {
           </div>
         </div>
 
+        {/* Team-Filter */}
+        {alleTeams.length > 2 && (
+          <div className="flex items-center justify-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select
+              className="w-64"
+              value={teamFilter}
+              onChange={(e) => setTeamFilter(e.target.value)}
+            >
+              <option value="">Alle Teams anzeigen</option>
+              {alleTeams.map((team) => (
+                <option key={team} value={team}>
+                  {team}
+                </option>
+              ))}
+            </Select>
+            {teamFilter && (
+              <button
+                onClick={() => setTeamFilter('')}
+                className="text-xs text-muted-foreground hover:text-foreground underline"
+              >
+                Zuruecksetzen
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Tabelle */}
         {turnier.tabelle.length > 0 && (
           <Card>
@@ -144,7 +192,7 @@ export default function TurnierLivePage() {
                     {turnier.tabelle.map((eintrag, index) => (
                       <tr
                         key={eintrag.name}
-                        className={`border-b ${index === 0 ? 'bg-primary/5 font-semibold' : ''}`}
+                        className={`border-b ${index === 0 ? 'bg-primary/5 font-semibold' : ''} ${teamFilter === eintrag.name ? 'bg-blue-50 font-semibold' : ''}`}
                       >
                         <td className="px-3 py-2">{index + 1}</td>
                         <td className="px-3 py-2 font-medium">{eintrag.name}</td>
@@ -174,16 +222,23 @@ export default function TurnierLivePage() {
         {/* Spielplan */}
         <Card>
           <CardHeader>
-            <CardTitle>Spiele</CardTitle>
+            <CardTitle>
+              Spiele
+              {teamFilter && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  — {teamFilter}
+                </span>
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            {turnier.matches.length === 0 ? (
+            {gefilterteSpiele.length === 0 ? (
               <p className="text-center text-muted-foreground py-4">
-                Noch keine Spiele eingetragen.
+                {teamFilter ? 'Keine Spiele fuer dieses Team.' : 'Noch keine Spiele eingetragen.'}
               </p>
             ) : (
               <div className="space-y-2">
-                {turnier.matches.map((spiel) => (
+                {gefilterteSpiele.map((spiel) => (
                   <div
                     key={spiel.id}
                     className={`flex items-center rounded-lg border p-3 ${
@@ -201,7 +256,7 @@ export default function TurnierLivePage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 text-right font-medium text-lg">
+                    <div className={`flex-1 text-right font-medium text-lg ${teamFilter === spiel.team1 ? 'text-primary font-bold' : ''}`}>
                       {spiel.team1}
                     </div>
                     <div className="mx-4 text-center min-w-[80px]">
@@ -217,7 +272,7 @@ export default function TurnierLivePage() {
                         {STATUS_LABEL[spiel.status] || spiel.status}
                       </Badge>
                     </div>
-                    <div className="flex-1 font-medium text-lg">
+                    <div className={`flex-1 font-medium text-lg ${teamFilter === spiel.team2 ? 'text-primary font-bold' : ''}`}>
                       {spiel.team2}
                     </div>
                   </div>
