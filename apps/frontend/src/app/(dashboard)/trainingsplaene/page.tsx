@@ -386,7 +386,7 @@ function TrainingsplaeneInhalt() {
           {/* Einheiten als strukturierte Karten */}
           {Array.isArray(generierterPlan.inhalt) &&
             (generierterPlan.inhalt as Einheit[]).map((einheit, index) => (
-              <Card key={index}>
+              <Card key={index} data-einheit={index}>
                 <CardHeader
                   className="cursor-pointer select-none"
                   onClick={() => toggleEinheit(index)}
@@ -504,6 +504,99 @@ function TrainingsplaeneInhalt() {
               </Card>
             ))}
         </div>
+      )}
+
+      {/* ==================== Visuelle Timeline ==================== */}
+      {generierterPlan && Array.isArray(generierterPlan.inhalt) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Wochenueberblick
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min((generierterPlan.inhalt as Einheit[]).length, 6)}, 1fr)` }}>
+              {(generierterPlan.inhalt as Einheit[]).map((einheit, index) => {
+                const gesamtDauer = generierterPlan.parameter.dauerMinuten;
+                const erwaermungProzent = einheit.erwaermung ? Math.round((einheit.erwaermung.dauer / gesamtDauer) * 100) : 0;
+                const hauptteilDauer = einheit.hauptteil?.reduce((s, u) => s + (u.dauer || 0), 0) || 0;
+                const hauptteilProzent = Math.round((hauptteilDauer / gesamtDauer) * 100);
+                const abschlussProzent = einheit.abschluss ? Math.round((einheit.abschluss.dauer / gesamtDauer) * 100) : 0;
+
+                return (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      setExpandierteEinheiten(new Set([index]));
+                      document.querySelector(`[data-einheit="${index}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                    className="rounded-lg border p-3 hover:shadow-md transition-shadow text-left"
+                  >
+                    <p className="text-xs font-semibold mb-1 truncate">
+                      {einheit.titel || `Einheit ${einheit.nummer}`}
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {gesamtDauer} Min.
+                    </p>
+                    {/* Farbige Zeitbalken */}
+                    <div className="flex rounded-full overflow-hidden h-3 bg-muted">
+                      {erwaermungProzent > 0 && (
+                        <div
+                          className="bg-orange-400"
+                          style={{ width: `${erwaermungProzent}%` }}
+                          title={`Erwaermung: ${einheit.erwaermung?.dauer} Min.`}
+                        />
+                      )}
+                      {hauptteilProzent > 0 && (
+                        <div
+                          className="bg-blue-500"
+                          style={{ width: `${hauptteilProzent}%` }}
+                          title={`Hauptteil: ${hauptteilDauer} Min.`}
+                        />
+                      )}
+                      {abschlussProzent > 0 && (
+                        <div
+                          className="bg-green-500"
+                          style={{ width: `${abschlussProzent}%` }}
+                          title={`Abschluss: ${einheit.abschluss?.dauer} Min.`}
+                        />
+                      )}
+                    </div>
+                    {/* Uebungen als Mini-Liste */}
+                    <div className="mt-2 space-y-0.5">
+                      {einheit.hauptteil?.slice(0, 3).map((u, ui) => (
+                        <p key={ui} className="text-[10px] text-muted-foreground truncate">
+                          {u.name}
+                        </p>
+                      ))}
+                      {(einheit.hauptteil?.length || 0) > 3 && (
+                        <p className="text-[10px] text-muted-foreground">
+                          +{(einheit.hauptteil?.length || 0) - 3} weitere
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {/* Legende */}
+            <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-orange-400" />
+                Erwaermung
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-blue-500" />
+                Hauptteil
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-green-500" />
+                Abschluss
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* ==================== Gespeicherte Plaene ==================== */}

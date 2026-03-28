@@ -73,8 +73,8 @@ const NAVIGATION_GRUPPEN: NavGruppe[] = [
     titel: 'Aktivitäten',
     eintraege: [
       { href: ROUTEN.KALENDER, label: 'Kalender & Saison', icon: Calendar, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER', 'MEMBER', 'PARENT'] },
-      { href: ROUTEN.NACHRICHTEN, label: 'Nachrichten & Umfragen', icon: MessageSquare, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER', 'MEMBER', 'PARENT'] },
-      { href: ROUTEN.SCHWARZES_BRETT, label: 'Pinnwand & Galerie', icon: ClipboardList, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER', 'MEMBER', 'PARENT'] },
+      { href: ROUTEN.NACHRICHTEN, label: 'Nachrichten', icon: MessageSquare, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER', 'MEMBER', 'PARENT'] },
+      { href: ROUTEN.SCHWARZES_BRETT, label: 'Pinnwand & Infos', icon: ClipboardList, rollen: ['SUPERADMIN', 'ADMIN', 'TRAINER', 'MEMBER', 'PARENT'] },
     ],
   },
   {
