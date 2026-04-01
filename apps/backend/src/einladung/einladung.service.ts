@@ -208,12 +208,14 @@ export class EinladungService {
       name: string;
       type: string;
       fields: unknown;
+      nurKenntnisnahme?: boolean;
+      fileUrl?: string;
     }> = [];
 
     if (einladung.templateIds.length > 0) {
       templates = await this.prisma.formTemplate.findMany({
         where: { id: { in: einladung.templateIds } },
-        select: { id: true, name: true, type: true, fields: true },
+        select: { id: true, name: true, type: true, fields: true, nurKenntnisnahme: true, fileUrl: true },
       });
     }
 
@@ -221,8 +223,12 @@ export class EinladungService {
     const einreichungen: Array<{ id: string; templateName: string }> = [];
 
     for (const template of templates) {
-      const daten = dto.formulardaten[template.id] || {};
-      const signatur = dto.unterschriften[template.id] || null;
+      // Bei Kenntnisnahme-Templates nur Bestaetigung speichern
+      const istKenntnisnahme = template.nurKenntnisnahme === true;
+      const daten = istKenntnisnahme
+        ? { kenntnisGenommen: true, bestaetigtAm: new Date().toISOString() }
+        : (dto.formulardaten[template.id] || {});
+      const signatur = istKenntnisnahme ? null : (dto.unterschriften[template.id] || null);
 
       // Sportarten in die Daten einfuegen
       const formDaten = {
@@ -496,7 +502,7 @@ export class EinladungService {
     if (einladung.templateIds.length > 0) {
       templates = await this.prisma.formTemplate.findMany({
         where: { id: { in: einladung.templateIds } },
-        select: { id: true, name: true, type: true, fields: true },
+        select: { id: true, name: true, type: true, fields: true, nurKenntnisnahme: true, fileUrl: true },
       });
     }
 

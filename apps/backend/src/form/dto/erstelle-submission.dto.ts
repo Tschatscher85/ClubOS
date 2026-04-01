@@ -74,6 +74,14 @@ export class ErstelleTemplateDto {
   @ValidateNested({ each: true })
   @Type(() => FormularFeldDto)
   felder!: FormularFeldDto[];
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'PDF nur zur Kenntnisnahme (nicht ausfuellen, nur bestaetigen)',
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'nurKenntnisnahme muss ein Boolean sein.' })
+  nurKenntnisnahme?: boolean;
 }
 
 // ==================== Submission DTOs ====================

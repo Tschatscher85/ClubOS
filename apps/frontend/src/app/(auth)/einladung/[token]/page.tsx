@@ -20,6 +20,8 @@ interface Template {
   name: string;
   type: string;
   fields: FormularFeld[];
+  nurKenntnisnahme?: boolean;
+  fileUrl?: string;
 }
 
 interface EinladungDaten {
@@ -291,19 +293,28 @@ export default function EinladungOeffentlichSeite() {
     // Pflichtfelder fuer aktuelles Formular pruefen
     const template = einladung.templates[aktuellesFormular];
     if (template) {
-      for (const feld of template.fields as FormularFeld[]) {
-        if (feld.pflicht) {
-          const wert = formularDaten[template.id]?.[feld.name];
-          if (!wert && wert !== false) {
-            setFehler(`Bitte fuellen Sie das Feld "${feld.label}" aus.`);
-            return;
+      if (template.nurKenntnisnahme) {
+        // Bei Kenntnisnahme nur Checkbox pruefen
+        if (!formularDaten[template.id]?.['kenntnisGenommen']) {
+          setFehler('Bitte bestaetigen Sie, dass Sie das Dokument zur Kenntnis genommen haben.');
+          return;
+        }
+      } else {
+        // Normale Formularfelder pruefen
+        for (const feld of template.fields as FormularFeld[]) {
+          if (feld.pflicht) {
+            const wert = formularDaten[template.id]?.[feld.name];
+            if (!wert && wert !== false) {
+              setFehler(`Bitte fuellen Sie das Feld "${feld.label}" aus.`);
+              return;
+            }
           }
         }
-      }
 
-      if (!unterschriften[template.id]) {
-        setFehler('Bitte unterschreiben Sie das Formular.');
-        return;
+        if (!unterschriften[template.id]) {
+          setFehler('Bitte unterschreiben Sie das Formular.');
+          return;
+        }
       }
     }
 
@@ -502,147 +513,181 @@ export default function EinladungOeffentlichSeite() {
                 <p className="text-sm text-gray-500">
                   {FORMTYP_LABEL[aktuellesTemplate.type] ||
                     aktuellesTemplate.type}{' '}
-                  — bitte ausfuellen und unterschreiben
+                  — {aktuellesTemplate.nurKenntnisnahme ? 'bitte zur Kenntnis nehmen' : 'bitte ausfuellen und unterschreiben'}
                 </p>
               </div>
             </div>
           </div>
           <div className="p-6 space-y-4">
-            {/* Formularfelder */}
-            {(aktuellesTemplate.fields as FormularFeld[]).map((feld) => (
-              <div key={feld.name} className="space-y-1.5">
-                <label
-                  htmlFor={`${aktuellesTemplate.id}-${feld.name}`}
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  {feld.label} {feld.pflicht && <span className="text-red-500">*</span>}
-                </label>
-
-                {feld.typ === 'text' && (
-                  <input
-                    id={`${aktuellesTemplate.id}-${feld.name}`}
-                    type="text"
-                    value={
-                      (formularDaten[aktuellesTemplate.id]?.[feld.name] as string) || ''
-                    }
-                    onChange={(e) =>
-                      handleFeldAendern(aktuellesTemplate.id, feld.name, e.target.value)
-                    }
-                    required={feld.pflicht}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+            {aktuellesTemplate.nurKenntnisnahme ? (
+              <>
+                {/* Kenntnisnahme: PDF anzeigen + Checkbox */}
+                {aktuellesTemplate.fileUrl && (
+                  <div className="rounded-md border border-gray-200 overflow-hidden">
+                    <iframe
+                      src={`${API_BASE_URL}${aktuellesTemplate.fileUrl}`}
+                      className="w-full"
+                      style={{ height: '500px' }}
+                      title={aktuellesTemplate.name}
+                    />
+                  </div>
                 )}
-
-                {feld.typ === 'email' && (
-                  <input
-                    id={`${aktuellesTemplate.id}-${feld.name}`}
-                    type="email"
-                    value={
-                      (formularDaten[aktuellesTemplate.id]?.[feld.name] as string) || ''
-                    }
-                    onChange={(e) =>
-                      handleFeldAendern(aktuellesTemplate.id, feld.name, e.target.value)
-                    }
-                    required={feld.pflicht}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                )}
-
-                {feld.typ === 'date' && (
-                  <input
-                    id={`${aktuellesTemplate.id}-${feld.name}`}
-                    type="date"
-                    value={
-                      (formularDaten[aktuellesTemplate.id]?.[feld.name] as string) || ''
-                    }
-                    onChange={(e) =>
-                      handleFeldAendern(aktuellesTemplate.id, feld.name, e.target.value)
-                    }
-                    required={feld.pflicht}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                )}
-
-                {feld.typ === 'select' && feld.optionen && (
-                  <select
-                    id={`${aktuellesTemplate.id}-${feld.name}`}
-                    value={
-                      (formularDaten[aktuellesTemplate.id]?.[feld.name] as string) || ''
-                    }
-                    onChange={(e) =>
-                      handleFeldAendern(aktuellesTemplate.id, feld.name, e.target.value)
-                    }
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="">Bitte waehlen</option>
-                    {feld.optionen.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                {feld.typ === 'checkbox' && (
-                  <label className="flex items-center gap-2">
+                <div className="rounded-md border border-blue-100 bg-blue-50 p-4">
+                  <label className="flex items-start gap-3 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={!!formularDaten[aktuellesTemplate.id]?.[feld.name]}
+                      checked={!!formularDaten[aktuellesTemplate.id]?.['kenntnisGenommen']}
                       onChange={(e) =>
-                        handleFeldAendern(
-                          aktuellesTemplate.id,
-                          feld.name,
-                          e.target.checked,
-                        )
+                        handleFeldAendern(aktuellesTemplate.id, 'kenntnisGenommen', e.target.checked)
                       }
-                      className="rounded border-gray-300"
+                      className="mt-0.5 rounded border-gray-300"
                     />
-                    <span className="text-sm text-gray-700">{feld.label}</span>
+                    <span className="text-sm text-gray-800">
+                      Ich habe das Dokument <strong>&quot;{aktuellesTemplate.name}&quot;</strong> gelesen
+                      und nehme es zur Kenntnis. <span className="text-red-500">*</span>
+                    </span>
                   </label>
-                )}
-              </div>
-            ))}
-
-            {/* Unterschrift */}
-            <div className="space-y-2 pt-4 border-t">
-              <label className="block text-base font-semibold text-gray-900">
-                Unterschrift <span className="text-red-500">*</span>
-              </label>
-              <p className="text-sm text-gray-500">
-                Bitte unterschreiben Sie dieses Formular mit der Maus oder dem
-                Finger
-              </p>
-              {unterschriften[aktuellesTemplate.id] ? (
-                <div className="space-y-2">
-                  <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 mx-auto mb-1" />
-                    <p className="text-sm text-green-800">
-                      Unterschrift gespeichert
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setUnterschriften((prev) => {
-                        const kopie = { ...prev };
-                        delete kopie[aktuellesTemplate.id];
-                        return kopie;
-                      })
-                    }
-                    className="flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    Erneut unterschreiben
-                  </button>
                 </div>
-              ) : (
-                <SignaturCanvas
-                  onGespeichert={(url) =>
-                    handleUnterschrift(aktuellesTemplate.id, url)
-                  }
-                />
-              )}
-            </div>
+              </>
+            ) : (
+              <>
+                {/* Normale Formularfelder */}
+                {(aktuellesTemplate.fields as FormularFeld[]).map((feld) => (
+                  <div key={feld.name} className="space-y-1.5">
+                    <label
+                      htmlFor={`${aktuellesTemplate.id}-${feld.name}`}
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      {feld.label} {feld.pflicht && <span className="text-red-500">*</span>}
+                    </label>
+
+                    {feld.typ === 'text' && (
+                      <input
+                        id={`${aktuellesTemplate.id}-${feld.name}`}
+                        type="text"
+                        value={
+                          (formularDaten[aktuellesTemplate.id]?.[feld.name] as string) || ''
+                        }
+                        onChange={(e) =>
+                          handleFeldAendern(aktuellesTemplate.id, feld.name, e.target.value)
+                        }
+                        required={feld.pflicht}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    )}
+
+                    {feld.typ === 'email' && (
+                      <input
+                        id={`${aktuellesTemplate.id}-${feld.name}`}
+                        type="email"
+                        value={
+                          (formularDaten[aktuellesTemplate.id]?.[feld.name] as string) || ''
+                        }
+                        onChange={(e) =>
+                          handleFeldAendern(aktuellesTemplate.id, feld.name, e.target.value)
+                        }
+                        required={feld.pflicht}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    )}
+
+                    {feld.typ === 'date' && (
+                      <input
+                        id={`${aktuellesTemplate.id}-${feld.name}`}
+                        type="date"
+                        value={
+                          (formularDaten[aktuellesTemplate.id]?.[feld.name] as string) || ''
+                        }
+                        onChange={(e) =>
+                          handleFeldAendern(aktuellesTemplate.id, feld.name, e.target.value)
+                        }
+                        required={feld.pflicht}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    )}
+
+                    {feld.typ === 'select' && feld.optionen && (
+                      <select
+                        id={`${aktuellesTemplate.id}-${feld.name}`}
+                        value={
+                          (formularDaten[aktuellesTemplate.id]?.[feld.name] as string) || ''
+                        }
+                        onChange={(e) =>
+                          handleFeldAendern(aktuellesTemplate.id, feld.name, e.target.value)
+                        }
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      >
+                        <option value="">Bitte waehlen</option>
+                        {feld.optionen.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {feld.typ === 'checkbox' && (
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={!!formularDaten[aktuellesTemplate.id]?.[feld.name]}
+                          onChange={(e) =>
+                            handleFeldAendern(
+                              aktuellesTemplate.id,
+                              feld.name,
+                              e.target.checked,
+                            )
+                          }
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm text-gray-700">{feld.label}</span>
+                      </label>
+                    )}
+                  </div>
+                ))}
+
+                {/* Unterschrift */}
+                <div className="space-y-2 pt-4 border-t">
+                  <label className="block text-base font-semibold text-gray-900">
+                    Unterschrift <span className="text-red-500">*</span>
+                  </label>
+                  <p className="text-sm text-gray-500">
+                    Bitte unterschreiben Sie dieses Formular mit der Maus oder dem
+                    Finger
+                  </p>
+                  {unterschriften[aktuellesTemplate.id] ? (
+                    <div className="space-y-2">
+                      <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
+                        <CheckCircle2 className="h-5 w-5 text-green-600 mx-auto mb-1" />
+                        <p className="text-sm text-green-800">
+                          Unterschrift gespeichert
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setUnterschriften((prev) => {
+                            const kopie = { ...prev };
+                            delete kopie[aktuellesTemplate.id];
+                            return kopie;
+                          })
+                        }
+                        className="flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Erneut unterschreiben
+                      </button>
+                    </div>
+                  ) : (
+                    <SignaturCanvas
+                      onGespeichert={(url) =>
+                        handleUnterschrift(aktuellesTemplate.id, url)
+                      }
+                    />
+                  )}
+                </div>
+              </>
+            )}
 
             {/* Fehler */}
             {fehler && (

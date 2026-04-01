@@ -42,6 +42,7 @@ export class FormService {
         type: dto.typ,
         fields: dto.felder as unknown as Prisma.InputJsonValue,
         fileUrl: '', // Wird spaeter bei PDF-Upload gesetzt
+        nurKenntnisnahme: dto.nurKenntnisnahme ?? false,
       },
     });
   }
@@ -60,6 +61,7 @@ export class FormService {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.typ !== undefined && { type: dto.typ }),
         ...(dto.felder !== undefined && { fields: dto.felder as unknown as Prisma.InputJsonValue }),
+        ...(dto.nurKenntnisnahme !== undefined && { nurKenntnisnahme: dto.nurKenntnisnahme }),
       },
     });
   }

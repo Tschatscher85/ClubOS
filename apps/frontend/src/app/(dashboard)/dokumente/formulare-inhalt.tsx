@@ -54,6 +54,7 @@ interface Vorlage {
   type: string;
   isActive: boolean;
   fields: FormularFeld[];
+  nurKenntnisnahme?: boolean;
   _count?: { submissions: number };
 }
 
@@ -112,6 +113,7 @@ export default function FormulareInhalt() {
   const [uploadDatei, setUploadDatei] = useState<File | null>(null);
   const [uploadName, setUploadName] = useState('');
   const [uploadTyp, setUploadTyp] = useState('MITGLIEDSANTRAG');
+  const [uploadNurKenntnisnahme, setUploadNurKenntnisnahme] = useState(false);
   const [uploadLadend, setUploadLadend] = useState(false);
   const [uploadFehler, setUploadFehler] = useState('');
   const [erkannteFelder, setErkannteFelder] = useState<FormularFeld[] | null>(null);
@@ -211,6 +213,7 @@ export default function FormulareInhalt() {
     setUploadDatei(null);
     setUploadName('');
     setUploadTyp('MITGLIEDSANTRAG');
+    setUploadNurKenntnisnahme(false);
     setUploadLadend(false);
     setUploadFehler('');
     setErkannteFelder(null);
@@ -248,6 +251,55 @@ export default function FormulareInhalt() {
     setErkannteFelder(null);
 
     try {
+      // Bei Kenntnisnahme: Direkt als Vorlage ohne Felder erstellen
+      if (uploadNurKenntnisnahme) {
+        await apiClient.post('/formulare/vorlagen', {
+          name: uploadName,
+          typ: uploadTyp,
+          felder: [],
+          nurKenntnisnahme: true,
+        });
+        // PDF separat hochladen ist nicht noetig — wird beim KI-Upload gemacht
+        // Fuer Kenntnisnahme brauchen wir aber das PDF gespeichert
+        const formData = new FormData();
+        formData.append('datei', uploadDatei);
+        formData.append('name', uploadName);
+
+        const authState = JSON.parse(localStorage.getItem('vereinbase-auth') || '{}');
+        const token = authState?.state?.accessToken;
+        const response = await fetch(
+          `${API_BASE_URL}/formulare/vorlagen/ki-konvertierung`,
+          {
+            method: 'POST',
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: formData,
+          },
+        );
+
+        if (!response.ok) {
+          const fehlerDaten = await response.json().catch(() => null);
+          throw new Error(
+            fehlerDaten?.nachricht || fehlerDaten?.message || `Fehler ${response.status}: Upload fehlgeschlagen.`,
+          );
+        }
+
+        const ergebnis = await response.json();
+        // Nachtraeglich nurKenntnisnahme setzen
+        await apiClient.put(`/formulare/vorlagen/${ergebnis.vorlage.id}`, {
+          name: uploadName,
+          typ: uploadTyp,
+          felder: [],
+          nurKenntnisnahme: true,
+        });
+
+        setUploadErfolg(true);
+        setUploadOffen(false);
+        await vorlagenLaden();
+        return;
+      }
+
       const formData = new FormData();
       formData.append('datei', uploadDatei);
       formData.append('name', uploadName);
@@ -282,7 +334,7 @@ export default function FormulareInhalt() {
     } finally {
       setUploadLadend(false);
     }
-  }, [uploadDatei, uploadName]);
+  }, [uploadDatei, uploadName, uploadNurKenntnisnahme, uploadTyp, vorlagenLaden]);
 
   const handleErkanntesFeldAendern = useCallback(
     (index: number, key: string, value: string | boolean) => {
@@ -414,11 +466,15 @@ export default function FormulareInhalt() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3 flex-wrap">
                       <Badge variant="outline">
                         {TYP_LABEL[vorlage.type] || vorlage.type}
                       </Badge>
-                      <span>{vorlage.fields?.length || 0} Felder</span>
+                      {vorlage.nurKenntnisnahme ? (
+                        <Badge variant="secondary">Nur Kenntnisnahme</Badge>
+                      ) : (
+                        <span>{vorlage.fields?.length || 0} Felder</span>
+                      )}
                     </div>
                     {vorlage._count && (
                       <p className="text-xs text-muted-foreground">
@@ -687,6 +743,21 @@ export default function FormulareInhalt() {
                 </div>
               </div>
 
+              <label className="flex items-center gap-3 cursor-pointer rounded-md border border-gray-200 p-3 hover:bg-gray-50">
+                <input
+                  type="checkbox"
+                  checked={uploadNurKenntnisnahme}
+                  onChange={(e) => setUploadNurKenntnisnahme(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <div>
+                  <span className="text-sm font-medium">Nur zur Kenntnisnahme</span>
+                  <p className="text-xs text-muted-foreground">
+                    PDF wird nur angezeigt und bestaetigt, keine Felder zum Ausfuellen
+                  </p>
+                </div>
+              </label>
+
               {uploadFehler && (
                 <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
                   {uploadFehler}
@@ -707,7 +778,12 @@ export default function FormulareInhalt() {
                   {uploadLadend ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      KI analysiert PDF...
+                      {uploadNurKenntnisnahme ? 'Wird hochgeladen...' : 'KI analysiert PDF...'}
+                    </>
+                  ) : uploadNurKenntnisnahme ? (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      PDF hochladen
                     </>
                   ) : (
                     <>
