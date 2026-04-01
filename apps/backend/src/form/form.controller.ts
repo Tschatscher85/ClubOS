@@ -155,6 +155,7 @@ export class FormController {
         seite: feld.seite,
         x: feld.x,
         y: feld.y,
+        pdfFeldName: feld.pdfFeldName,
       })),
     });
 
@@ -246,11 +247,13 @@ export class FormController {
     const felder = ((template.fields as unknown as Array<Record<string, unknown>>) || []).map((f) => ({
       name: f.name as string,
       label: f.label as string,
-      typ: (f.typ as 'text' | 'email' | 'date' | 'select' | 'checkbox') || 'text',
+      typ: (f.typ as 'text' | 'email' | 'date' | 'select' | 'checkbox' | 'radio' | 'signature') || 'text',
       pflicht: (f.pflicht as boolean) || false,
+      optionen: f.optionen as string[] | undefined,
       seite: f.seite as number | undefined,
       x: f.x as number | undefined,
       y: f.y as number | undefined,
+      pdfFeldName: f.pdfFeldName as string | undefined,
     }));
 
     const daten = (einreichung.daten as Record<string, unknown>) || {};

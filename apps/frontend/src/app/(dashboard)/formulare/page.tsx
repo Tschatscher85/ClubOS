@@ -585,6 +585,8 @@ export default function FormularePage() {
                         <option value="date">Datum</option>
                         <option value="select">Auswahl</option>
                         <option value="checkbox">Checkbox</option>
+                        <option value="radio">Radio-Buttons</option>
+                        <option value="signature">Unterschrift</option>
                       </Select>
                     </div>
                     <div className="flex items-center gap-2 pb-1">
@@ -800,6 +802,8 @@ export default function FormularePage() {
                       <option value="date">Datum</option>
                       <option value="select">Auswahl</option>
                       <option value="checkbox">Checkbox</option>
+                      <option value="radio">Radio-Buttons</option>
+                      <option value="signature">Unterschrift</option>
                     </Select>
                   </div>
                   <div className="flex items-center gap-2 pb-1">

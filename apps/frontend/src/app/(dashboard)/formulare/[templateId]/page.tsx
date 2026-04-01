@@ -363,7 +363,23 @@ export default function FormularAusfuellenPage() {
                       <span className="text-destructive"> *</span>
                     )}
                   </Label>
-                  {feld.typ === 'select' && feld.optionen ? (
+                  {feld.typ === 'radio' && feld.optionen ? (
+                    <div className="flex flex-wrap gap-4">
+                      {feld.optionen.map((opt) => (
+                        <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name={feld.name}
+                            value={opt}
+                            checked={(formDaten[feld.name] as string) === opt}
+                            onChange={(e) => handleFeldAendern(feld.name, e.target.value)}
+                            className="accent-primary"
+                          />
+                          <span className="text-sm">{opt}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : feld.typ === 'select' && feld.optionen ? (
                     <Select
                       value={(formDaten[feld.name] as string) || ''}
                       onChange={(e) => handleFeldAendern(feld.name, e.target.value)}

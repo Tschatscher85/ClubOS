@@ -28,11 +28,11 @@ export class FormularFeldDto {
 
   @ApiProperty({
     example: 'text',
-    enum: ['text', 'email', 'date', 'select', 'checkbox'],
+    enum: ['text', 'email', 'date', 'select', 'checkbox', 'radio', 'signature'],
     description: 'Feldtyp',
   })
   @IsString({ message: 'Typ muss ein Text sein.' })
-  typ!: 'text' | 'email' | 'date' | 'select' | 'checkbox';
+  typ!: 'text' | 'email' | 'date' | 'select' | 'checkbox' | 'radio' | 'signature';
 
   @ApiProperty({ example: true, description: 'Pflichtfeld?' })
   @IsBoolean({ message: 'Pflicht muss ein Boolean sein.' })
@@ -40,12 +40,20 @@ export class FormularFeldDto {
 
   @ApiPropertyOptional({
     example: ['maennlich', 'weiblich', 'divers'],
-    description: 'Optionen fuer Select-Felder',
+    description: 'Optionen fuer Select-/Radio-Felder',
   })
   @IsOptional()
   @IsArray({ message: 'Optionen muss ein Array sein.' })
   @IsString({ each: true, message: 'Jede Option muss ein Text sein.' })
   optionen?: string[];
+
+  @ApiPropertyOptional({
+    example: 'Vorname',
+    description: 'Exakter Name des eingebetteten PDF-Formularfelds (fuer Overlay)',
+  })
+  @IsOptional()
+  @IsString({ message: 'pdfFeldName muss ein Text sein.' })
+  pdfFeldName?: string;
 }
 
 export class ErstelleTemplateDto {
